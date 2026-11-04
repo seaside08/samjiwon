@@ -269,3 +269,7 @@ body.phone .chart{gap:2px}
 body.phone .left > div[style*="gap:28px"]{flex-direction:column}
 .tm{font-style:normal}
 body.phone .tm{display:none}
+.ilist{display:flex;flex-direction:column;overflow-y:auto;min-height:0}
+.ir{display:grid;grid-template-columns:110px minmax(0,1fr) 120px 70px;gap:10px;border-top:1.5px solid var(--ink);padding:6px 0;font-size:15px}
+.ir:last-child{border-bottom:1.5px solid var(--ink)}
+body.phone .ir{grid-template-columns:78px minmax(0,1fr) 92px 52px;gap:6px;font-size:13px}

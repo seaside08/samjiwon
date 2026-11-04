@@ -526,6 +526,37 @@ async function fillRoutine(w) {
   toast(n ? `${w.name} ${n}회를 달력에 넣었어요` : `${mo + 1}월에 더 넣을 ${w.name} 근무가 없어요`);
 }
 
+// ───────── 근무표 가져오기 (#import=… 링크)
+// { from, to, work: [[day, 근무지, 시작분, 끝분], …] } — 기간 안의 기존 근무는 지우고 바꿔 넣음
+function viewImport() {
+  const I = S.imp || { work: [] };
+  const old = S.events.filter((e) => e.kind === 'work' && e.day >= I.from && e.day <= I.to).length;
+  const rows = I.work.map(([day, place, a, b]) => {
+    const d = parseYmd(day);
+    return `<div class="ir"><span>${md(day)} ${WD_EN[d.getDay()]}</span><span><i class="sq"></i>${esc(place)}</span><span>${hm(a)}&#8211;${hm(b)}</span><span class="r">${dur(b - a)}</span></div>`;
+  }).join('');
+  const total = I.work.reduce((x, w) => x + (w[3] - w[2]), 0);
+  return `${header(`근무 ${I.work.length}회 &#183; ${dur(total)}`)}
+  <div class="main"><section class="left">
+    <div class="row"><span class="bk">IMPORT / 근무표 가져오기</span><span style="font-size:15px">${md(I.from)} &#8212; ${md(I.to)}</span></div>
+    <div class="ilist">${rows}</div>
+    <span style="margin-top:14px;font-size:13px">${old ? `이 기간에 이미 있는 근무 ${old}개는 지우고 바꿔 넣어요` : ''}</span>
+    <div style="display:flex;gap:16px;align-items:center;margin-top:14px"><button class="btn" data-act="imp-ok">달력에 넣기</button><button class="ul" data-act="imp-no">취소</button></div>
+  </section></div>`;
+}
+async function runImport() {
+  const I = S.imp; if (!I) return;
+  try {
+    const cur = await api.list('events', I.from, I.to);
+    for (const e of cur.filter((x) => x.kind === 'work')) await api.remove('events', e.id);
+    await api.insertMany('events', I.work.map(([day, place, a, b]) => ({ day, start_min: a, end_min: b, title: place, kind: 'work', place })));
+    S.imp = null; S.loaded = [null, null];
+    S.month = new Date(parseYmd(I.from).getFullYear(), parseYmd(I.from).getMonth(), 1);
+    location.hash = '#work';
+    toast(`근무 ${I.work.length}회를 달력에 넣었어요`);
+  } catch (e) { fail(e); }
+}
+
 function viewSoon() {
   return `${header('')}
   <div class="main"><section class="left">
@@ -566,6 +597,7 @@ function render() {
   else if (S.view === 'diary') html = viewDiary();
   else if (S.view === 'plants') html = viewPlants();
   else if (S.view === 'stats') html = viewStats();
+  else if (S.view === 'import') html = viewImport();
   else html = viewSoon();
   const focusAdd = a && a.closest && a.closest('form[data-add]')?.dataset.add;
   board.innerHTML = html + nav();
@@ -1010,6 +1042,8 @@ function viewStats() {
 
 // ───────── 추가 동작
 function handleMore(act, el, ev) {
+  if (act === 'imp-ok') { el.disabled = true; el.textContent = '넣는 중…'; runImport(); return true; }
+  if (act === 'imp-no') { S.imp = null; location.hash = '#work'; return true; }
   if (act === 'start') { startWork(projOf(el.dataset.id)); return true; }
   if (act === 'stop') { const r = running(); if (r) stopWork(r); return true; }
   if (act === 'discard') { const r = running(); if (r) discardWork(r); return true; }
@@ -1143,6 +1177,13 @@ setInterval(() => {
 
 function route() {
   const k = location.hash.slice(1);
+  if (k.startsWith('import=')) {
+    try {
+      const b = k.slice(7).replace(/-/g, '+').replace(/_/g, '/');
+      const json = new TextDecoder().decode(Uint8Array.from(atob(b), (c) => c.charCodeAt(0)));
+      S.imp = JSON.parse(json); S.view = 'import'; render(); return;
+    } catch (e) { toast('가져올 내용을 읽지 못했어요'); }
+  }
   S.view = TABS.some(([t]) => t === k) ? k : 'today';
   if (S.view === 'cal') {
     const d = parseYmd(S.sel);
