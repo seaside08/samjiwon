@@ -298,7 +298,7 @@ body.phone .sync{font-size:15px}
 .cell .ln,.cell .bar{letter-spacing:-.01em}
 
 /* 누르면 뜨는 창 */
-.sh-bg{position:absolute;inset:0;z-index:20;background:rgba(251,251,248,.72)}
+.sh-bg{position:absolute;inset:0;z-index:20;background:transparent}
 .sheet{position:absolute;z-index:21;left:50%;top:50%;transform:translate(-50%,-50%);width:380px;max-height:720px;overflow:auto;box-sizing:border-box;background:var(--paper);border:2.5px solid var(--ink);padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px}
 .sh-head{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.02em}
 .sh-x{margin-left:auto;font-size:22px;line-height:1;padding:0 2px}
