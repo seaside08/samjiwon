@@ -292,3 +292,7 @@ body.phone .rz{margin:0 -3px;padding:1px 3px}
 .ph .dial-t{font-size:36px}
 .sync{font-size:13px;padding:0 4px;margin-left:2px;align-self:center}
 body.phone .sync{font-size:15px}
+/* 달력 칸: 띄어쓰기만 고딕 글꼴의 좁은 빈칸으로 */
+@font-face{font-family:'KR Space';src:local('AppleSDGothicNeo-Bold'),local('Apple SD Gothic Neo Bold'),local('NotoSansKR-Bold'),local('Noto Sans KR Bold'),local('Noto Sans CJK KR Bold'),local('Malgun Gothic Bold');unicode-range:U+0020}
+.cell{font-family:'KR Space','IBM Plex Mono','KR Small',-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif}
+.cell .ln,.cell .bar{letter-spacing:-.01em}
