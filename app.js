@@ -338,7 +338,7 @@ function viewToday() {
   const d = new Date();
   const sess = daySess(day), r = running();
   const items = [
-    ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="go-day" data-day="${day}"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n">${e.kind === 'work' ? '<i class="sq"></i>' : ''}${esc(e.title)}</span><span class="x">${e.end_min != null ? '~' + hm(e.end_min) : ''}</span></div>` })),
+    ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="go-day" data-day="${day}"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n">${esc(e.title)}</span><span class="x">${e.end_min != null ? '~' + hm(e.end_min) : ''}</span></div>` })),
     ...sessOf(day).map((s) => ({ k: minOfDay(s.start_at), h: `<div class="e"><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))}</span><span class="x">${s.end_at ? '~' + hm(minOfDay(s.end_at)) : 'REC'}</span></div>` })),
   ].sort((a, b) => a.k - b.k);
   const active = S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
@@ -390,7 +390,7 @@ function daySide() {
   const evs = eventsOf(day), todos = todosOf(day), done = todos.filter((t) => t.done).length;
   return `<section class="side">
     <span class="bk" style="margin-bottom:8px">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${WD_EN[d.getDay()]}</span>
-    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n">${e.kind === 'work' ? '<i class="sq"></i>' : ''}<span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(e.title)}</span>${e.end_min != null ? ' ~' + hm(e.end_min) : ''}</span></div>`).join('')}
+    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(e.title)}</span>${e.end_min != null ? ' ~' + hm(e.end_min) : ''}</span></div>`).join('')}
     ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))} ~${hm(minOfDay(s.end_at))}</span></div>`).join('')}
     <div class="kinds">${KINDS.map(([k, l]) => `<button data-act="ak" data-k="${k}" class="${S.addKind === k ? 'riso3' : ''}">${l}</button>`).join('')}</div>
     ${S.addKind === 'task' ? `<div class="opts">${activeProjects().map((p, i) => `<button data-act="ap" data-id="${p.id}" class="${(S.addProj ? S.addProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('') || '<span class="mu">진행 중인 프로젝트 없음</span>'}</div>` : ''}
@@ -596,7 +596,7 @@ function viewImport() {
   const old = S.events.filter((e) => hit(e) && e.day >= I.from && e.day <= I.to).length;
   const rows = I.work.map(([day, place, a, b]) => {
     const d = parseYmd(day);
-    return `<div class="ir"><span>${md(day)} ${WD_EN[d.getDay()]}</span><span><i class="sq"></i>${esc(place)}</span><span>${hm(a)}&#8211;${hm(b)}</span><span class="r">${dur(b - a)}</span></div>`;
+    return `<div class="ir"><span>${md(day)} ${WD_EN[d.getDay()]}</span><span>${esc(place)}</span><span>${hm(a)}&#8211;${hm(b)}</span><span class="r">${dur(b - a)}</span></div>`;
   }).join('');
   const total = I.work.reduce((x, w) => x + (w[3] - w[2]), 0);
   return `${header(`근무 ${I.work.length}회 &#183; ${dur(total)}`)}
