@@ -314,16 +314,18 @@ body.phone .sync{font-size:15px}
 .sheet .kinds{margin-bottom:4px}
 .sheet .opts{margin-bottom:8px}
 /* 바퀴 */
-.wheels{display:flex;gap:18px;margin-top:6px}
+.wheels{display:flex;gap:6px;align-items:center;margin-top:6px}
+.wt{font-size:22px;padding:0 4px}
+.wt.off{opacity:.25}
 .wgrp{display:flex;flex-direction:column;gap:4px}
 .wgrp.off{opacity:.25;pointer-events:none}
 .wl{font-size:12px}
 .wrow{position:relative;display:flex;align-items:center}
-.wheel{height:170px;width:52px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;cursor:grab}
+.wheel{height:84px;width:36px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;cursor:grab}
 .wheel::-webkit-scrollbar{display:none}
-.wpad{height:68px}
-.wi{height:34px;line-height:34px;text-align:center;font-size:22px;scroll-snap-align:center;color:var(--ink);font-weight:300}
+.wpad{height:28px}
+.wi{height:28px;line-height:28px;text-align:center;font-size:22px;letter-spacing:-.04em;scroll-snap-align:center;color:var(--ink);font-weight:300}
 .wi.on{color:var(--ink);font-weight:700}
-.wc{font-size:22px;padding:0 2px}
+.wc{font-size:22px;padding:0;margin-top:-3px}
 body.phone .sh-bg{position:fixed}
 body.phone .sheet{position:fixed;left:0;right:0;top:auto;bottom:0;transform:none;width:auto;max-height:85vh;border-width:2.5px 0 0;padding:18px 20px calc(env(safe-area-inset-bottom) + 22px)}

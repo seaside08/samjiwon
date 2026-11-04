@@ -1289,7 +1289,7 @@ async function handleAddMore(k, v) {
 
 // ───────── 누르면 뜨는 창 (할 일 · 일정 · 작업 기록)
 const KIND_KO = { task: '작업', event: '약속', work: '근무' };
-const WH = 34; // 바퀴 한 칸 높이
+const WH = 28; // 바퀴 한 칸 높이
 function sheetItem() {
   const sh = S.sheet; if (!sh) return null;
   return sh.type === 'todo' ? S.todos.find((x) => x.id === sh.id)
@@ -1321,8 +1321,8 @@ function wheel(key, n, step, val) {
 }
 function wheelsHTML(v, { end = true } = {}) {
   return `<div class="wheels">
-    <div class="wgrp"><span class="wl">시작</span><div class="wrow">${wheel('sh', 24, 1, v.sh)}<span class="wc">:</span>${wheel('sm', 12, 5, v.sm)}</div></div>
-    ${end ? `<div class="wgrp${v.noEnd ? ' off' : ''}"><span class="wl">끝</span><div class="wrow">${wheel('eh', 24, 1, v.eh)}<span class="wc">:</span>${wheel('em', 12, 5, v.em)}</div></div>` : ''}
+    <div class="wgrp"><div class="wrow">${wheel('sh', 24, 1, v.sh)}<span class="wc">:</span>${wheel('sm', 12, 5, v.sm)}</div></div>
+    ${end ? `<span class="wt${v.noEnd ? ' off' : ''}">~</span><div class="wgrp${v.noEnd ? ' off' : ''}"><div class="wrow">${wheel('eh', 24, 1, v.eh)}<span class="wc">:</span>${wheel('em', 12, 5, v.em)}</div></div>` : ''}
   </div>`;
 }
 function sheetHTML() {
