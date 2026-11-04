@@ -8,7 +8,16 @@ const TEX = 'https://seaside08.github.io/samjiwon/tex.jpg';
 const K = 'samjung_refresh';
 
 const INK = new Color('#141414'), PAPER = new Color('#fbfbf8'), RED = new Color('#e0352b'), GREEN = new Color('#5fd97c');
-const SHORT = { 언더워터: '언더워터', 라운지돌돌: '라운지', 다락: '다락' };
+const SHORT = { 언더워터: '워터', 라운지돌돌: '돌돌', 다락: '다락' };
+const PROJ_SHORT = { 'toss 안정감 프로젝트': '피보테' };
+const shortName = (t) => PROJ_SHORT[String(t || '').trim()] || t;
+// 출근 시각 줄여 쓰기: 15:00→15, 16:30→163, 8:00→08, 9:20→920
+function workCode(min) {
+  if (min == null) return '';
+  const h = Math.floor(min / 60) % 24, m = min % 60;
+  if (h >= 10) return m ? `${h}${Math.floor(m / 10)}` : `${h}`;
+  return m ? `${h}${String(m).padStart(2, '0')}` : `0${h}`;
+}
 
 const pad = (n) => String(n).padStart(2, '0');
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -131,13 +140,13 @@ function draw(size, data, tex, fam) {
         if (i === maxL - 1 && lines.length > maxL) { text(`+${lines.length - i}`, x + 4, ly, cw - 5, lh, Font.boldMonospacedSystemFont(7.5)); break; }
         if (L.e.kind === 'work') {
           c.setFillColor(INK); c.fillRect(new Rect(x + 4, ly + 2.6, 4.2, 4.2));
-          text(SHORT[L.e.place] || L.e.title, x + 10, ly, cw - 11, lh, f);
-        } else if (L.e.start_min == null) {
+          text(`${workCode(L.e.start_min)} ${SHORT[L.e.place] || L.e.title}`, x + 10, ly, cw - 11, lh, f);
+        } else if (L.e.kind === 'task') {
           const br = new Rect(x + LW, ly, cw - LW * 1.5, lh);
           if (tex) c.drawImageInRect(tex, br); else { c.setFillColor(GREEN); c.fillRect(br); }
-          text(L.e.title, x + 4, ly, cw - 5, lh, f);
+          text(shortName(L.e.title), x + 4, ly, cw - 5, lh, f);
         } else {
-          text(L.e.title, x + 4, ly, cw - 5, lh, f);
+          text(shortName(L.e.title), x + 4, ly, cw - 5, lh, f);
         }
         ly += lh;
       }

@@ -5,8 +5,8 @@ const DEMO = new URLSearchParams(location.search).has('demo');
 
 // 근무지 — 기본 근무 시간(요일: [시작분, 끝분]), 일요일 0
 const WORKPLACES = [
-  { name: '언더워터', short: '언더워터', keys: ['언더워터'], shifts: { 1: [1020, 1350], 2: [1020, 1350] }, rate: 10320, payday: 10 },
-  { name: '라운지돌돌', short: '라운지', keys: ['라운지돌돌', '라운지'], shifts: { 4: [930, 1170], 5: [630, 1050] }, rate: 11000, payday: 25, juhu: true, holiday: '월요일' },
+  { name: '언더워터', short: '워터', keys: ['언더워터', '워터'], shifts: { 1: [1020, 1350], 2: [1020, 1350] }, rate: 10320, payday: 10 },
+  { name: '라운지돌돌', short: '돌돌', keys: ['라운지돌돌', '라운지', '돌돌'], shifts: { 4: [930, 1170], 5: [630, 1050] }, rate: 11000, payday: 25, juhu: true, holiday: '월요일' },
   { name: '다락', short: '다락', keys: ['다락'], shifts: { 6: [660, 840], 0: [660, 840] }, rate: 11000, payday: 0 }, // 0 = 말일
 ];
 
@@ -18,6 +18,16 @@ const SOON = {
   projects: 'PROJECTS / 프로젝트', work: 'WORK / 근무', diary: 'DIARY / 기록',
   plants: 'PLANTS / 식물', stats: 'STATS / 통계',
 };
+// 좁은 칸에서 쓰는 줄임말
+const PROJ_SHORT = { 'toss 안정감 프로젝트': '피보테' };
+const shortName = (t) => PROJ_SHORT[String(t || '').trim()] || PROJ_SHORT[String(t || '').trim().toLowerCase()] || t;
+// 출근 시각 줄여 쓰기: 15:00→15, 16:30→163, 8:00→08, 9:20→920
+function workCode(min) {
+  if (min == null) return '';
+  const h = Math.floor(min / 60) % 24, m = min % 60;
+  if (h >= 10) return m ? `${h}${Math.floor(m / 10)}` : `${h}`;
+  return m ? `${h}${String(m).padStart(2, '0')}` : `0${h}`;
+}
 const WD_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 // ───────── 날짜 도우미
@@ -416,11 +426,11 @@ function viewMonth() {
       const cls = ds === today ? 'now' : (ds === S.sel ? 'riso3' : '') + (inMonth ? '' : ' dim');
       grid += `<div class="cell" data-act="sel" data-day="${ds}"><b class="${cls}">${d.getDate()}</b>
         ${evs.map((e, i) => e.kind === 'work'
-          ? `<span class="ln"><i class="sq"></i>${esc(wpOf(e)?.short || e.title)}</span>`
+          ? `<span class="ln"><i class="sq"></i>${workCode(e.start_min)} ${esc(wpOf(e)?.short || e.title)}</span>`
           : e.start_min == null
             ? `<span class="ln">${esc(e.title)}</span>`
-            : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><em class="tm">${hm(e.start_min)} </em>${esc(e.title)}</span>`).join('')}
-        ${Object.entries(sessOf(ds).reduce((a, s) => { const k = sessLabel(s); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v], j) => `<span class="ln rz ${['riso3', 'riso', 'riso2'][(d.getDate() + j) % 3]}">${esc(k)} ${dur(v)}</span>`).join('')}
+            : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><em class="tm">${hm(e.start_min)} </em>${esc(shortName(e.title))}</span>`).join('')}
+        ${Object.entries(sessOf(ds).reduce((a, s) => { const k = shortName(sessLabel(s)); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v], j) => `<span class="ln rz ${['riso3', 'riso', 'riso2'][(d.getDate() + j) % 3]}">${esc(k)} ${dur(v)}</span>`).join('')}
       </div>`;
     }
     grid += '</div>';
@@ -454,12 +464,13 @@ function viewWeek() {
       const plain = e.end_min == null || (e.kind !== 'work' && !isWorkEv(e));
       const cls = plain ? '' : e.kind === 'work' ? 'work' : ['riso', 'riso2', 'riso3'][(k++ + i) % 3];
       const t = `${hShort(e.start_min)}${e.end_min != null ? '&#8211;' + hShort(e.end_min) : ''}`;
-      items.push({ a: e.start_min, b: plain ? e.start_min + 45 : e.end_min, plain, cls, body: plain ? `${hm(e.start_min)}<br>${esc(e.title)}` : `${esc(e.title)}<br>${t}` });
+      const nm = e.kind === 'work' ? (wpOf(e)?.short || e.title) : shortName(e.title);
+      items.push({ a: e.start_min, b: plain ? e.start_min + 45 : e.end_min, plain, cls, body: plain ? `${hm(e.start_min)}<br>${esc(nm)}` : `${esc(nm)}<br>${t}` });
     });
     sessOf(ds).forEach((s, j) => {
       weekSess += sessMin(s);
       const a = minOfDay(s.start_at), b = s.end_at ? minOfDay(s.end_at) : nowMin;
-      items.push({ a, b: Math.max(b, a + 1), cls: ['riso', 'riso2', 'riso3'][(j + i + 1) % 3], body: `${esc(sessLabel(s))}<br>${hShort(a)}&#8211;${s.end_at ? hShort(b) : ''}` });
+      items.push({ a, b: Math.max(b, a + 1), cls: ['riso', 'riso2', 'riso3'][(j + i + 1) % 3], body: `${esc(shortName(sessLabel(s)))}<br>${hShort(a)}&#8211;${s.end_at ? hShort(b) : ''}` });
     });
     items.sort((x, y) => x.a - y.a || y.b - x.b);
     const lanesEnd = []; let cluster = [], clusterEnd = -1;
