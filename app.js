@@ -375,12 +375,12 @@ function viewMonth() {
       const evs = eventsOf(ds), todos = todosOf(ds), done = todos.filter((t) => t.done).length;
       const cls = ds === today ? 'now' : (ds === S.sel ? 'riso3' : '') + (inMonth ? '' : ' dim');
       grid += `<div class="cell" data-act="sel" data-day="${ds}"><b class="${cls}">${d.getDate()}</b>
-        ${evs.map((e) => e.kind === 'work'
+        ${evs.map((e, i) => e.kind === 'work'
           ? `<span class="ln"><i class="sq"></i>${esc(wpOf(e)?.short || e.title)}</span>`
           : e.start_min == null
             ? `<span class="bar riso2">${esc(e.title)}</span>`
-            : `<span class="ln"><em class="tm">${hm(e.start_min)} </em>${esc(e.title)}</span>`).join('')}
-        ${Object.entries(sessOf(ds).reduce((a, s) => { const k = sessLabel(s); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v]) => `<span class="ln">${esc(k)} ${dur(v)}</span>`).join('')}
+            : `<span class="ln rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}"><em class="tm">${hm(e.start_min)} </em>${esc(e.title)}</span>`).join('')}
+        ${Object.entries(sessOf(ds).reduce((a, s) => { const k = sessLabel(s); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v], j) => `<span class="ln rz ${['riso3', 'riso', 'riso2'][(d.getDate() + j) % 3]}">${esc(k)} ${dur(v)}</span>`).join('')}
       </div>`;
     }
     grid += '</div>';

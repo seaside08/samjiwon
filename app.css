@@ -273,3 +273,5 @@ body.phone .tm{display:none}
 .ir{display:grid;grid-template-columns:110px minmax(0,1fr) 120px 70px;gap:10px;border-top:1.5px solid var(--ink);padding:6px 0;font-size:15px}
 .ir:last-child{border-bottom:1.5px solid var(--ink)}
 body.phone .ir{grid-template-columns:78px minmax(0,1fr) 92px 52px;gap:6px;font-size:13px}
+.rz{margin:0 -7px;padding:1px 7px}
+body.phone .rz{margin:0 -3px;padding:1px 3px}
