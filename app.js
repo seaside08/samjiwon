@@ -12,10 +12,10 @@ const WORKPLACES = [
 
 const TABS = [
   ['today', '오늘'], ['cal', '달력'], ['projects', '프로젝트'], ['work', '근무'],
-  ['diary', '기록'], ['plants', '식물'], ['stats', '통계'],
+  ['diary', '일기'], ['plants', '식물'], ['stats', '통계'],
 ];
 const SOON = {
-  projects: 'PROJECTS / 프로젝트', work: 'WORK / 근무', diary: 'DIARY / 기록',
+  projects: 'PROJECTS / 프로젝트', work: 'WORK / 근무', diary: 'DIARY / 일기',
   plants: 'PLANTS / 식물', stats: 'STATS / 통계',
 };
 // 좁은 칸에서 쓰는 줄임말
@@ -1001,7 +1001,7 @@ function viewDiary() {
   <div class="main">
     <section class="left" style="gap:14px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span class="bk">DIARY / 기록</span>
+        <span class="bk">DIARY / 일기</span>
         <span style="margin-left:18px;font-size:22px;letter-spacing:-.01em">${pad(mo + 1)}. ${pad(d.getDate())} ${WD_EN[d.getDay()]}</span>
         <button data-act="prev" aria-label="이전 날" style="font-size:15px;padding:0 2px">&#8592;</button>
         <button data-act="next" aria-label="다음 날" style="font-size:15px;padding:0 2px">&#8594;</button>
