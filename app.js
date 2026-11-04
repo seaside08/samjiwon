@@ -313,8 +313,7 @@ const clockLabel = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.g
 
 function nav() {
   return `<nav class="tabs" aria-label="화면">${TABS.map(([k, l]) =>
-    `<a href="#${k}" class="${S.view === k ? 'on riso2' : ''}"${S.view === k ? ' aria-current="page"' : ''}>${l}</a>`).join('')}</nav>
-    ${DEMO ? '' : '<button class="out" data-act="logout">나가기</button>'}`;
+    `<a href="#${k}" class="${S.view === k ? 'on riso2' : ''}"${S.view === k ? ' aria-current="page"' : ''}>${l}</a>`).join('')}</nav>`;
 }
 
 function todoRow(t) {
@@ -356,7 +355,6 @@ function viewToday() {
     <div class="row"><span class="bk">TODAY / 오늘 할 일</span><span class="red" style="font-size:16px">[ ${done} / ${todos.length} ]</span></div>
     <div class="todos">${todos.map(todoRow).join('')}</div>
     ${addForm('todo', '할 일 추가', 'margin-top:12px')}
-    <div class="vow"><span class="lb">다짐</span><span class="tx riso-hl" contenteditable="plaintext-only" data-vow="${day}" spellcheck="false">${esc(vow)}</span></div>
     ${items.length ? `<div class="sched riso"><div class="h"><span>SCHEDULE</span><span>${pad(d.getMonth() + 1)} / ${pad(d.getDate())}</span></div>${items.map((x) => x.h.replace(' data-act="go-day"', '')).join('')}</div>` : ''}
     ${now}
     <div class="ph-sum">작업 ${dur(sess)} &#183; 근무 ${dur(work)} &#183; 이번 주 작업 ${dur(weekSess)}</div>
@@ -367,7 +365,6 @@ function viewToday() {
       <div class="row"><span class="bk">TODAY / 오늘 할 일</span><span class="red" style="font-size:15px">[ ${done} / ${todos.length} ]</span></div>
       <div class="todos">${todos.map(todoRow).join('')}</div>
       ${addForm('todo', '할 일 추가', 'margin-top:14px;width:75%')}
-      <div class="vow"><span class="lb">다짐</span><span class="tx riso-hl" contenteditable="plaintext-only" data-vow="${day}" spellcheck="false">${esc(vow)}</span></div>
     </section>
     <section class="today-side">
       <div class="sched riso">
@@ -1001,10 +998,6 @@ function viewDiary() {
         ${day !== todayStr() ? '<button class="ul" data-act="diary-today" style="margin-left:8px;font-size:13px">오늘</button>' : ''}
       </div>
       <div class="strip">${strip}</div>
-      <div style="display:flex;align-items:baseline;gap:14px">
-        <span class="dlb">다짐</span>
-        <span class="riso-hl vowtx" contenteditable="plaintext-only" data-vow="${day}" spellcheck="false">${esc(rec.vow || '')}</span>
-      </div>
       <div style="display:flex;flex-direction:column;min-height:0;flex-grow:1">
         <div style="display:flex;align-items:baseline;gap:14px;min-height:0;flex-grow:1">
           <span class="dlb">일기</span>
@@ -1180,7 +1173,6 @@ function viewStats() {
       <div class="kv"><span>작업</span><span>${dur(daySess(statDay))}</span></div>
       <div class="kv"><span>근무</span><span>${dur(dayWork(statDay))}</span></div>
       <div class="kv"><span>할 일</span><span class="red">[ ${st.filter((t) => t.done).length} / ${st.length} ]</span></div>
-      ${rec.vow ? `<span class="lb">다짐</span><span>${esc(rec.vow)}</span>` : ''}
       ${rec.diary ? `<span class="lb" data-act="diary-go" data-day="${statDay}">일기</span><span data-act="diary-go" data-day="${statDay}">${esc(firstLine(rec.diary))}</span>` : ''}
       <span class="lb">한 일</span>
       ${sessOf(statDay).map((s) => `<span style="font-size:13px">${esc(sessLabel(s))} ${dur(sessMin(s))}</span>`).join('')}
