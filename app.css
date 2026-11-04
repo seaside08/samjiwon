@@ -159,7 +159,8 @@ textarea.edit{font:inherit;font-size:14px;line-height:1.4;resize:none;border:1.5
 .ent.last{border-bottom:1.5px solid var(--ink)}
 
 /* 식물 */
-.tl-hd,.tl-row{display:grid;grid-template-columns:150px repeat(28,minmax(0,1fr));align-items:center;position:relative}
+.tlg{--nw:150px}
+.tl-hd,.tl-row{display:grid;grid-template-columns:var(--nw) repeat(var(--n,28),minmax(0,1fr));align-items:center;position:relative}
 .tl-hd{font-size:11px;padding-bottom:6px}
 .tl-row{border-top:1.5px solid var(--ink);height:40px}
 .tl-row:last-child{border-bottom:1.5px solid var(--ink)}
@@ -201,8 +202,19 @@ textarea.edit{font:inherit;font-size:14px;line-height:1.4;resize:none;border:1.5
 /* 휴대폰 */
 body.phone{overflow:auto}
 body.phone #stage{position:static;display:block}
-body.phone #board{width:100%;height:auto;min-height:100vh;min-height:100dvh;overflow:visible;padding:calc(env(safe-area-inset-top) + 22px) 22px calc(env(safe-area-inset-bottom) + 28px);gap:22px}
-body.phone .hd .sum{display:none}
+body.phone #board{width:100%;height:auto;min-height:100vh;min-height:100dvh;overflow:visible;font-size:16px;padding:calc(env(safe-area-inset-top) + 20px) 18px calc(env(safe-area-inset-bottom) + 96px);gap:20px}
+body.phone .hd{flex-wrap:wrap;row-gap:6px}
+body.phone .hd .sum{margin-left:0;width:100%}
+body.phone .main{flex-direction:column;gap:28px}
+body.phone .left{min-width:0}
+body.phone .side{width:auto;overflow:visible;font-size:16px}
+body.phone .scroll{overflow:visible}
+/* 아래 탭 막대 */
+body.phone nav.tabs{position:fixed;top:auto;left:0;right:0;bottom:0;z-index:5;flex-direction:row;justify-content:space-between;align-items:center;gap:0;background:var(--paper);border-top:1.5px solid var(--ink);padding:9px 10px calc(env(safe-area-inset-bottom) + 9px);font-size:14px}
+body.phone nav.tabs a{padding:3px 5px}
+body.phone nav.tabs a.on{margin-right:0;padding:3px 6px}
+body.phone .out{position:static;align-self:flex-start;font-size:12px}
+/* 오늘 */
 .ph{display:flex;flex-direction:column;gap:0;font-size:18px}
 .ph .todos{gap:12px}
 .ph .todo{gap:14px;align-items:flex-start}
@@ -218,4 +230,42 @@ body.phone .hd .sum{display:none}
 .ph .nw .bk{max-width:calc(100vw - 120px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ph .big-t{font-size:44px}
 .ph-sum{margin-top:28px;font-size:12px}
-body.phone .out{position:static;align-self:flex-start;margin-top:8px}
+/* 오른쪽 목록 (달력·근무 등) */
+body.phone .side .todo{font-size:16px;gap:12px}
+body.phone .side .ck{width:18px;height:18px;border-width:2.5px}
+body.phone .side .todos{gap:10px}
+body.phone .ev{font-size:16px}
+body.phone .ev .t{width:50px}
+/* 달력 */
+body.phone .ctl{flex-wrap:wrap}
+body.phone .ctl .ttl{font-size:22px}
+body.phone .wd{font-size:10px;padding:0 3px 5px}
+body.phone .wk{height:auto;min-height:74px}
+body.phone .cell{padding:4px 3px 5px;font-size:9.5px;gap:2px}
+body.phone .cell b{font-size:14px;margin-bottom:1px;padding:0 3px;margin-left:-3px}
+body.phone .bar{margin:1px -3px;padding:1px 3px}
+body.phone .sq{width:5px;height:5px;margin-right:2px}
+body.phone .wgrid{grid-template-columns:22px repeat(7,minmax(0,1fr))}
+body.phone .dh{flex-direction:column;gap:2px;font-size:10px;padding:0 0 5px 3px}
+body.phone .blk{left:2px;right:2px;padding:3px;font-size:9.5px}
+body.phone .hours{font-size:9px}
+/* 프로젝트 · 근무 */
+body.phone .pr{grid-template-columns:minmax(0,1fr) 64px 76px;column-gap:8px}
+body.phone .pr .nm,body.phone .mr .nm{font-size:17px}
+body.phone .mr{grid-template-columns:minmax(0,1fr) 62px 78px 34px;column-gap:6px}
+body.phone .r{font-size:13px}
+body.phone .row{flex-wrap:wrap;row-gap:8px}
+/* 기록 */
+body.phone .diary{min-height:260px;font-size:17px}
+/* 식물 */
+body.phone .tlg{--nw:96px}
+body.phone .tl-row .nm b{font-size:13px}
+body.phone .tl-row i{width:11px;height:11px}
+/* 통계 */
+body.phone .big{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.phone .big div:nth-child(3){border-left:0;padding-left:0;border-top:1.5px solid var(--ink)}
+body.phone .big div:nth-child(4){border-top:1.5px solid var(--ink)}
+body.phone .chart{gap:2px}
+body.phone .left > div[style*="gap:28px"]{flex-direction:column}
+.tm{font-style:normal}
+body.phone .tm{display:none}

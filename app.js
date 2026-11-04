@@ -379,7 +379,7 @@ function viewMonth() {
           ? `<span class="ln"><i class="sq"></i>${esc(wpOf(e)?.short || e.title)}</span>`
           : e.start_min == null
             ? `<span class="bar riso2">${esc(e.title)}</span>`
-            : `<span class="ln">${hm(e.start_min)} ${esc(e.title)}</span>`).join('')}
+            : `<span class="ln"><em class="tm">${hm(e.start_min)} </em>${esc(e.title)}</span>`).join('')}
         ${Object.entries(sessOf(ds).reduce((a, s) => { const k = sessLabel(s); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v]) => `<span class="ln">${esc(k)} ${dur(v)}</span>`).join('')}
         ${todos.length ? `<span class="ln red">[ ${done} / ${todos.length} ]</span>` : ''}
       </div>`;
@@ -559,7 +559,7 @@ function render() {
   if (a && board.contains(a) && (a.tagName === 'INPUT' || a.isContentEditable) && (a.value || a.textContent)) { pendingRender = true; return; }
   pendingRender = false;
   let html;
-  if (S.view === 'today' || PHONE) html = viewToday();
+  if (S.view === 'today') html = viewToday();
   else if (S.view === 'cal') html = S.calMode === 'month' ? viewMonth() : viewWeek();
   else if (S.view === 'work') html = viewWork();
   else if (S.view === 'projects') html = viewProjects();
@@ -568,7 +568,7 @@ function render() {
   else if (S.view === 'stats') html = viewStats();
   else html = viewSoon();
   const focusAdd = a && a.closest && a.closest('form[data-add]')?.dataset.add;
-  board.innerHTML = html + (PHONE ? (DEMO ? '' : '<button class="out" data-act="logout">나가기</button>') : nav());
+  board.innerHTML = html + nav();
   if (focusAdd) board.querySelector(`form[data-add="${focusAdd}"] input`)?.focus();
 }
 let pendingRender = false;
@@ -641,7 +641,7 @@ board.addEventListener('click', async (e) => {
     if (S.view === 'diary') {
       S.diaryDay = ymd(addDays(parseYmd(S.diaryDay), k));
     } else if (S.view === 'plants') {
-      S.plantEnd = ymd(addDays(parseYmd(S.plantEnd), 28 * k));
+      S.plantEnd = ymd(addDays(parseYmd(S.plantEnd), (PHONE ? 14 : 28) * k));
     } else if (S.calMode === 'month' || S.view === 'work' || S.view === 'stats') {
       S.month = new Date(S.month.getFullYear(), S.month.getMonth() + k, 1);
       const t = new Date();
@@ -882,8 +882,9 @@ function viewPlants() {
         <button class="ul" style="align-self:flex-start;margin-top:16px;font-size:13px" data-act="plant-back">다시 함께 살기</button>` : ''}</section>
     </div>`;
   }
-  const end = parseYmd(S.plantEnd), start = addDays(end, -27);
-  const days = [...Array(28)].map((_, i) => ymd(addDays(start, i)));
+  const N = PHONE ? 14 : 28;
+  const end = parseYmd(S.plantEnd), start = addDays(end, -(N - 1));
+  const days = [...Array(N)].map((_, i) => ymd(addDays(start, i)));
   const sel = alive.find((p) => p.id === S.plant) || alive[0];
   const selDay = days.includes(S.plantDay) || S.plantDay === today ? S.plantDay : today;
   const hd = days.map((ds, i) => {
@@ -900,9 +901,9 @@ function viewPlants() {
     let pop = '';
     if (p === sel) {
       const l = logOf(p.id, selDay), idx = days.indexOf(selDay);
-      if (l?.memo && idx >= 0) pop = `<div class="pop" style="left:calc(150px + (100% - 150px) * ${idx} / 28 - ${idx > 14 ? 160 : -10}px)"><b>${md(selDay)} ${WD_EN[parseYmd(selDay).getDay()]}</b><span>${esc(l.memo)}</span></div>`;
+      if (l?.memo && idx >= 0) pop = `<div class="pop" style="left:calc(var(--nw) + (100% - var(--nw)) * ${idx} / ${N} - ${idx > N / 2 ? 160 : -10}px)"><b>${md(selDay)} ${WD_EN[parseYmd(selDay).getDay()]}</b><span>${esc(l.memo)}</span></div>`;
     }
-    return `<div class="tl-row${p === sel ? ' sel' : ''}"><span class="nm" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b><small>${esc(p.species || '')}</small></span>${cells}${pop}</div>`;
+    return `<div class="tl-row${p === sel ? ' sel' : ''}" style="--n:${N}"><span class="nm" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b><small>${esc(p.species || '')}</small></span>${cells}${pop}</div>`;
   }).join('');
   let side = '<section class="side"></section>';
   if (sel) {
@@ -929,7 +930,7 @@ function viewPlants() {
         <button aria-label="식물 추가" data-act="plant-add" style="font-size:20px;padding:0 2px;margin-left:8px">+</button></div>
       ${S.plantAdd ? addForm('plant', '식물 추가', 'width:60%;margin:-4px 0 10px') : ''}
       <div class="tlg">
-        <div class="tl-hd"><span>이름 &#183; 종류</span>${hd}</div>
+        <div class="tl-hd" style="--n:${N}"><span>이름 &#183; 종류</span>${hd}</div>
         ${rows}
       </div>
       <button class="lk" data-act="plant-gone">추억의 전당 [ ${gone.length} ] &#8594;</button>
