@@ -304,6 +304,16 @@ function viewToday() {
         <div style="display:flex;gap:14px;align-items:center;margin-top:4px"><button class="btn" data-act="stop">멈추고 기록</button><button class="ul" data-act="discard">기록 안 함</button></div>
       </div>` : active.length ? `<div class="nw idle"><span style="font-size:13px">작업 시작</span>
         <div style="display:flex;flex-wrap:wrap;gap:6px 14px">${active.map((p) => `<button class="ul" data-act="start" data-id="${p.id}">${esc(p.name)}</button>`).join('')}</div></div>` : '';
+  if (PHONE) return `${header('')}
+  <section class="ph">
+    <div class="row"><span class="bk">TODAY / 오늘 할 일</span><span class="red" style="font-size:16px">[ ${done} / ${todos.length} ]</span></div>
+    <div class="todos">${todos.map(todoRow).join('')}</div>
+    ${addForm('todo', '할 일 추가', 'margin-top:12px')}
+    <div class="vow"><span class="lb">다짐</span><span class="tx riso-hl" contenteditable="plaintext-only" data-vow="${day}" spellcheck="false">${esc(vow)}</span></div>
+    ${items.length ? `<div class="sched riso"><div class="h"><span>SCHEDULE</span><span>${pad(d.getMonth() + 1)} / ${pad(d.getDate())}</span></div>${items.map((x) => x.h.replace(' data-act="go-day"', '')).join('')}</div>` : ''}
+    ${now}
+    <div class="ph-sum">작업 ${dur(sess)} &#183; 근무 ${dur(work)} &#183; 이번 주 작업 ${dur(weekSess)}</div>
+  </section>`;
   return `${header(`할 일 ${done}/${todos.length} &#183; 작업 ${dur(sess)}`)}
   <div class="main" style="gap:36px">
     <section class="left">
@@ -549,7 +559,7 @@ function render() {
   if (a && board.contains(a) && (a.tagName === 'INPUT' || a.isContentEditable) && (a.value || a.textContent)) { pendingRender = true; return; }
   pendingRender = false;
   let html;
-  if (S.view === 'today') html = viewToday();
+  if (S.view === 'today' || PHONE) html = viewToday();
   else if (S.view === 'cal') html = S.calMode === 'month' ? viewMonth() : viewWeek();
   else if (S.view === 'work') html = viewWork();
   else if (S.view === 'projects') html = viewProjects();
@@ -558,7 +568,7 @@ function render() {
   else if (S.view === 'stats') html = viewStats();
   else html = viewSoon();
   const focusAdd = a && a.closest && a.closest('form[data-add]')?.dataset.add;
-  board.innerHTML = html + nav();
+  board.innerHTML = html + (PHONE ? (DEMO ? '' : '<button class="out" data-act="logout">나가기</button>') : nav());
   if (focusAdd) board.querySelector(`form[data-add="${focusAdd}"] input`)?.focus();
 }
 let pendingRender = false;
@@ -1110,9 +1120,14 @@ async function handleAddMore(k, v) {
 }
 
 // ───────── 화면 맞춤 · 시계 · 동기화
+// 휴대폰 세로 화면이면 '오늘'만 따로 그린다
+var PHONE = false;
 function fit() {
-  const s = Math.min(innerWidth / 1180, innerHeight / 820);
-  board.style.transform = `scale(${s})`;
+  const phone = innerWidth < 760 && innerHeight > innerWidth;
+  document.body.classList.toggle('phone', phone);
+  if (phone) board.style.transform = 'none';
+  else board.style.transform = `scale(${Math.min(innerWidth / 1180, innerHeight / 820)})`;
+  if (phone !== PHONE) { PHONE = phone; render(); }
 }
 addEventListener('resize', fit); fit();
 

@@ -197,3 +197,25 @@ textarea.edit{font:inherit;font-size:14px;line-height:1.4;resize:none;border:1.5
 .hb i{flex:1 1 0;display:block}
 .pb{display:grid;grid-template-columns:110px minmax(0,1fr) 44px;column-gap:10px;align-items:center;font-size:13px}
 .pb i{display:block;height:12px}
+
+/* 휴대폰 */
+body.phone{overflow:auto}
+body.phone #stage{position:static;display:block}
+body.phone #board{width:100%;height:auto;min-height:100vh;min-height:100dvh;overflow:visible;padding:calc(env(safe-area-inset-top) + 22px) 22px calc(env(safe-area-inset-bottom) + 28px);gap:22px}
+body.phone .hd .sum{display:none}
+.ph{display:flex;flex-direction:column;gap:0;font-size:18px}
+.ph .todos{gap:12px}
+.ph .todo{gap:14px;align-items:flex-start}
+.ph .todo .tx{line-height:1.25}
+.ph .ck{width:20px;height:20px;border-width:3px;margin-top:1px}
+.ph .todo .tag{font-size:13px;margin-top:3px}
+.ph .add input{font-size:18px}
+.ph .vow{margin:28px 0 0;gap:12px;flex-wrap:wrap}
+.ph .vow .tx{font-size:20px;min-width:200px}
+.ph .sched{margin-top:28px;gap:5px}
+.ph .sched .e{font-size:16px}
+.ph .nw{margin-top:22px}
+.ph .nw .bk{max-width:calc(100vw - 120px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ph .big-t{font-size:44px}
+.ph-sum{margin-top:28px;font-size:12px}
+body.phone .out{position:static;align-self:flex-start;margin-top:8px}
