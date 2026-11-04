@@ -210,6 +210,8 @@ const wpOf = (e) => WORKPLACES.find((w) => w.name === e.place);
 const sessMin = (s) => Math.max(0, Math.round(((s.end_at ? Date.parse(s.end_at) : Date.now()) - Date.parse(s.start_at)) / 60000));
 const sessOf = (day) => S.sessions.filter((s) => s.day === day).sort((a, b) => (a.start_at < b.start_at ? -1 : 1));
 const running = () => S.sessions.find((s) => !s.end_at);
+// 작업 일정: 프로젝트 이름과 겹치는 일정 (예: '피보테 배경' ↔ '피보테 배경 외주')
+const isWorkEv = (e) => e.kind !== 'work' && S.projects.some((p) => p.name && e.title && p.name.length > 1 && e.title.length > 1 && (e.title.includes(p.name) || p.name.includes(e.title)));
 const projOf = (id) => S.projects.find((p) => p.id === id);
 const sessLabel = (s) => projOf(s.project_id)?.name || s.title || '작업';
 const minOfDay = (iso) => { const d = new Date(iso); return d.getHours() * 60 + d.getMinutes(); };
@@ -378,8 +380,8 @@ function viewMonth() {
         ${evs.map((e, i) => e.kind === 'work'
           ? `<span class="ln"><i class="sq"></i>${esc(wpOf(e)?.short || e.title)}</span>`
           : e.start_min == null
-            ? `<span class="bar riso2">${esc(e.title)}</span>`
-            : `<span class="ln rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}"><em class="tm">${hm(e.start_min)} </em>${esc(e.title)}</span>`).join('')}
+            ? `<span class="ln">${esc(e.title)}</span>`
+            : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><em class="tm">${hm(e.start_min)} </em>${esc(e.title)}</span>`).join('')}
         ${Object.entries(sessOf(ds).reduce((a, s) => { const k = sessLabel(s); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v], j) => `<span class="ln rz ${['riso3', 'riso', 'riso2'][(d.getDate() + j) % 3]}">${esc(k)} ${dur(v)}</span>`).join('')}
       </div>`;
     }
@@ -413,6 +415,7 @@ function viewWeek() {
       const t = `${hShort(e.start_min)}${e.end_min != null ? '&#8211;' + hShort(e.end_min) : ''}`;
       if (e.end_min == null) return `<div class="blk" style="top:${top}px">${hm(e.start_min)}<br>${esc(e.title)}</div>`;
       const h = Math.max(28, Math.min(560, (e.end_min - H0) * PX) - top);
+      if (e.kind !== 'work' && !isWorkEv(e)) return `<div class="blk" style="top:${top}px">${hm(e.start_min)}<br>${esc(e.title)}</div>`;
       const cls = e.kind === 'work' ? 'work' : ['riso', 'riso2', 'riso3'][(k++ + i) % 3];
       return `<div class="blk ${cls}" style="top:${top}px;height:${h}px">${esc(e.title)}<br>${t}</div>`;
     }).join('') + sessOf(ds).map((s, j) => {
@@ -435,7 +438,7 @@ function viewWeek() {
       ${calCtl(`${pad(ws.getMonth() + 1)}. ${pad(ws.getDate())} &#8212; ${pad(we.getMonth() + 1)}. ${pad(we.getDate())}`, '이전 주', '다음 주')}
       <div class="wgrid">
         <span></span>${heads.join('')}
-        ${hasAll ? '<span></span>' + allday.map((a, i) => `<div class="allday" data-act="sel" data-day="${ymd(days[i])}">${a.map((e) => `<span class="bar riso2">${esc(e.title)}</span>`).join('')}</div>`).join('') : ''}
+        ${hasAll ? '<span></span>' + allday.map((a, i) => `<div class="allday" data-act="sel" data-day="${ymd(days[i])}">${a.map((e) => `<span class="adl">${esc(e.title)}</span>`).join('')}</div>`).join('') : ''}
         <div class="hours">${hours}</div>${cols.join('')}
       </div>
     </section>

@@ -275,3 +275,4 @@ body.phone .tm{display:none}
 body.phone .ir{grid-template-columns:78px minmax(0,1fr) 92px 52px;gap:6px;font-size:13px}
 .rz{margin:0 -7px;padding:1px 7px}
 body.phone .rz{margin:0 -3px;padding:1px 3px}
+.adl{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
