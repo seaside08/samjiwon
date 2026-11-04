@@ -5,9 +5,9 @@ const DEMO = new URLSearchParams(location.search).has('demo');
 
 // 근무지 — 기본 근무 시간(요일: [시작분, 끝분]), 일요일 0
 const WORKPLACES = [
-  { name: '언더워터', short: '언더워터', keys: ['언더워터'], shifts: { 1: [1020, 1350], 2: [1020, 1350] } },
-  { name: '라운지돌돌', short: '라운지', keys: ['라운지돌돌', '라운지'], shifts: { 4: [930, 1170], 5: [630, 1050] } },
-  { name: '다락', short: '다락', keys: ['다락'], shifts: { 6: [660, 840], 0: [660, 840] } },
+  { name: '언더워터', short: '언더워터', keys: ['언더워터'], shifts: { 1: [1020, 1350], 2: [1020, 1350] }, rate: 10320, payday: 10 },
+  { name: '라운지돌돌', short: '라운지', keys: ['라운지돌돌', '라운지'], shifts: { 4: [930, 1170], 5: [630, 1050] }, rate: 11000, payday: 25, juhu: true, holiday: '월요일' },
+  { name: '다락', short: '다락', keys: ['다락'], shifts: { 6: [660, 840], 0: [660, 840] }, rate: 11000, payday: 0 }, // 0 = 말일
 ];
 
 const TABS = [
@@ -339,6 +339,88 @@ function viewWeek() {
   </div>`;
 }
 
+// ───────── 근무
+const won = (n) => Math.round(n).toLocaleString('ko-KR');
+const KDAY = ['일', '월', '화', '수', '목', '금', '토'];
+const paydayLabel = (w) => (w.payday ? `${w.payday}일` : '말일');
+function routineLabel(w) {
+  const groups = {};
+  for (const [d, [a, b]] of Object.entries(w.shifts)) (groups[`${a}-${b}`] ||= { a, b, days: [] }).days.push(+d);
+  return Object.values(groups).map((g) => g.days.sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7)).map((d) => KDAY[d]).join('&#183;') + ` ${hm(g.a)}&#8211;${hm(g.b)}`).join(' &#183; ');
+}
+// 한 달 근무 집계 (until: 이 날짜까지만, 포함)
+function workStats(w, until) {
+  const m = S.month, y = m.getFullYear(), mo = m.getMonth(), last = new Date(y, mo + 1, 0).getDate();
+  let mins = 0, count = 0; const weeks = {};
+  for (let i = 1; i <= last; i++) {
+    const d = new Date(y, mo, i), ds = ymd(d);
+    if (until && ds > until) break;
+    for (const e of eventsOf(ds)) {
+      if (e.kind !== 'work' || e.place !== w.name) continue;
+      const mm = workMin(e); if (!mm) continue;
+      mins += mm; count++;
+      const wk = ymd(mondayOf(d)); weeks[wk] = (weeks[wk] || 0) + mm;
+    }
+  }
+  const base = (mins / 60) * w.rate;
+  // 주휴수당: 주마다 (주 근무시간 ÷ 40) × 8시간 × 시급, 최대 8시간
+  const juhu = w.juhu ? Object.values(weeks).reduce((a, wm) => a + Math.min(8, (wm / 60 / 40) * 8) * w.rate, 0) : 0;
+  return { mins, count, base, juhu, total: base + juhu };
+}
+
+function viewWork() {
+  const m = S.month, mo = m.getMonth(), today = todayStr();
+  const sel = WORKPLACES.find((w) => w.name === S.wp) || WORKPLACES[0];
+  const all = WORKPLACES.map((w) => ({ w, s: workStats(w), sofar: workStats(w, today) }));
+  const sum = all.reduce((a, r) => ({ mins: a.mins + r.s.mins, total: a.total + r.s.total, sofar: a.sofar + r.sofar.total }), { mins: 0, total: 0, sofar: 0 });
+  const cur = all.find((r) => r.w === sel).s;
+  const isNow = m.getFullYear() === new Date().getFullYear() && mo === new Date().getMonth();
+  const rows = all.map(({ w, s }) => `<div class="mr" data-act="wp" data-wp="${w.name}">
+      <div style="display:flex;flex-direction:column"><span class="nm">${w === sel ? `<span class="riso-hl" style="padding:0 3px">${w.name}</span>` : w.name}</span>
+      <span class="sub">${routineLabel(w)} &#183; ${won(w.rate)}${w.juhu ? ' &#183; 주휴' : ''}</span></div>
+      <span class="r">${dur(s.mins)}</span><span class="r">${won(s.total)}</span><span class="r">${paydayLabel(w)}</span></div>`).join('');
+  return `${header(`${mo + 1}월 ${isNow ? `지금까지 ${won(sum.sofar)} &#183; ` : ''}예상 ${won(sum.total)}`)}
+  <div class="main">
+    <section class="left">
+      <div class="row"><span class="bk">WORK / 근무</span><span style="font-size:15px">[ ${WORKPLACES.length} ]</span>
+        <span style="margin-left:auto;font-size:22px;letter-spacing:-.01em">${m.getFullYear()}. ${pad(mo + 1)}</span>
+        <span class="arr" style="display:flex;gap:8px;margin-left:10px;font-size:15px"><button data-act="prev" aria-label="이전 달">&#8592;</button><button data-act="next" aria-label="다음 달">&#8594;</button></span></div>
+      <div class="mr hd2"><span>근무지 &#183; 기본 근무</span><span class="r">시간</span><span class="r">세전</span><span class="r">지급</span></div>
+      ${rows}
+      <div class="mr" style="border-top:3px solid #141414;border-bottom:1.5px solid #141414;cursor:default">
+        <span class="nm">${mo + 1}월 합계</span><span class="r">${dur(sum.mins)}</span><span class="r">${won(sum.total)}</span><span class="r"></span></div>
+    </section>
+    <section class="side">
+      <span class="bk" style="margin-bottom:8px">${sel.name}</span>
+      <div class="kv"><span>시급</span><span>${won(sel.rate)}</span></div>
+      <div class="kv"><span>근무</span><span>${cur.count}회 &#183; ${dur(cur.mins)}</span></div>
+      <div class="kv"><span>기본급</span><span>${won(cur.base)}</span></div>
+      ${sel.juhu ? `<div class="kv"><span>주휴수당</span><span>${won(cur.juhu)}</span></div><div class="kv" style="font-size:13px"><span>주휴일</span><span>${sel.holiday}</span></div>` : ''}
+      <span style="margin-top:14px;font-size:13px">${mo + 1}월 세전</span>
+      <span style="font-size:34px;letter-spacing:-.01em">${won(cur.total)}</span>
+      <span style="font-size:13px">매월 ${paydayLabel(sel)} 지급</span>
+      <button class="btn" style="margin-top:18px" data-act="fill" data-wp="${sel.name}">${mo + 1}월 기본 근무 채우기</button>
+    </section>
+  </div>`;
+}
+
+async function fillRoutine(w) {
+  const m = S.month, y = m.getFullYear(), mo = m.getMonth(), last = new Date(y, mo + 1, 0).getDate();
+  const today = todayStr(); let n = 0;
+  const rows = [];
+  for (let i = 1; i <= last; i++) {
+    const d = new Date(y, mo, i), ds = ymd(d), sh = w.shifts[d.getDay()];
+    if (!sh || ds < today) continue;
+    if (eventsOf(ds).some((e) => e.kind === 'work' && e.place === w.name)) continue;
+    rows.push({ day: ds, start_min: sh[0], end_min: sh[1], title: w.name, kind: 'work', place: w.name });
+  }
+  for (const r of rows) {
+    try { S.events.push(await api.insert('events', r)); n++; } catch (e) { fail(e); break; }
+  }
+  render();
+  toast(n ? `${w.name} ${n}회를 달력에 넣었어요` : `${mo + 1}월에 더 넣을 ${w.name} 근무가 없어요`);
+}
+
 function viewSoon() {
   return `${header('')}
   <div class="main"><section class="left">
@@ -374,6 +456,7 @@ function render() {
   let html;
   if (S.view === 'today') html = viewToday();
   else if (S.view === 'cal') html = S.calMode === 'month' ? viewMonth() : viewWeek();
+  else if (S.view === 'work') html = viewWork();
   else html = viewSoon();
   const focusAdd = a && a.closest && a.closest('form[data-add]')?.dataset.add;
   board.innerHTML = html + nav();
@@ -444,7 +527,7 @@ board.addEventListener('click', async (e) => {
     render(); ensureLoaded();
   } else if (act === 'prev' || act === 'next') {
     const k = act === 'prev' ? -1 : 1;
-    if (S.calMode === 'month') {
+    if (S.calMode === 'month' || S.view === 'work') {
       S.month = new Date(S.month.getFullYear(), S.month.getMonth() + k, 1);
       const t = new Date();
       S.sel = S.month.getMonth() === t.getMonth() && S.month.getFullYear() === t.getFullYear() ? todayStr() : ymd(S.month);
@@ -454,6 +537,10 @@ board.addEventListener('click', async (e) => {
       S.sel = t >= ymd(S.week) && t <= ymd(addDays(S.week, 6)) ? t : ymd(S.week);
     }
     render(); ensureLoaded();
+  } else if (act === 'wp') {
+    S.wp = el.dataset.wp; render();
+  } else if (act === 'fill') {
+    fillRoutine(WORKPLACES.find((w) => w.name === el.dataset.wp));
   } else if (act === 'logout') {
     await sb.auth.signOut();
   }
