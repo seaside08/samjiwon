@@ -99,16 +99,11 @@ function header(stack, list, fam) {
   const box = top.addStack();
   box.backgroundColor = INK;
   box.setPadding(3, 8, 3, 8);
-  const lb = box.addText('TODAY');
+  const left = list ? list.filter((t) => !t.done).length : null;
+  const lb = box.addText(left == null ? 'TODAY' : `TODAY ${left}`);
   lb.font = Font.boldMonospacedSystemFont(13);
   lb.textColor = PAPER;
-  if (list) {
-    top.addSpacer(8);
-    const done = list.filter((t) => t.done).length;
-    const c = top.addText(`[ ${done} / ${list.length} ]`);
-    c.font = Font.boldMonospacedSystemFont(13);
-    c.textColor = RED;
-  }
+}
 }
 
 // 한 열: 위에서부터 고른 간격으로
