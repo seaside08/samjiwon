@@ -123,21 +123,21 @@ function draw(size, data, tex, fam) {
       // 날짜
       const num = String(d.getDate());
       if (ds === today) {
-        const bw = num.length * 5.6 + 5;
-        c.setFillColor(INK); c.fillRect(new Rect(x + 2.5, ry + 2.5, bw, 11));
-        text(num, x + 5, ry + 2.5, bw, 11, Font.boldMonospacedSystemFont(8.5), PAPER);
+        const bw = num.length * 6.2 + 5;
+        c.setFillColor(INK); c.fillRect(new Rect(x + 2.5, ry + 2.5, bw, 12.5));
+        text(num, x + 5, ry + 2.5, bw, 12.5, Font.boldMonospacedSystemFont(9.5), PAPER);
       } else {
-        text(num, x + 4, ry + 2.5, cw, 11, inM ? Font.boldMonospacedSystemFont(8.5) : Font.regularMonospacedSystemFont(8.5));
+        text(num, x + 4, ry + 2.5, cw, 12.5, inM ? Font.boldMonospacedSystemFont(9.5) : Font.regularMonospacedSystemFont(9.5));
       }
       // 내용
-      const lh = 10.4, maxL = Math.floor((ch - 15) / lh);
+      const lh = 9.6, maxL = Math.floor((ch - 16) / lh);
       const evs = (byDay[ds] || []).sort((a, b) => (a.kind === 'work' ? -1 : 0) - (b.kind === 'work' ? -1 : 0) || (a.start_min ?? -1) - (b.start_min ?? -1));
       const lines = evs.map((e) => ({ e }));
-      let ly = ry + 14.5;
-      const f = Font.boldSystemFont(8.8);
+      let ly = ry + 16;
+      const f = Font.boldSystemFont(8);
       for (let i = 0; i < Math.min(maxL, lines.length); i++) {
         const L = lines[i];
-        if (i === maxL - 1 && lines.length > maxL) { text(`+${lines.length - i}`, x + 4, ly, cw - 5, lh, Font.boldMonospacedSystemFont(8.8)); break; }
+        if (i === maxL - 1 && lines.length > maxL) { text(`+${lines.length - i}`, x + 4, ly, cw - 5, lh, Font.boldMonospacedSystemFont(8)); break; }
         if (L.e.kind === 'work') {
           text(`${workCode(L.e.start_min)} ${SHORT[L.e.place] || L.e.title}`, x + 3.5, ly, cw - 4, lh, f);
         } else if (L.e.kind === 'task') {
