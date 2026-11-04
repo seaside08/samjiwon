@@ -530,7 +530,8 @@ async function fillRoutine(w) {
 // { from, to, work: [[day, 근무지, 시작분, 끝분], …] } — 기간 안의 기존 근무는 지우고 바꿔 넣음
 function viewImport() {
   const I = S.imp || { work: [] };
-  const old = S.events.filter((e) => e.kind === 'work' && e.day >= I.from && e.day <= I.to).length;
+  const hit = (e) => e.kind === 'work' && (!I.places || I.places.includes(e.place));
+  const old = S.events.filter((e) => hit(e) && e.day >= I.from && e.day <= I.to).length;
   const rows = I.work.map(([day, place, a, b]) => {
     const d = parseYmd(day);
     return `<div class="ir"><span>${md(day)} ${WD_EN[d.getDay()]}</span><span><i class="sq"></i>${esc(place)}</span><span>${hm(a)}&#8211;${hm(b)}</span><span class="r">${dur(b - a)}</span></div>`;
@@ -540,7 +541,7 @@ function viewImport() {
   <div class="main"><section class="left">
     <div class="row"><span class="bk">IMPORT / 근무표 가져오기</span><span style="font-size:15px">${md(I.from)} &#8212; ${md(I.to)}</span></div>
     <div class="ilist">${rows}</div>
-    <span style="margin-top:14px;font-size:13px">${old ? `이 기간에 이미 있는 근무 ${old}개는 지우고 바꿔 넣어요` : ''}</span>
+    <span style="margin-top:14px;font-size:13px">${old ? `이 기간에 이미 있는 ${I.places ? I.places.join('·') + ' ' : ''}근무 ${old}개는 지우고 바꿔 넣어요` : ''}</span>
     <div style="display:flex;gap:16px;align-items:center;margin-top:14px"><button class="btn" data-act="imp-ok">달력에 넣기</button><button class="ul" data-act="imp-no">취소</button></div>
   </section></div>`;
 }
@@ -548,7 +549,7 @@ async function runImport() {
   const I = S.imp; if (!I) return;
   try {
     const cur = await api.list('events', I.from, I.to);
-    for (const e of cur.filter((x) => x.kind === 'work')) await api.remove('events', e.id);
+    for (const e of cur.filter((x) => x.kind === 'work' && (!I.places || I.places.includes(x.place)))) await api.remove('events', e.id);
     await api.insertMany('events', I.work.map(([day, place, a, b]) => ({ day, start_min: a, end_min: b, title: place, kind: 'work', place })));
     S.imp = null; S.loaded = [null, null];
     S.month = new Date(parseYmd(I.from).getFullYear(), parseYmd(I.from).getMonth(), 1);
