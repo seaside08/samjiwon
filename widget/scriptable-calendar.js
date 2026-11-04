@@ -99,7 +99,7 @@ function draw(size, data, tex, fam) {
   const top = P + 30, cw = (W - P * 2) / 7;
   WD.forEach((d, i) => text(d, P + i * cw + 3, top, cw, 12, Font.boldMonospacedSystemFont(7.5)));
 
-  const gy = top + 14, LW = 1.2;
+  const gy = top + 14, LW = 0.8;
   const ch = (H - P + 2 - gy) / rows;
   const byDay = {};
   for (const e of events) (byDay[e.day] ||= []).push(e);
