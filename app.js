@@ -423,7 +423,7 @@ function viewMonth() {
       const cls = ds === today ? 'now' : (ds === S.sel ? 'riso3' : '') + (inMonth ? '' : ' dim');
       grid += `<div class="cell" data-act="sel" data-day="${ds}"><b class="${cls}">${d.getDate()}</b>
         ${evs.map((e, i) => e.kind === 'work'
-          ? `<span class="ln"><i class="sq"></i>${workCode(e.start_min)} ${esc(wpOf(e)?.short || e.title)}</span>`
+          ? `<span class="ln">${workCode(e.start_min)} ${esc(wpOf(e)?.short || e.title)}</span>`
           : e.start_min == null
             ? `<span class="ln">${esc(e.title)}</span>`
             : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><em class="tm">${hm(e.start_min)} </em>${esc(shortName(e.title))}</span>`).join('')}
