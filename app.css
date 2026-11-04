@@ -296,3 +296,35 @@ body.phone .sync{font-size:15px}
 @font-face{font-family:'KR Space';src:local('AppleSDGothicNeo-Bold'),local('Apple SD Gothic Neo Bold'),local('NotoSansKR-Bold'),local('Noto Sans KR Bold'),local('Noto Sans CJK KR Bold'),local('Malgun Gothic Bold');unicode-range:U+0020}
 .cell{font-family:'KR Space','IBM Plex Mono','KR Small',-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif}
 .cell .ln,.cell .bar{letter-spacing:-.01em}
+
+/* 누르면 뜨는 창 */
+.sh-bg{position:absolute;inset:0;z-index:20;background:rgba(251,251,248,.72)}
+.sheet{position:absolute;z-index:21;left:50%;top:50%;transform:translate(-50%,-50%);width:380px;max-height:720px;overflow:auto;box-sizing:border-box;background:var(--paper);border:2.5px solid var(--ink);padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.sh-head{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.02em}
+.sh-x{margin-left:auto;font-size:22px;line-height:1;padding:0 2px}
+.sh-title{font-size:20px;line-height:1.25;word-break:keep-all}
+.sh-body{display:flex;flex-direction:column}
+.sh-row{text-align:left;border-top:1.5px solid var(--ink);padding:11px 0;font-size:17px}
+.sh-row:last-child{border-bottom:1.5px solid var(--ink)}
+.sh-acts{display:flex;gap:16px;align-items:center;margin-top:14px}
+.sh-form{display:flex}
+.sh-date{border:0;border-bottom:3px solid var(--ink);background:transparent;padding:6px 0;font-size:18px;min-height:40px}
+.sh-tg{display:flex;gap:6px;margin-top:10px;font-size:14px}
+.sh-tg button{padding:2px 8px}
+.sheet .kinds{margin-bottom:4px}
+.sheet .opts{margin-bottom:8px}
+/* 바퀴 */
+.wheels{display:flex;gap:18px;margin-top:6px}
+.wgrp{display:flex;flex-direction:column;gap:4px}
+.wgrp.off{opacity:.25;pointer-events:none}
+.wl{font-size:12px}
+.wrow{position:relative;display:flex;align-items:center}
+.wrow::before{content:"";position:absolute;left:0;right:0;top:calc(50% - 17px);height:34px;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);pointer-events:none}
+.wheel{height:170px;width:52px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;cursor:grab;-webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent)}
+.wheel::-webkit-scrollbar{display:none}
+.wpad{height:68px}
+.wi{height:34px;line-height:34px;text-align:center;font-size:22px;scroll-snap-align:center;color:#8a8a86;font-weight:600}
+.wi.on{color:var(--ink);font-weight:700}
+.wc{font-size:22px;padding:0 2px}
+body.phone .sh-bg{position:fixed}
+body.phone .sheet{position:fixed;left:0;right:0;top:auto;bottom:0;transform:none;width:auto;max-height:85vh;border-width:2.5px 0 0;padding:18px 20px calc(env(safe-area-inset-bottom) + 22px)}

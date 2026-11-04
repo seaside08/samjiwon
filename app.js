@@ -37,7 +37,7 @@ const parseYmd = (s) => { const [y, m, d] = s.split('-').map(Number); return new
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 const todayStr = () => ymd(new Date());
 const mondayOf = (d) => addDays(d, -((d.getDay() + 6) % 7));
-const hm = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+const hm = (m) => { if (m > 1440) m -= 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
 const hShort = (m) => (m % 60 ? hm(m) : String(Math.floor(m / 60)));
 const dur = (m) => { const h = Math.floor(m / 60), r = m % 60; return r ? `${h}H ${r}M` : `${h}H`; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -338,8 +338,8 @@ function viewToday() {
   const d = new Date();
   const sess = daySess(day), r = running();
   const items = [
-    ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="go-day" data-day="${day}"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n">${esc(e.title)}</span><span class="x">${e.end_min != null ? '~' + hm(e.end_min) : ''}</span></div>` })),
-    ...sessOf(day).map((s) => ({ k: minOfDay(s.start_at), h: `<div class="e"><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))}</span><span class="x">${s.end_at ? '~' + hm(minOfDay(s.end_at)) : 'REC'}</span></div>` })),
+    ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="edit-event" data-id="${e.id}"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n">${esc(e.title)}</span><span class="x">${e.end_min != null ? '~' + hm(e.end_min) : ''}</span></div>` })),
+    ...sessOf(day).map((s) => ({ k: minOfDay(s.start_at), h: `<div class="e"${s.end_at ? ` data-act="edit-sess" data-id="${s.id}"` : ''}><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))}</span><span class="x">${s.end_at ? '~' + hm(minOfDay(s.end_at)) : 'REC'}</span></div>` })),
   ].sort((a, b) => a.k - b.k);
   const active = S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
   const now = r ? `<div class="nw">
@@ -646,11 +646,12 @@ function viewLogin(msg = '') {
   });
 }
 
-function render() {
+function render(force) {
   if (!S.user) return;
+  if (S.sheet && !force) { pendingRender = true; return; }
   // 편집 중이면 다시 그리지 않음
   const a = document.activeElement;
-  if (a && board.contains(a) && (a.tagName === 'INPUT' || a.isContentEditable) && (a.value || a.textContent)) { pendingRender = true; return; }
+  if (!force && a && board.contains(a) && (a.tagName === 'INPUT' || a.isContentEditable) && (a.value || a.textContent)) { pendingRender = true; return; }
   if (dialDrag) { pendingRender = true; return; }
   pendingRender = false;
   let html;
@@ -664,8 +665,9 @@ function render() {
   else if (S.view === 'import') html = viewImport();
   else html = viewSoon();
   const focusAdd = a && a.closest && a.closest('form[data-add]')?.dataset.add;
-  board.innerHTML = html + nav();
-  if (focusAdd) board.querySelector(`form[data-add="${focusAdd}"] input`)?.focus();
+  board.innerHTML = html + nav() + sheetHTML();
+  if (S.sheet) initWheels();
+  else if (focusAdd) board.querySelector(`form[data-add="${focusAdd}"] input`)?.focus();
 }
 let pendingRender = false;
 
@@ -688,6 +690,7 @@ async function addEvent(day, raw) {
 }
 
 board.addEventListener('submit', (e) => {
+  if (e.target.closest('form[data-sh]')) { e.preventDefault(); sheetDo('save-edit'); return; }
   const f = e.target.closest('form[data-add]'); if (!f) return;
   e.preventDefault();
   const input = f.querySelector('input'), v = input.value.trim();
@@ -710,24 +713,13 @@ board.addEventListener('click', async (e) => {
     t.done = !t.done; t.done_at = t.done ? new Date().toISOString() : null; render();
     try { await api.update('todos', t.id, { done: t.done, done_at: t.done_at }); } catch (er) { fail(er); }
   } else if (act === 'edit-todo') {
-    const row = el.closest('.todo'), t = S.todos.find((x) => x.id === row.dataset.id); if (!t) return;
-    inlineEdit(el, todoInput(t), async (v) => {
-      if (!v) { S.todos = S.todos.filter((x) => x !== t); render(); try { await api.remove('todos', t.id); } catch (er) { fail(er); } return; }
-      Object.assign(t, parseTodo(v)); render();
-      try { await api.update('todos', t.id, { text: t.text, tag: t.tag }); } catch (er) { fail(er); }
-    });
+    openSheet('todo', el.closest('.todo').dataset.id);
   } else if (act === 'edit-event') {
-    const ev = S.events.find((x) => x.id === el.dataset.id); if (!ev) return;
-    inlineEdit(el, eventInput(ev), async (v) => {
-      if (!v) { S.events = S.events.filter((x) => x !== ev); render(); try { await api.remove('events', ev.id); } catch (er) { fail(er); } return; }
-      const t = splitTime(v);
-      const p = ev.kind === 'event' ? { title: t.rest || ev.title, start_min: t.start_min, end_min: t.end_min }
-        : ev.kind === 'task' ? { title: t.rest || ev.title, start_min: t.start_min, end_min: t.end_min }
-        : t.start_min != null && t.end_min != null ? { start_min: t.start_min, end_min: t.end_min } : null;
-      if (!p) return render();
-      Object.assign(ev, p); render();
-      try { await api.update('events', ev.id, p); } catch (er) { fail(er); }
-    });
+    openSheet('event', el.dataset.id);
+  } else if (act === 'sh') {
+    sheetDo(el.dataset.do);
+  } else if (act === 'sh-close') {
+    closeSheet();
   } else if (act === 'ak') {
     S.addKind = el.dataset.k; render(); board.querySelector('form[data-add="event"] input')?.focus();
   } else if (act === 'ap') {
@@ -796,6 +788,7 @@ function inlineEdit(span, value, save, area = false) {
 }
 
 // 다짐
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.sheet) closeSheet(); });
 board.addEventListener('keydown', (e) => {
   if (e.target.dataset?.vow && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); e.target.blur(); }
 });
@@ -1201,21 +1194,7 @@ function handleMore(act, el, ev) {
   if (act === 'dial-reset') { dialSet(0); return true; }
   if (act === 'stop') { const r = running(); if (r) stopWork(r); return true; }
   if (act === 'discard') { const r = running(); if (r) discardWork(r); return true; }
-  if (act === 'edit-sess') {
-    const s = S.sessions.find((x) => x.id === el.dataset.id); if (!s) return true;
-    const a = minOfDay(s.start_at), b = minOfDay(s.end_at);
-    inlineEdit(el, `${hm(a)}-${hm(b)}`, async (v) => {
-      if (!v) { await discardWork(s); return; }
-      const m = v.match(new RegExp('^' + RANGE + '$'));
-      if (!m || !m[3]) return render();
-      const base = parseYmd(s.day), sm = toMin(m[1], m[2]), em = toMin(m[3], m[4]);
-      if (sm == null || em == null) return render();
-      const at = (mm) => new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, mm).toISOString();
-      s.start_at = at(sm); s.end_at = at(em > sm ? em : em + 1440); render();
-      try { await api.update('sessions', s.id, { start_at: s.start_at, end_at: s.end_at }); } catch (er) { fail(er); }
-    });
-    return true;
-  }
+  if (act === 'edit-sess') { openSheet('sess', el.dataset.id); return true; }
   // 프로젝트
   if (act === 'proj') { S.proj = el.dataset.id; render(); return true; }
   if (act === 'proj-archive') { S.projArchive = !S.projArchive; S.proj = null; render(); return true; }
@@ -1305,6 +1284,177 @@ async function handleAddMore(k, v) {
   } else if (k === 'pmemo') {
     const plant = S.plants.find((p) => p.id === S.plant) || S.plants.filter((p) => !p.gone).sort((a, b) => a.pos - b.pos)[0];
     if (plant) saveLog(plant, S.plantDay, { memo: v || null });
+  }
+}
+
+// ───────── 누르면 뜨는 창 (할 일 · 일정 · 작업 기록)
+const KIND_KO = { task: '작업', event: '약속', work: '근무' };
+const WH = 34; // 바퀴 한 칸 높이
+function sheetItem() {
+  const sh = S.sheet; if (!sh) return null;
+  return sh.type === 'todo' ? S.todos.find((x) => x.id === sh.id)
+    : sh.type === 'event' ? S.events.find((x) => x.id === sh.id)
+    : S.sessions.find((x) => x.id === sh.id);
+}
+const dayLabel = (ds) => `${md(ds)} ${WD_EN[parseYmd(ds).getDay()]}`;
+function openSheet(type, id) {
+  const it = (type === 'todo' ? S.todos : type === 'event' ? S.events : S.sessions).find((x) => x.id === id);
+  if (!it) return;
+  S.sheet = { type, id, mode: 'menu' };
+  render(true);
+}
+function closeSheet() { S.sheet = null; render(true); }
+function sheetVals(it, type) {
+  let a, b;
+  if (type === 'sess') { a = minOfDay(it.start_at); b = it.end_at ? minOfDay(it.end_at) : a + 60; }
+  else if (type === 'event' && it.start_min != null) { a = it.start_min; b = it.end_min ?? a + 60; }
+  else { const n = new Date(); a = Math.min(23, n.getHours() + 1) * 60; b = a + 60; }
+  const r5 = (m) => Math.round(m / 5) * 5;
+  a = r5(a) % 1440; b = r5(b) % 1440;
+  return { sh: Math.floor(a / 60), sm: a % 60, eh: Math.floor(b / 60), em: b % 60,
+    noEnd: type === 'event' && it.start_min != null && it.end_min == null,
+    allDay: type === 'event' && it.start_min == null, kind: 'task', proj: activeProjects()[0]?.id || null };
+}
+function wheel(key, n, step, val) {
+  const items = [...Array(n)].map((_, i) => `<div class="wi${i * step === val ? ' on' : ''}">${pad(i * step)}</div>`).join('');
+  return `<div class="wheel" data-w="${key}" data-step="${step}" data-i="${Math.round(val / step)}"><div class="wpad"></div>${items}<div class="wpad"></div></div>`;
+}
+function wheelsHTML(v, { end = true } = {}) {
+  return `<div class="wheels">
+    <div class="wgrp"><span class="wl">시작</span><div class="wrow">${wheel('sh', 24, 1, v.sh)}<span class="wc">:</span>${wheel('sm', 12, 5, v.sm)}</div></div>
+    ${end ? `<div class="wgrp${v.noEnd ? ' off' : ''}"><span class="wl">끝</span><div class="wrow">${wheel('eh', 24, 1, v.eh)}<span class="wc">:</span>${wheel('em', 12, 5, v.em)}</div></div>` : ''}
+  </div>`;
+}
+function sheetHTML() {
+  const sh = S.sheet; if (!sh) return '';
+  const it = sheetItem(); if (!it) { S.sheet = null; return ''; }
+  const t = sh.type;
+  let head, title;
+  if (t === 'todo') { head = `할 일 &#183; ${dayLabel(it.day)}`; title = esc(it.text) + (it.tag ? ` <span class="riso-t" style="font-size:14px">#${esc(it.tag)}</span>` : ''); }
+  else if (t === 'event') {
+    const tm = it.start_min != null ? ` &#183; ${hm(it.start_min)}${it.end_min != null ? '&#8211;' + hm(it.end_min) : ''}` : ' &#183; 하루 종일';
+    head = `${KIND_KO[it.kind]} &#183; ${dayLabel(it.day)}${tm}`; title = esc(it.title);
+  } else { head = `작업 기록 &#183; ${dayLabel(it.day)} &#183; ${hm(minOfDay(it.start_at))}&#8211;${it.end_at ? hm(minOfDay(it.end_at)) : ''}`; title = esc(sessLabel(it)); }
+  const row = (d, l) => `<button class="sh-row" data-act="sh" data-do="${d}">${l}</button>`;
+  let body = '';
+  if (sh.mode === 'menu') {
+    if (t === 'todo') body = row('edit', '수정하기') + row('tomorrow', '내일 하기') + row('date', '날짜 바꾸기') + row('toEvent', '일정으로 바꾸기') + row('del', '지우기');
+    else if (t === 'event') body = (it.kind !== 'work' ? row('edit', '수정하기') : '') + row('time', '시간 바꾸기') + row('date', '날짜 바꾸기') + row('tomorrow', '내일로 옮기기') + (it.kind !== 'work' ? row('kind', it.kind === 'task' ? '약속으로 바꾸기' : '작업으로 바꾸기') + row('toTodo', '할 일로 바꾸기') : '') + row('del', '지우기');
+    else body = row('time', '시간 바꾸기') + row('del', '지우기');
+  } else if (sh.mode === 'edit') {
+    body = `<form class="sh-form" data-sh="edit"><input class="edit" autocomplete="off" enterkeyhint="done" value="${esc(t === 'todo' ? todoInput(it) : it.title)}"></form>
+      <div class="sh-acts"><button class="btn" data-act="sh" data-do="save-edit">저장</button><button class="ul" data-act="sh" data-do="menu">뒤로</button></div>`;
+  } else if (sh.mode === 'date') {
+    body = `<input type="date" class="sh-date" value="${it.day}">
+      <div class="sh-acts"><button class="btn" data-act="sh" data-do="save-date">저장</button><button class="ul" data-act="sh" data-do="menu">뒤로</button></div>`;
+  } else if (sh.mode === 'time') {
+    const v = sh.v; const isEv = t === 'event', isWork = isEv && it.kind === 'work';
+    body = `${v.allDay ? '' : wheelsHTML(v)}
+      ${isEv && !isWork ? `<div class="sh-tg"><button class="${v.allDay ? 'riso3' : ''}" data-act="sh" data-do="tg-all">하루 종일</button>${v.allDay ? '' : `<button class="${v.noEnd ? 'riso3' : ''}" data-act="sh" data-do="tg-end">끝 시간 없음</button>`}</div>` : ''}
+      <div class="sh-acts"><button class="btn" data-act="sh" data-do="save-time">저장</button><button class="ul" data-act="sh" data-do="menu">뒤로</button></div>`;
+  } else if (sh.mode === 'toEvent') {
+    const v = sh.v, ap = activeProjects();
+    body = `<div class="kinds" style="margin-top:0">${['task', 'event'].map((k) => `<button data-act="sh" data-do="k-${k}" class="${v.kind === k ? 'riso3' : ''}">${KIND_KO[k]}</button>`).join('')}</div>
+      ${v.kind === 'task' ? `<div class="opts">${ap.map((p) => `<button data-act="sh" data-do="p-${p.id}" class="${v.proj === p.id ? 'on' : ''}">${esc(p.name)}</button>`).join('') || '<span class="mu">진행 중인 프로젝트 없음</span>'}</div>` : ''}
+      ${v.allDay ? '' : wheelsHTML(v)}
+      <div class="sh-tg"><button class="${v.allDay ? 'riso3' : ''}" data-act="sh" data-do="tg-all">하루 종일</button>${v.allDay ? '' : `<button class="${v.noEnd ? 'riso3' : ''}" data-act="sh" data-do="tg-end">끝 시간 없음</button>`}</div>
+      <div class="sh-acts"><button class="btn" data-act="sh" data-do="save-toEvent">일정으로 바꾸기</button><button class="ul" data-act="sh" data-do="menu">뒤로</button></div>`;
+  }
+  return `<div class="sh-bg" data-act="sh-close"></div>
+  <div class="sheet" role="dialog" aria-label="${t === 'todo' ? '할 일' : '일정'}">
+    <div class="sh-head"><span>${head}</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
+    <div class="sh-title">${title}</div>
+    <div class="sh-body">${body}</div>
+  </div>`;
+}
+function initWheels() {
+  board.querySelectorAll('.wheel').forEach((w) => { w.scrollTop = +w.dataset.i * WH; });
+  const inp = board.querySelector('.sh-form input'); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+}
+// 바퀴 돌리기 — 손가락은 기본 스크롤, 마우스는 끌기
+const wheelTimers = new Map();
+board.addEventListener('scroll', (e) => {
+  const w = e.target; if (!w.classList || !w.classList.contains('wheel')) return;
+  clearTimeout(wheelTimers.get(w));
+  wheelTimers.set(w, setTimeout(() => {
+    const i = Math.max(0, Math.min(w.querySelectorAll('.wi').length - 1, Math.round(w.scrollTop / WH)));
+    const v = S.sheet?.v;
+    if (v) {
+      v[w.dataset.w] = i * +w.dataset.step;
+      // 시작을 바꿨는데 끝이 시작보다 앞이면 끝을 1시간 뒤로
+      if ((w.dataset.w === 'sh' || w.dataset.w === 'sm') && vMin(v.eh, v.em) <= vMin(v.sh, v.sm)) {
+        const b = (vMin(v.sh, v.sm) + 60) % 1440; v.eh = Math.floor(b / 60); v.em = b % 60;
+        for (const [k, val, st] of [['eh', v.eh, 1], ['em', v.em, 5]]) {
+          const x = board.querySelector(`.wheel[data-w="${k}"]`); if (x) x.scrollTo({ top: (val / st) * WH, behavior: 'smooth' });
+        }
+      }
+    }
+    w.querySelectorAll('.wi').forEach((x, k) => x.classList.toggle('on', k === i));
+  }, 60));
+}, true);
+let wDrag = null;
+board.addEventListener('pointerdown', (e) => {
+  const w = e.target.closest('.wheel'); if (!w || e.pointerType !== 'mouse') return;
+  e.preventDefault(); wDrag = { w, y: e.clientY, top: w.scrollTop }; w.style.scrollSnapType = 'none';
+});
+addEventListener('pointermove', (e) => { if (wDrag) wDrag.w.scrollTop = wDrag.top - (e.clientY - wDrag.y); });
+addEventListener('pointerup', () => {
+  if (!wDrag) return; const w = wDrag.w; wDrag = null;
+  w.style.scrollSnapType = ''; w.scrollTo({ top: Math.round(w.scrollTop / WH) * WH, behavior: 'smooth' });
+});
+board.addEventListener('wheel', (e) => {
+  const w = e.target.closest('.wheel'); if (!w) return;
+  e.preventDefault(); w.scrollTop += Math.sign(e.deltaY) * WH;
+}, { passive: false });
+
+const vMin = (h, m) => h * 60 + m;
+async function sheetDo(d) {
+  const sh = S.sheet, it = sheetItem(); if (!sh || !it) return closeSheet();
+  const t = sh.type, table = t === 'todo' ? 'todos' : t === 'event' ? 'events' : 'sessions';
+  const upd = async (patch) => { Object.assign(it, patch); closeSheet(); try { await api.update(table, it.id, patch); } catch (e) { fail(e); } };
+  if (d === 'menu') { sh.mode = 'menu'; return render(true); }
+  if (['edit', 'date'].includes(d)) { sh.mode = d; return render(true); }
+  if (d === 'time' || d === 'toEvent') { sh.mode = d; sh.v = sheetVals(it, t); return render(true); }
+  if (d === 'tg-all') { sh.v.allDay = !sh.v.allDay; return render(true); }
+  if (d === 'tg-end') { sh.v.noEnd = !sh.v.noEnd; return render(true); }
+  if (d.startsWith('k-')) { sh.v.kind = d.slice(2); return render(true); }
+  if (d.startsWith('p-')) { sh.v.proj = d.slice(2); return render(true); }
+  if (d === 'tomorrow') return upd({ day: ymd(addDays(parseYmd(it.day), 1)) });
+  if (d === 'save-date') { const v = board.querySelector('.sh-date')?.value; if (v) return upd({ day: v }); return; }
+  if (d === 'save-edit') {
+    const v = board.querySelector('.sh-form input')?.value.trim(); if (!v) return;
+    return upd(t === 'todo' ? parseTodo(v) : { title: v });
+  }
+  if (d === 'kind') return upd({ kind: it.kind === 'task' ? 'event' : 'task', project_id: it.kind === 'task' ? null : (it.project_id || activeProjects()[0]?.id || null) });
+  if (d === 'save-time') {
+    const v = sh.v, a = vMin(v.sh, v.sm); let b = vMin(v.eh, v.em); if (b <= a) b += 1440;
+    if (t === 'sess') {
+      const base = parseYmd(it.day), at = (mm) => new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, mm).toISOString();
+      return upd({ start_at: at(a), end_at: at(b) });
+    }
+    if (v.allDay) return upd({ start_min: null, end_min: null });
+    return upd({ start_min: a, end_min: v.noEnd && it.kind !== 'work' ? null : b });
+  }
+  if (d === 'del') {
+    if (!sh.sure) { sh.sure = true; const b = board.querySelector('[data-do="del"]'); if (b) { b.textContent = '정말 지우기'; b.classList.add('red'); } return; }
+    if (t === 'todo') S.todos = S.todos.filter((x) => x !== it);
+    else if (t === 'event') S.events = S.events.filter((x) => x !== it);
+    else S.sessions = S.sessions.filter((x) => x !== it);
+    closeSheet(); try { await api.remove(table, it.id); } catch (e) { fail(e); } return;
+  }
+  if (d === 'save-toEvent') {
+    const v = sh.v, a = vMin(v.sh, v.sm); let b = vMin(v.eh, v.em); if (b <= a) b += 1440;
+    const p = projOf(v.proj);
+    const row = { day: it.day, title: it.text, kind: v.kind, place: null, project_id: v.kind === 'task' ? p?.id || null : null,
+      start_min: v.allDay ? null : a, end_min: v.allDay || v.noEnd ? null : b };
+    S.todos = S.todos.filter((x) => x !== it); closeSheet();
+    try { S.events.push(await api.insert('events', row)); await api.remove('todos', it.id); render(); } catch (e) { fail(e); }
+    return;
+  }
+  if (d === 'toTodo') {
+    const pos = Math.max(0, ...todosOf(it.day).map((x) => x.pos)) + 1;
+    S.events = S.events.filter((x) => x !== it); closeSheet();
+    try { S.todos.push(await api.insert('todos', { day: it.day, text: it.title, tag: null, pos })); await api.remove('events', it.id); render(); } catch (e) { fail(e); }
   }
 }
 
