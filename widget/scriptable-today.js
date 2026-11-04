@@ -104,7 +104,6 @@ function header(stack, list, fam) {
   lb.font = Font.boldMonospacedSystemFont(13);
   lb.textColor = PAPER;
 }
-}
 
 // 한 열: 위에서부터 고른 간격으로
 function column(stack, rows, width, gap) {
@@ -155,12 +154,17 @@ function build(list, err) {
   return w;
 }
 
-let widget;
-try {
-  widget = build(await todos(await token()));
-} catch (e) {
-  widget = build(null, e.message);
+async function main() {
+  let widget;
+  try {
+    const tk = await token();
+    const list = await todos(tk);
+    widget = build(list);
+  } catch (e) {
+    widget = build(null, e.message);
+  }
+  if (config.runsInWidget) Script.setWidget(widget);
+  else await widget.presentMedium();
 }
-if (config.runsInWidget) Script.setWidget(widget);
-else await widget.presentMedium();
-Script.complete();
+
+main().then(() => Script.complete(), (e) => { console.error(e); Script.complete(); });
