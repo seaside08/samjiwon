@@ -290,3 +290,5 @@ body.phone .rz{margin:0 -3px;padding:1px 3px}
 .dial-acts{display:flex;gap:14px;align-items:center}
 .nw.idle{gap:12px}
 .ph .dial-t{font-size:36px}
+.sync{font-size:13px;padding:0 4px;margin-left:2px;align-self:center}
+body.phone .sync{font-size:15px}
