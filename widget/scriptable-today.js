@@ -53,14 +53,40 @@ async function todos(tk) {
   return r.loadJSON();
 }
 
+// 체크 칸: 검은 테두리 네모, 완료면 안을 꽉 채우는 빨간 X
+function box(done) {
+  const n = 32, b = 5, c = new DrawContext();
+  c.size = new Size(n, n); c.opaque = false; c.respectScreenScale = true;
+  c.setFillColor(Color.white()); c.fillRect(new Rect(0, 0, n, n));
+  if (done) {
+    c.setStrokeColor(RED); c.setLineWidth(4.4);
+    const p = new Path(); p.move(new Point(b, b)); p.addLine(new Point(n - b, n - b));
+    p.move(new Point(n - b, b)); p.addLine(new Point(b, n - b));
+    c.addPath(p); c.strokePath();
+  }
+  c.setFillColor(INK);
+  c.fillRect(new Rect(0, 0, n, b)); c.fillRect(new Rect(0, n - b, n, b));
+  c.fillRect(new Rect(0, 0, b, n)); c.fillRect(new Rect(n - b, 0, b, n));
+  return c.getImage();
+}
+// 취소선: 글자 칸 배경으로 깔리는 빨간 가로줄
+function strike() {
+  const c = new DrawContext();
+  c.size = new Size(40, 40); c.opaque = false; c.respectScreenScale = true;
+  c.setFillColor(RED); c.fillRect(new Rect(0, 19, 40, 6));
+  return c.getImage();
+}
+const BOX = [box(false), box(true)], STRIKE = strike();
+
 function item(stack, t, size) {
   const row = stack.addStack();
   row.centerAlignContent();
-  const ic = row.addImage(SFSymbol.named(t.done ? 'xmark.square' : 'square').image);
-  ic.imageSize = new Size(size + 2, size + 2);
-  ic.tintColor = t.done ? RED : INK;
+  const ic = row.addImage(BOX[t.done ? 1 : 0]);
+  ic.imageSize = new Size(size, size);
   row.addSpacer(9);
-  const tx = row.addText(t.text);
+  const wrap = row.addStack();
+  if (t.done) wrap.backgroundImage = STRIKE;
+  const tx = wrap.addText(t.text);
   tx.font = Font.boldSystemFont(size);
   tx.textColor = INK;
   tx.lineLimit = 1;
