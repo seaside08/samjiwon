@@ -1133,7 +1133,7 @@ function viewStats() {
   for (const ds of days) { const t = todosOf(ds); tn += t.length; td += t.filter((x) => x.done).length; appt += eventsOf(ds).filter((e) => e.kind === 'event').length; }
   const max = Math.max(240, ...per.map((x) => x.s + x.w)), px = 140 / max;
   const statDay = days.includes(S.statDay) ? S.statDay : days[0];
-  const bars = per.map((x, i) => `<div class="dy${x.ds === statDay ? ' sel' : ''}" data-act="stat-day" data-day="${x.ds}"><i class="riso" style="height:${x.s * px}px"></i><i class="jb" style="height:${x.w * px}px"></i><span>${[0, 4, 9, 14, 19, 24, 29].includes(i) || i === last - 1 && last === 31 ? i + 1 : ''}</span></div>`).join('');
+  const bars = per.map((x, i) => `<div class="dy${x.ds === statDay ? ' sel' : ''}" data-act="stat-day" data-day="${x.ds}"><i class="riso" style="height:${x.s * px}px"></i><i class="jb" style="height:${x.w * px}px"></i><span>${x.ds !== statDay && ([0, 4, 9, 14, 19, 24, 29].includes(i) || i === last - 1 && last === 31) ? i + 1 : ''}</span></div>`).join('');
   // 시간대 (8~24시)
   const hrs = Array(16).fill(0);
   const monthSess = S.sessions.filter((s) => days.includes(s.day));
