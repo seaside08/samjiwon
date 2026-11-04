@@ -337,8 +337,10 @@ function viewToday() {
         <div style="display:flex;align-items:center;gap:12px"><span class="bk">NOW WORKING &#8212; ${esc(sessLabel(r))}</span><span class="red" style="font-size:12px;letter-spacing:.04em">&#9679; REC</span></div>
         <span id="elapsed" class="big-t">${elapsed(r)}</span>
         <div style="display:flex;gap:14px;align-items:center;margin-top:4px"><button class="btn" data-act="stop">멈추고 기록</button><button class="ul" data-act="discard">기록 안 함</button></div>
-      </div>` : active.length ? `<div class="nw idle"><span style="font-size:13px">작업 시작</span>
-        <div style="display:flex;flex-wrap:wrap;gap:6px 14px">${active.map((p) => `<button class="ul" data-act="start" data-id="${p.id}">${esc(p.name)}</button>`).join('')}</div></div>` : '';
+      </div>` : active.length ? `<div class="nw idle">
+        <div class="opts" style="font-size:14px;gap:6px 14px">${active.map((p, i) => `<button data-act="dial-p" data-id="${p.id}" class="${(S.dialProj ? S.dialProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('')}</div>
+        ${dialHTML(PHONE ? 210 : 176)}
+      </div>` : '';
   if (PHONE) return `${header('')}
   <section class="ph">
     <div class="row"><span class="bk">TODAY / 오늘 할 일</span><span class="red" style="font-size:16px">[ ${done} / ${todos.length} ]</span></div>
@@ -641,6 +643,7 @@ function render() {
   // 편집 중이면 다시 그리지 않음
   const a = document.activeElement;
   if (a && board.contains(a) && (a.tagName === 'INPUT' || a.isContentEditable) && (a.value || a.textContent)) { pendingRender = true; return; }
+  if (dialDrag) { pendingRender = true; return; }
   pendingRender = false;
   let html;
   if (S.view === 'today') html = viewToday();
@@ -797,6 +800,76 @@ board.addEventListener('focusout', async (e) => {
   setTimeout(() => { if (pendingRender && !board.contains(document.activeElement)) render(); }, 0);
 });
 
+// ───────── 다이얼로 작업 시간 기록
+// 한 바퀴 = 60분, 5분 단위, 여러 바퀴 돌리면 시간이 쌓임 (최대 12시간)
+S.dialMin = 0; S.dialRaw = 0;
+const TEXU = 'tex.jpg';
+function dialArc(min) {
+  const m = min % 60, full = min > 0 && m === 0, a = (m / 60) * Math.PI * 2;
+  if (full) return 'M100 100 m-86 0 a86 86 0 1 0 172 0 a86 86 0 1 0 -172 0';
+  if (!min) return '';
+  const x = 100 + 86 * Math.sin(a), y = 100 - 86 * Math.cos(a);
+  return `M100 100 L100 14 A86 86 0 ${m > 30 ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)} Z`;
+}
+function dialKnob(min) {
+  const a = ((min % 60) / 60) * Math.PI * 2;
+  return [100 + 86 * Math.sin(a), 100 - 86 * Math.cos(a)];
+}
+const dialLabel = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+function dialHTML(size, projId = '') {
+  const [kx, ky] = dialKnob(S.dialMin);
+  const ticks = [...Array(12)].map((_, i) => { const a = (i / 12) * Math.PI * 2, r1 = i % 3 ? 78 : 72; return `<line x1="${100 + r1 * Math.sin(a)}" y1="${100 - r1 * Math.cos(a)}" x2="${100 + 86 * Math.sin(a)}" y2="${100 - 86 * Math.cos(a)}" stroke="#141414" stroke-width="${i % 3 ? 2 : 3}"/>`; }).join('');
+  return `<div class="dialbox" data-proj="${projId}">
+    <div class="dial" style="width:${size}px;height:${size}px">
+      <svg viewBox="0 0 200 200" width="${size}" height="${size}" aria-label="작업 시간 다이얼">
+        <defs><pattern id="dtx" patternUnits="userSpaceOnUse" width="160" height="160"><image href="${TEXU}" width="160" height="160"/></pattern></defs>
+        <circle cx="100" cy="100" r="86" fill="#fff"/>
+        <path id="dial-arc" d="${dialArc(S.dialMin)}" fill="url(#dtx)"/>
+        ${ticks}
+        <circle cx="100" cy="100" r="86" fill="none" stroke="#141414" stroke-width="3"/>
+        <rect id="dial-knob" x="${kx - 7}" y="${ky - 7}" width="14" height="14" fill="#141414"/>
+      </svg>
+      <span class="dial-t" id="dial-t">${dialLabel(S.dialMin)}</span>
+    </div>
+    <div class="dial-acts"><button class="btn" data-act="dial-save">기록</button><button class="ul" data-act="dial-reset">지우기</button><button class="ul" data-act="start" data-id="${projId}" data-dialstart="1">타이머</button></div>
+  </div>`;
+}
+function dialSet(min) {
+  S.dialMin = Math.max(0, Math.min(720, min));
+  const arc = document.getElementById('dial-arc'), knob = document.getElementById('dial-knob'), t = document.getElementById('dial-t');
+  if (arc) arc.setAttribute('d', dialArc(S.dialMin));
+  if (knob) { const [x, y] = dialKnob(S.dialMin); knob.setAttribute('x', x - 7); knob.setAttribute('y', y - 7); }
+  if (t) t.textContent = dialLabel(S.dialMin);
+}
+let dialDrag = null;
+const dialAngle = (svg, e) => { const r = svg.getBoundingClientRect(); const x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2); return ((Math.atan2(x, -y) * 180) / Math.PI + 360) % 360; };
+board.addEventListener('pointerdown', (e) => {
+  const svg = e.target.closest('.dial svg'); if (!svg) return;
+  e.preventDefault(); svg.setPointerCapture(e.pointerId);
+  dialDrag = { svg, prev: dialAngle(svg, e) };
+  S.dialRaw = S.dialMin;
+});
+board.addEventListener('pointermove', (e) => {
+  if (!dialDrag) return;
+  const a = dialAngle(dialDrag.svg, e); let d = a - dialDrag.prev; if (d > 180) d -= 360; if (d < -180) d += 360;
+  dialDrag.prev = a; S.dialRaw = Math.max(0, Math.min(720, S.dialRaw + (d / 360) * 60));
+  dialSet(Math.round(S.dialRaw / 5) * 5);
+});
+const dialEnd = () => { if (!dialDrag) return; dialDrag = null; if (pendingRender) render(); };
+board.addEventListener('pointerup', dialEnd); board.addEventListener('pointercancel', dialEnd);
+
+async function dialSave(projId) {
+  const p = projOf(projId || S.dialProj) || activeProjects()[0];
+  if (!p) return;
+  const m = S.dialMin; if (!m) { toast('다이얼을 돌려 시간을 정해 주세요'); return; }
+  const end = new Date(), start = new Date(end - m * 60000);   // 지금 끝난 것으로, 시작한 날에 기록
+  const row = { project_id: p.id, title: p.name, day: ymd(start), start_at: start.toISOString(), end_at: end.toISOString() };
+  const tmp = { id: 'tmp' + Date.now(), ...row };
+  S.sessions.push(tmp); S.dialMin = 0; render();
+  toast(`${p.name} ${dur(m)} 기록했어요`);
+  try { Object.assign(tmp, await api.insert('sessions', row)); } catch (e) { fail(e); S.sessions = S.sessions.filter((x) => x !== tmp); render(); }
+}
+
 // ───────── 타이머
 async function startWork(p) {
   const r = running(); if (r) await stopWork(r);
@@ -872,7 +945,7 @@ function viewProjects() {
       <span class="lb" data-act="pf" data-f="link">링크</span>${sel.link ? `<a class="lnk" href="${esc(/^https?:/.test(sel.link) ? sel.link : 'https://' + sel.link)}" target="_blank" rel="noopener">${esc(sel.link.replace(/^https?:\/\//, ''))}</a>` : '<span data-act="pf" data-f="link" class="mu">&#8212;</span>'}
       <span class="lb" data-act="pf" data-f="note">작가 노트</span><p class="note" data-act="pf" data-f="note">${sel.note ? esc(sel.note) : '<span class="mu">&#8212;</span>'}</p>
       ${sel.status === 'active'
-        ? `${r && r.project_id === sel.id ? '<button class="btn" style="margin-top:16px" data-act="stop">멈추고 기록</button>' : `<button class="btn" style="margin-top:16px" data-act="start" data-id="${sel.id}">작업 시작</button>`}
+        ? `${r && r.project_id === sel.id ? '<button class="btn" style="margin-top:16px" data-act="stop">멈추고 기록</button>' : `<div style="margin-top:16px">${dialHTML(170, sel.id)}</div>`}
            <div class="acts"><button class="ul" data-act="pstatus" data-s="done">완료</button><button class="ul" data-act="pstatus" data-s="archived">보관</button><button class="ul" data-act="pstatus" data-s="stopped">중단</button></div>`
         : `<div class="acts" style="margin-top:16px"><button class="ul" data-act="pstatus" data-s="active">다시 진행</button><button class="ul" data-act="pdel">삭제</button></div>`}
     </section>` : '<section class="side"></section>';
@@ -1109,7 +1182,10 @@ function viewStats() {
 function handleMore(act, el, ev) {
   if (act === 'imp-ok') { el.disabled = true; el.textContent = '넣는 중…'; runImport(); return true; }
   if (act === 'imp-no') { S.imp = null; location.hash = '#work'; return true; }
-  if (act === 'start') { startWork(projOf(el.dataset.id)); return true; }
+  if (act === 'start') { startWork(projOf(el.dataset.id || S.dialProj) || activeProjects()[0]); return true; }
+  if (act === 'dial-p') { S.dialProj = el.dataset.id; render(); return true; }
+  if (act === 'dial-save') { dialSave(el.closest('.dialbox')?.dataset.proj); return true; }
+  if (act === 'dial-reset') { dialSet(0); return true; }
   if (act === 'stop') { const r = running(); if (r) stopWork(r); return true; }
   if (act === 'discard') { const r = running(); if (r) discardWork(r); return true; }
   if (act === 'edit-sess') {
