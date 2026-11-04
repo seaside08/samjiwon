@@ -39,6 +39,7 @@ const S = {
   todos: [], events: [], days: {},
   projects: [], sessions: [], plants: [], plogs: [], recent: [],
   proj: null, projArchive: false,
+  addKind: 'task', addProj: null, addWp: null,
   diaryDay: todayStr(),
   plantEnd: todayStr(), plant: null, plantDay: todayStr(), plantGone: false, plantAdd: false,
   statDay: todayStr(),
@@ -210,8 +211,8 @@ const wpOf = (e) => WORKPLACES.find((w) => w.name === e.place);
 const sessMin = (s) => Math.max(0, Math.round(((s.end_at ? Date.parse(s.end_at) : Date.now()) - Date.parse(s.start_at)) / 60000));
 const sessOf = (day) => S.sessions.filter((s) => s.day === day).sort((a, b) => (a.start_at < b.start_at ? -1 : 1));
 const running = () => S.sessions.find((s) => !s.end_at);
-// 작업 일정: 프로젝트 이름과 겹치는 일정 (예: '피보테 배경' ↔ '피보테 배경 외주')
-const isWorkEv = (e) => e.kind !== 'work' && S.projects.some((p) => p.name && e.title && p.name.length > 1 && e.title.length > 1 && (e.title.includes(p.name) || p.name.includes(e.title)));
+// 작업 일정 (kind: task)
+const isWorkEv = (e) => e.kind === 'task';
 const projOf = (id) => S.projects.find((p) => p.id === id);
 const sessLabel = (s) => projOf(s.project_id)?.name || s.title || '작업';
 const minOfDay = (iso) => { const d = new Date(iso); return d.getHours() * 60 + d.getMinutes(); };
@@ -232,6 +233,38 @@ const todoInput = (t) => t.text + (t.tag ? ` #${t.tag}` : '');
 const T = '(\\d{1,2})(?::(\\d{2}))?시?';
 const RANGE = T + '(?:\\s*[-~–—]\\s*' + T + ')?';
 const toMin = (h, m) => { h = +h; m = +(m || 0); return h <= 24 && m < 60 ? h * 60 + m : null; };
+function splitTime(raw) {
+  let s = raw.trim(), start = null, end = null, m;
+  if ((m = s.match(new RegExp('^' + RANGE + '(?=\\s|$)')))) {
+    start = toMin(m[1], m[2]); end = m[3] ? toMin(m[3], m[4]) : null; s = s.slice(m[0].length).trim();
+  } else if ((m = s.match(new RegExp('(?:^|\\s)' + RANGE + '$'))) && (m[2] || m[3])) {
+    start = toMin(m[1], m[2]); end = m[3] ? toMin(m[3], m[4]) : null; s = s.slice(0, s.length - m[0].length).trim();
+  }
+  if (start == null) end = null;
+  if (end != null && end <= start) end += 24 * 60;
+  return { rest: s, start_min: start, end_min: end };
+}
+// 달력에서 고른 종류(작업·약속·근무)대로 일정 만들기
+function buildEvent(raw, day, kind) {
+  const t = splitTime(raw);
+  if (kind === 'task') {
+    const p = projOf(S.addProj) || activeProjects()[0];
+    const title = t.rest || p?.name; if (!title) return null;
+    return { title, start_min: t.start_min, end_min: t.end_min, kind: 'task', place: null, project_id: p?.id || null };
+  }
+  if (kind === 'work') {
+    const w = WORKPLACES.find((x) => x.name === S.addWp) || WORKPLACES[0];
+    let { start_min, end_min } = t;
+    if (start_min == null) [start_min, end_min] = w.shifts[parseYmd(day).getDay()] || Object.values(w.shifts)[0];
+    else if (end_min == null) return null;
+    return { title: w.name, start_min, end_min, kind: 'work', place: w.name };
+  }
+  if (!t.rest) return null;
+  return { title: t.rest, start_min: t.start_min, end_min: t.end_min, kind: 'event', place: null };
+}
+const activeProjects = () => S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
+const KINDS = [['task', '작업'], ['event', '약속'], ['work', '근무']];
+
 function parseEvent(raw, day) {
   let s = raw.trim(), start = null, end = null, m;
   if ((m = s.match(new RegExp('^' + RANGE + '(?=\\s|$)')))) {
@@ -348,9 +381,12 @@ function daySide() {
   const evs = eventsOf(day), todos = todosOf(day), done = todos.filter((t) => t.done).length;
   return `<section class="side">
     <span class="bk" style="margin-bottom:8px">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${WD_EN[d.getDay()]}</span>
-    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n">${e.kind === 'work' ? '<i class="sq"></i>' : ''}${esc(e.title)}${e.end_min != null ? ' ~' + hm(e.end_min) : ''}</span></div>`).join('')}
+    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n">${e.kind === 'work' ? '<i class="sq"></i>' : ''}<span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(e.title)}</span>${e.end_min != null ? ' ~' + hm(e.end_min) : ''}</span></div>`).join('')}
     ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))} ~${hm(minOfDay(s.end_at))}</span></div>`).join('')}
-    ${addForm('event', '일정 추가', 'margin-top:6px')}
+    <div class="kinds">${KINDS.map(([k, l]) => `<button data-act="ak" data-k="${k}" class="${S.addKind === k ? 'riso3' : ''}">${l}</button>`).join('')}</div>
+    ${S.addKind === 'task' ? `<div class="opts">${activeProjects().map((p, i) => `<button data-act="ap" data-id="${p.id}" class="${(S.addProj ? S.addProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('') || '<span class="mu">진행 중인 프로젝트 없음</span>'}</div>` : ''}
+    ${S.addKind === 'work' ? `<div class="opts">${WORKPLACES.map((w, i) => `<button data-act="aw" data-n="${w.name}" class="${(S.addWp ? S.addWp === w.name : i === 0) ? 'on' : ''}">${w.name}</button>`).join('')}</div>` : ''}
+    ${addForm('event', '일정 추가', 'margin-top:2px')}
     <span class="lbl red">할 일 [ ${done} / ${todos.length} ]</span>
     <div class="todos">${todos.map(todoRow).join('')}</div>
     ${addForm('todo-sel', '할 일 추가')}
@@ -409,20 +445,34 @@ function viewWeek() {
   const cols = days.map((d, i) => {
     const ds = ymd(d);
     let k = 0;
-    const blks = eventsOf(ds).filter((e) => e.start_min != null).map((e) => {
+    // 겹치는 칸은 나란히 놓기
+    const items = [];
+    eventsOf(ds).filter((e) => e.start_min != null).forEach((e) => {
       weekWork += workMin(e);
-      const top = Math.max(0, (e.start_min - H0) * PX);
+      const plain = e.end_min == null || (e.kind !== 'work' && !isWorkEv(e));
+      const cls = plain ? '' : e.kind === 'work' ? 'work' : ['riso', 'riso2', 'riso3'][(k++ + i) % 3];
       const t = `${hShort(e.start_min)}${e.end_min != null ? '&#8211;' + hShort(e.end_min) : ''}`;
-      if (e.end_min == null) return `<div class="blk" style="top:${top}px">${hm(e.start_min)}<br>${esc(e.title)}</div>`;
-      const h = Math.max(28, Math.min(560, (e.end_min - H0) * PX) - top);
-      if (e.kind !== 'work' && !isWorkEv(e)) return `<div class="blk" style="top:${top}px">${hm(e.start_min)}<br>${esc(e.title)}</div>`;
-      const cls = e.kind === 'work' ? 'work' : ['riso', 'riso2', 'riso3'][(k++ + i) % 3];
-      return `<div class="blk ${cls}" style="top:${top}px;height:${h}px">${esc(e.title)}<br>${t}</div>`;
-    }).join('') + sessOf(ds).map((s, j) => {
+      items.push({ a: e.start_min, b: plain ? e.start_min + 45 : e.end_min, plain, cls, body: plain ? `${hm(e.start_min)}<br>${esc(e.title)}` : `${esc(e.title)}<br>${t}` });
+    });
+    sessOf(ds).forEach((s, j) => {
       weekSess += sessMin(s);
       const a = minOfDay(s.start_at), b = s.end_at ? minOfDay(s.end_at) : nowMin;
-      const top = Math.max(0, (a - H0) * PX), h = Math.max(28, Math.min(560, (Math.max(b, a) - H0) * PX) - top);
-      return `<div class="blk ${['riso', 'riso2', 'riso3'][(j + i + 1) % 3]}" style="top:${top}px;height:${h}px">${esc(sessLabel(s))}<br>${hShort(a)}&#8211;${s.end_at ? hShort(b) : ''}</div>`;
+      items.push({ a, b: Math.max(b, a + 1), cls: ['riso', 'riso2', 'riso3'][(j + i + 1) % 3], body: `${esc(sessLabel(s))}<br>${hShort(a)}&#8211;${s.end_at ? hShort(b) : ''}` });
+    });
+    items.sort((x, y) => x.a - y.a || y.b - x.b);
+    const lanesEnd = []; let cluster = [], clusterEnd = -1;
+    const flush = () => { const n = Math.max(1, ...cluster.map((x) => x.lane + 1)); cluster.forEach((x) => (x.n = n)); cluster = []; };
+    for (const it of items) {
+      if (it.a >= clusterEnd) { flush(); lanesEnd.length = 0; }
+      let l = lanesEnd.findIndex((end) => end <= it.a); if (l < 0) l = lanesEnd.length;
+      lanesEnd[l] = it.b; it.lane = l; cluster.push(it); clusterEnd = Math.max(clusterEnd, it.b);
+    }
+    flush();
+    const blks = items.map((it) => {
+      const top = Math.max(0, (it.a - H0) * PX);
+      const h = it.plain ? null : Math.max(28, Math.min(560, (it.b - H0) * PX) - top);
+      const pos = it.n > 1 ? `left:calc(${(it.lane / it.n) * 100}% + 2px);right:auto;width:calc(${100 / it.n}% - 4px);` : '';
+      return `<div class="blk ${it.cls}" style="${pos}top:${top}px;${h ? `height:${h}px` : ''}">${it.body}</div>`;
     }).join('');
     const line = ds === today && nowMin >= H0 ? `<div class="nowline" style="top:${(nowMin - H0) * PX}px"></div><div class="nowsq" style="top:${(nowMin - H0) * PX - 3}px"></div>` : '';
     return `<div class="col" data-act="sel" data-day="${ds}">${blks}${line}</div>`;
@@ -618,7 +668,8 @@ async function addTodo(day, raw) {
   render();
 }
 async function addEvent(day, raw) {
-  const p = parseEvent(raw, day); if (!p) return;
+  const p = buildEvent(raw, day, S.addKind);
+  if (!p) { toast(S.addKind === 'work' ? '근무는 시작과 끝 시간을 함께 적어 주세요 (예: 12-18)' : '제목을 적어 주세요'); return; }
   const tmp = { id: 'tmp' + Date.now(), day, ...p };
   S.events.push(tmp); render();
   try { Object.assign(tmp, await api.insert('events', { day, ...p })); } catch (e) { fail(e); S.events = S.events.filter((x) => x !== tmp); }
@@ -632,6 +683,7 @@ board.addEventListener('submit', (e) => {
   const k = f.dataset.add;
   if (k === 'pmemo') { input.blur(); return; }
   input.value = '';
+  if (k === 'event' && !v && S.addKind !== 'event') { addEvent(S.sel, ''); return; }
   if (!v) return;
   if (k === 'plant') { handleAddMore(k, v); return; }
   if (k === 'todo') addTodo(todayStr(), v);
@@ -657,10 +709,20 @@ board.addEventListener('click', async (e) => {
     const ev = S.events.find((x) => x.id === el.dataset.id); if (!ev) return;
     inlineEdit(el, eventInput(ev), async (v) => {
       if (!v) { S.events = S.events.filter((x) => x !== ev); render(); try { await api.remove('events', ev.id); } catch (er) { fail(er); } return; }
-      const p = parseEvent(v, ev.day); if (!p) return render();
+      const t = splitTime(v);
+      const p = ev.kind === 'event' ? { title: t.rest || ev.title, start_min: t.start_min, end_min: t.end_min }
+        : ev.kind === 'task' ? { title: t.rest || ev.title, start_min: t.start_min, end_min: t.end_min }
+        : t.start_min != null && t.end_min != null ? { start_min: t.start_min, end_min: t.end_min } : null;
+      if (!p) return render();
       Object.assign(ev, p); render();
       try { await api.update('events', ev.id, p); } catch (er) { fail(er); }
     });
+  } else if (act === 'ak') {
+    S.addKind = el.dataset.k; render(); board.querySelector('form[data-add="event"] input')?.focus();
+  } else if (act === 'ap') {
+    S.addProj = el.dataset.id; render(); board.querySelector('form[data-add="event"] input')?.focus();
+  } else if (act === 'aw') {
+    S.addWp = el.dataset.n; render(); board.querySelector('form[data-add="event"] input')?.focus();
   } else if (act === 'sel') {
     S.sel = el.dataset.day; render();
   } else if (act === 'go-day') {
@@ -981,7 +1043,7 @@ function viewStats() {
   const per = days.map((ds) => ({ ds, s: daySess(ds), w: dayWork(ds) }));
   const tS = per.reduce((a, x) => a + x.s, 0), tW = per.reduce((a, x) => a + x.w, 0);
   let td = 0, tn = 0, appt = 0;
-  for (const ds of days) { const t = todosOf(ds); tn += t.length; td += t.filter((x) => x.done).length; appt += eventsOf(ds).filter((e) => e.kind !== 'work').length; }
+  for (const ds of days) { const t = todosOf(ds); tn += t.length; td += t.filter((x) => x.done).length; appt += eventsOf(ds).filter((e) => e.kind === 'event').length; }
   const max = Math.max(240, ...per.map((x) => x.s + x.w)), px = 140 / max;
   const statDay = days.includes(S.statDay) ? S.statDay : days[0];
   const bars = per.map((x, i) => `<div class="dy${x.ds === statDay ? ' sel' : ''}" data-act="stat-day" data-day="${x.ds}"><i class="riso" style="height:${x.s * px}px"></i><i class="jb" style="height:${x.w * px}px"></i><span>${[0, 4, 9, 14, 19, 24, 29].includes(i) || i === last - 1 && last === 31 ? i + 1 : ''}</span></div>`).join('');

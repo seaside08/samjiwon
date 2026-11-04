@@ -276,3 +276,9 @@ body.phone .ir{grid-template-columns:78px minmax(0,1fr) 92px 52px;gap:6px;font-s
 .rz{margin:0 -7px;padding:1px 7px}
 body.phone .rz{margin:0 -3px;padding:1px 3px}
 .adl{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kinds{display:flex;gap:4px;margin-top:10px;font-size:14px}
+.kinds button{padding:2px 8px}
+.opts{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;margin-top:4px}
+.opts button{padding:1px 0;border-bottom:2.5px solid transparent;text-align:left}
+.opts button.on{border-bottom-color:var(--ink)}
+.rzs{padding:0 3px;margin:0 -3px}
