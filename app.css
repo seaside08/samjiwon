@@ -319,11 +319,10 @@ body.phone .sync{font-size:15px}
 .wgrp.off{opacity:.25;pointer-events:none}
 .wl{font-size:12px}
 .wrow{position:relative;display:flex;align-items:center}
-.wrow::before{content:"";position:absolute;left:0;right:0;top:calc(50% - 17px);height:34px;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);pointer-events:none}
-.wheel{height:170px;width:52px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;cursor:grab;-webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent)}
+.wheel{height:170px;width:52px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;cursor:grab}
 .wheel::-webkit-scrollbar{display:none}
 .wpad{height:68px}
-.wi{height:34px;line-height:34px;text-align:center;font-size:22px;scroll-snap-align:center;color:#8a8a86;font-weight:600}
+.wi{height:34px;line-height:34px;text-align:center;font-size:22px;scroll-snap-align:center;color:var(--ink);font-weight:300}
 .wi.on{color:var(--ink);font-weight:700}
 .wc{font-size:22px;padding:0 2px}
 body.phone .sh-bg{position:fixed}
