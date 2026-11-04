@@ -1,0 +1,114 @@
+@font-face{font-family:'KR Small';src:local('AppleSDGothicNeo-Regular'),local('Apple SD Gothic Neo'),local('NotoSansKR-Regular'),local('Noto Sans KR'),local('Noto Sans CJK KR'),local('Malgun Gothic');font-weight:400;size-adjust:93%;unicode-range:U+1100-11FF,U+3130-318F,U+AC00-D7A3}
+@font-face{font-family:'KR Small';src:local('AppleSDGothicNeo-Medium'),local('Apple SD Gothic Neo Medium'),local('NotoSansKR-Medium'),local('Noto Sans KR Medium'),local('Noto Sans CJK KR Medium'),local('Malgun Gothic');font-weight:500;size-adjust:93%;unicode-range:U+1100-11FF,U+3130-318F,U+AC00-D7A3}
+@font-face{font-family:'KR Small';src:local('AppleSDGothicNeo-Bold'),local('Apple SD Gothic Neo Bold'),local('NotoSansKR-Bold'),local('Noto Sans KR Bold'),local('Noto Sans CJK KR Bold'),local('Malgun Gothic Bold');font-weight:700;size-adjust:93%;unicode-range:U+1100-11FF,U+3130-318F,U+AC00-D7A3}
+
+:root{--ink:#141414;--paper:#fbfbf8;--red:#e0352b}
+html,body{margin:0;height:100%;background:var(--paper);overflow:hidden;-webkit-text-size-adjust:100%}
+body{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#board{width:1180px;height:820px;flex:none;box-sizing:border-box;position:relative;overflow:hidden;background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono','KR Small',-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;font-size:17px;font-weight:700;line-height:1.08;padding:38px 170px 34px 78px;display:flex;flex-direction:column;gap:20px;transform-origin:center center}
+button,input{-webkit-appearance:none;appearance:none;border-radius:0;font:inherit;color:inherit;margin:0}
+button{background:none;border:0;padding:0;cursor:pointer}
+input:focus,[contenteditable]:focus{outline:none}
+form{margin:0}
+
+.riso{background:#5fd97c url(tex.jpg) 0 0/240px 240px}
+.riso2{background:#5fd97c url(tex.jpg) -90px -60px/240px 240px}
+.riso3{background:#5fd97c url(tex.jpg) -160px -20px/240px 240px}
+.riso-hl{background:linear-gradient(var(--paper) 0 52%,transparent 52% 92%,var(--paper) 92%),url(tex.jpg) -40px -150px/240px 240px}
+.riso-t{background:linear-gradient(rgba(0,95,35,.55),rgba(0,95,35,.55)),url(tex.jpg) 0 0/200px 200px;-webkit-background-clip:text;background-clip:text;color:transparent}
+
+.hd{display:flex;align-items:baseline;gap:10px;font-size:15px}
+.hd .sum{margin-left:auto;font-size:13px}
+.main{display:flex;gap:32px;flex-grow:1;min-height:0}
+.left{flex:1 1 0;display:flex;flex-direction:column;min-width:0}
+.side{width:196px;flex:none;display:flex;flex-direction:column;gap:6px;padding-top:4px;font-size:15px;min-height:0;overflow:hidden}
+.bk{align-self:flex-start;background:var(--ink);color:var(--paper);font-size:13px;letter-spacing:.04em;padding:5px 12px}
+.red{color:var(--red)}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+
+nav.tabs{position:absolute;top:112px;right:44px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:17px}
+nav.tabs a{color:var(--ink);text-decoration:none}
+nav.tabs a.on{padding:3px 10px;margin-right:-10px;transform:rotate(-1.5deg)}
+.out{position:absolute;right:44px;bottom:34px;font-size:12px}
+
+/* 할 일 */
+.ck{width:16px;height:16px;flex:none;box-sizing:border-box;border:2.5px solid var(--ink);background:#fff;padding:0}
+.ck svg{display:block;width:100%;height:100%}
+.todos{display:flex;flex-direction:column;gap:6px}
+.todo{display:flex;align-items:center;gap:12px}
+.todo .tx{flex-grow:1;min-width:0;cursor:text}
+.todo.done .tx{text-decoration:line-through;text-decoration-color:var(--red);text-decoration-thickness:3px}
+.todo .tag{font-size:13px;flex:none}
+.add{display:flex;align-items:center;gap:12px}
+.add .plus{width:16px;flex:none;text-align:center;font-size:20px}
+.add input,.edit{flex-grow:1;min-width:0;border:0;border-bottom:3px solid var(--ink);background:transparent;padding:6px 0}
+.side .add{gap:10px}
+.side .add input,.side .edit{padding:4px 0}
+.side .todos{gap:5px}
+.side .todo{gap:8px;font-size:14px}
+.side .ck{width:13px;height:13px;border-width:2px}
+
+.vow{margin-top:auto;display:flex;align-items:baseline;gap:16px}
+.vow .lb{font-size:13px;letter-spacing:.04em}
+.vow .tx{font-size:20px;padding:0 4px;min-width:240px;cursor:text}
+
+/* 오늘 오른쪽 */
+.today-side{width:400px;flex:none;display:flex;flex-direction:column;gap:6px}
+.sched{padding:16px 18px 14px;display:flex;flex-direction:column;gap:3px}
+.sched .h{display:flex;justify-content:space-between;font-size:13px;letter-spacing:.04em}
+.sched .e{display:flex;gap:12px;align-items:baseline}
+.sched .e .t{width:52px;flex:none}
+.sched .e .n{flex-grow:1}
+.sched .e .x{font-size:13px}
+.cap{align-self:flex-end;font-size:12px}
+.mini{margin-top:auto;align-self:flex-end;text-align:right;font-size:12px}
+
+/* 달력 공통 */
+.ctl{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}
+.ctl .ttl{font-size:26px;letter-spacing:-.01em}
+.ctl .sw{margin-left:auto;display:flex;gap:4px;font-size:15px;align-items:baseline}
+.ctl .arr{display:flex;gap:8px;margin-right:12px}
+.ctl .arr button{font-size:17px;padding:0 2px}
+.ctl .sw a{color:var(--ink);text-decoration:none;padding:2px 8px}
+.sq{display:inline-block;width:7px;height:7px;background:var(--ink);margin-right:4px;vertical-align:1px}
+
+/* 월간 */
+.wd{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));font-size:13px;padding:0 7px 6px}
+.wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1.5px solid var(--ink);height:var(--rowh,100px)}
+.wk:last-child{border-bottom:1.5px solid var(--ink)}
+.cell{padding:6px 7px 7px;display:flex;flex-direction:column;gap:3px;font-size:13px;min-width:0;overflow:hidden;cursor:pointer}
+.cell+.cell{border-left:1.5px solid var(--ink)}
+.cell b{font-size:18px;margin-bottom:3px;align-self:flex-start;padding:0 5px;margin-left:-5px}
+.cell b.dim{font-weight:400}
+.cell b.now{background:var(--ink);color:var(--paper)}
+.ln{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{margin:1px -7px;padding:1px 7px;white-space:nowrap;overflow:hidden}
+
+/* 오른쪽 날짜 목록 */
+.ev{display:flex;gap:8px;cursor:text}
+.ev .t{width:44px;flex:none}
+.ev .n{min-width:0;word-break:keep-all}
+.lbl{margin-top:10px;font-size:13px}
+
+/* 주간 */
+.wgrid{display:grid;grid-template-columns:34px repeat(7,minmax(0,1fr))}
+.dh{display:flex;align-items:baseline;gap:6px;font-size:13px;padding:0 0 6px 6px;cursor:pointer}
+.dh .n{padding:0 4px}
+.dh .n.now{background:var(--ink);color:var(--paper)}
+.dh .n.sel{}
+.allday{padding:0 4px 4px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.allday .bar{margin:0;padding:1px 5px;font-size:12px}
+.hours{position:relative;height:560px;font-size:11px;border-top:1.5px solid var(--ink)}
+.hours span{position:absolute}
+.col{position:relative;height:560px;border-left:1.5px solid var(--ink);border-top:1.5px solid var(--ink);cursor:pointer}
+.blk{position:absolute;left:4px;right:4px;box-sizing:border-box;padding:4px 5px;font-size:12px;line-height:1.1;overflow:hidden;word-break:keep-all}
+.blk.work{border:1.5px solid var(--ink);background:var(--paper)}
+.nowline{position:absolute;left:0;right:0;height:2.5px;background:var(--red)}
+.nowsq{position:absolute;left:-4px;width:8px;height:8px;background:var(--red)}
+
+/* 로그인 · 준비 중 */
+.login{display:flex;flex-direction:column;gap:14px;width:360px}
+.login input{border:0;border-bottom:3px solid var(--ink);background:transparent;padding:6px 0}
+.btn{align-self:flex-start;font-size:14px;background:var(--paper);border:2.5px solid var(--ink);padding:3px 9px;line-height:1.1}
+.soon{font-size:13px}
