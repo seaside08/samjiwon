@@ -69,24 +69,52 @@ function box(done) {
   c.fillRect(new Rect(0, 0, b, n)); c.fillRect(new Rect(n - b, 0, b, n));
   return c.getImage();
 }
-// 취소선: 글자 칸 배경으로 깔리는 빨간 가로줄
-function strike() {
-  const c = new DrawContext();
-  c.size = new Size(40, 40); c.opaque = false; c.respectScreenScale = true;
-  c.setFillColor(RED); c.fillRect(new Rect(0, 19, 40, 6));
-  return c.getImage();
-}
-const BOX = [box(false), box(true)], STRIKE = strike();
+const BOX = [box(false), box(true)];
 
-function item(stack, t, size) {
+// 글자 폭 어림 (굵은 시스템 글꼴 기준, 글자 크기 1 당)
+function textW(str, size) {
+  let w = 0;
+  for (const ch of str) {
+    if (/[\uAC00-\uD7A3\u3130-\u318F]/.test(ch)) w += 0.93;
+    else if (/[0-9]/.test(ch)) w += 0.6;
+    else if (/[A-Z]/.test(ch)) w += 0.68;
+    else if (/[a-z]/.test(ch)) w += 0.56;
+    else if (ch === ' ') w += 0.26;
+    else if (/[.,:;'!|]/.test(ch)) w += 0.28;
+    else w += 0.6;
+  }
+  return w * size;
+}
+// 완료한 일: 글자를 그림으로 그리고 그 위에 X와 같은 굵기의 빨간 줄
+function doneText(str, size, maxW) {
+  let s = str;
+  if (textW(s, size) > maxW) {
+    while (s.length > 1 && textW(s + '…', size) > maxW) s = s.slice(0, -1);
+    s += '…';
+  }
+  const w = Math.ceil(textW(s, size)) + 2, h = Math.ceil(size * 1.3);
+  const c = new DrawContext();
+  c.size = new Size(w, h); c.opaque = false; c.respectScreenScale = true;
+  c.setFont(Font.boldSystemFont(size)); c.setTextColor(INK);
+  c.drawTextInRect(s, new Rect(0, (h - size * 1.2) / 2, w + size * 2, size * 1.2));
+  const lw = 4.4 * size / 32;                      // 체크 칸 X 획과 같은 굵기
+  c.setFillColor(RED); c.fillRect(new Rect(0, h / 2 - lw / 2 + size * 0.04, w, lw));
+  return { img: c.getImage(), w, h };
+}
+
+function item(stack, t, size, maxW) {
   const row = stack.addStack();
   row.centerAlignContent();
   const ic = row.addImage(BOX[t.done ? 1 : 0]);
   ic.imageSize = new Size(size, size);
   row.addSpacer(9);
-  const wrap = row.addStack();
-  if (t.done) wrap.backgroundImage = STRIKE;
-  const tx = wrap.addText(t.text);
+  if (t.done) {
+    const d = doneText(t.text, size, maxW);
+    const im = row.addImage(d.img);
+    im.imageSize = new Size(d.w, d.h);
+    return;
+  }
+  const tx = row.addText(t.text);
   tx.font = Font.boldSystemFont(size);
   tx.textColor = INK;
   tx.lineLimit = 1;
@@ -98,10 +126,10 @@ function header(stack, list, fam) {
   top.centerAlignContent();
   const box = top.addStack();
   box.backgroundColor = INK;
-  box.setPadding(3, 8, 3, 8);
+  box.setPadding(4, 10, 4, 10);
   const left = list ? list.filter((t) => !t.done).length : null;
   const lb = box.addText(left == null ? 'TODAY' : `TODAY ${left}`);
-  lb.font = Font.boldMonospacedSystemFont(13);
+  lb.font = Font.boldMonospacedSystemFont(17);
   lb.textColor = PAPER;
 }
 
@@ -140,7 +168,7 @@ function build(list, err) {
   let more = 0;
   if (items.length > slots) { more = items.length - (slots - 1); items = items.slice(0, slots - 1); }
 
-  const cells = [(c) => header(c, list, fam), ...items.map((t) => (c) => item(c, t, size))];
+  const cells = [(c) => header(c, list, fam), ...items.map((t) => (c) => item(c, t, size, (cols > 1 ? 138 : 130) - size - 9))];
   if (more) cells.push((c) => { const m = c.addText(`+ ${more}`); m.font = Font.boldMonospacedSystemFont(size); m.textColor = INK; });
 
   const body = w.addStack();
