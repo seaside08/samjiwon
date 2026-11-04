@@ -53,69 +53,84 @@ async function todos(tk) {
   return r.loadJSON();
 }
 
+function item(stack, t, size) {
+  const row = stack.addStack();
+  row.centerAlignContent();
+  const ic = row.addImage(SFSymbol.named(t.done ? 'xmark.square' : 'square').image);
+  ic.imageSize = new Size(size + 2, size + 2);
+  ic.tintColor = t.done ? RED : INK;
+  row.addSpacer(9);
+  const tx = row.addText(t.text);
+  tx.font = Font.boldSystemFont(size);
+  tx.textColor = INK;
+  tx.lineLimit = 1;
+  tx.minimumScaleFactor = 0.8;
+}
+
+function header(stack, list, fam) {
+  const top = stack.addStack();
+  top.centerAlignContent();
+  const box = top.addStack();
+  box.backgroundColor = INK;
+  box.setPadding(3, 8, 3, 8);
+  const lb = box.addText('TODAY');
+  lb.font = Font.boldMonospacedSystemFont(13);
+  lb.textColor = PAPER;
+  if (list) {
+    top.addSpacer(8);
+    const done = list.filter((t) => t.done).length;
+    const c = top.addText(`[ ${done} / ${list.length} ]`);
+    c.font = Font.boldMonospacedSystemFont(13);
+    c.textColor = RED;
+  }
+}
+
+// 한 열: 위에서부터 고른 간격으로
+function column(stack, rows, width, gap) {
+  const col = stack.addStack();
+  col.layoutVertically();
+  col.spacing = gap;
+  if (width) col.size = new Size(width, 0);
+  rows.forEach((fn) => fn(col));
+  return col;
+}
+
 function build(list, err) {
   const w = new ListWidget();
   w.backgroundColor = PAPER;
   w.url = SITE;
-  w.setPadding(14, 14, 12, 14);
   w.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
-
   const fam = config.widgetFamily || 'medium';
-  const max = fam === 'small' ? 4 : fam === 'large' ? 11 : 4;
+  w.setPadding(16, 18, 16, 18);
 
-  const top = w.addStack();
-  top.centerAlignContent();
-  const box = top.addStack();
-  box.backgroundColor = INK;
-  box.setPadding(3, 7, 3, 7);
-  const lb = box.addText(fam === 'small' ? 'TODAY' : 'TODAY / 오늘 할 일');
-  lb.font = Font.boldMonospacedSystemFont(11);
-  lb.textColor = PAPER;
-  top.addSpacer(8);
-  if (list) {
-    const done = list.filter((t) => t.done).length;
-    const c = top.addText(`[ ${done} / ${list.length} ]`);
-    c.font = Font.boldMonospacedSystemFont(12);
-    c.textColor = RED;
-  }
-  top.addSpacer();
-  if (fam !== 'small') {
-    const d = top.addText(`${pad(now.getMonth() + 1)}. ${pad(now.getDate())} ${WD[now.getDay()]}`);
-    d.font = Font.boldMonospacedSystemFont(11);
-    d.textColor = INK;
-  }
-  w.addSpacer(9);
-
-  if (err) {
-    const t = w.addText(err);
+  if (err || !list) {
+    header(w, null, fam);
+    w.addSpacer(10);
+    const t = w.addText(err || '');
     t.font = Font.boldSystemFont(12); t.textColor = RED;
-  } else {
-    for (const t of list.slice(0, max)) {
-      const row = w.addStack();
-      row.centerAlignContent();
-      const ic = row.addImage(SFSymbol.named(t.done ? 'xmark.square' : 'square').image);
-      ic.imageSize = new Size(13, 13);
-      ic.tintColor = t.done ? RED : INK;
-      row.addSpacer(7);
-      const tx = row.addText(t.text);
-      tx.font = Font.boldSystemFont(fam === 'small' ? 12 : 13);
-      tx.textColor = INK;
-      tx.lineLimit = 1;
-      if (t.tag && fam !== 'small') {
-        row.addSpacer();
-        const tg = row.addText(`#${t.tag}`);
-        tg.font = Font.boldSystemFont(10);
-        tg.textColor = new Color('#1f8f47');
-        tg.lineLimit = 1;
-      }
-      w.addSpacer(5);
-    }
-    if (list.length > max) {
-      const more = w.addText(`+ ${list.length - max}`);
-      more.font = Font.boldMonospacedSystemFont(11); more.textColor = INK;
-    }
+    w.addSpacer();
+    return w;
   }
-  w.addSpacer();
+
+  const size = fam === 'small' ? 13 : 15;
+  const perCol = fam === 'large' ? 10 : 4;      // 머리 줄 포함 한 줄 수
+  const cols = fam === 'small' ? 1 : 2;
+  const slots = perCol * cols - 1;               // 머리 줄 한 칸 빼고
+  let items = list.slice();
+  let more = 0;
+  if (items.length > slots) { more = items.length - (slots - 1); items = items.slice(0, slots - 1); }
+
+  const cells = [(c) => header(c, list, fam), ...items.map((t) => (c) => item(c, t, size))];
+  if (more) cells.push((c) => { const m = c.addText(`+ ${more}`); m.font = Font.boldMonospacedSystemFont(size); m.textColor = INK; });
+
+  const body = w.addStack();
+  for (let k = 0; k < cols; k++) {
+    const part = cells.slice(k * perCol, (k + 1) * perCol);
+    if (!part.length) break;
+    if (k) body.addSpacer(14);
+    column(body, part, cols > 1 ? 138 : 0, fam === 'large' ? 12 : 13);
+  }
+  body.addSpacer();
   return w;
 }
 
