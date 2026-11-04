@@ -381,7 +381,6 @@ function viewMonth() {
             ? `<span class="bar riso2">${esc(e.title)}</span>`
             : `<span class="ln"><em class="tm">${hm(e.start_min)} </em>${esc(e.title)}</span>`).join('')}
         ${Object.entries(sessOf(ds).reduce((a, s) => { const k = sessLabel(s); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v]) => `<span class="ln">${esc(k)} ${dur(v)}</span>`).join('')}
-        ${todos.length ? `<span class="ln red">[ ${done} / ${todos.length} ]</span>` : ''}
       </div>`;
     }
     grid += '</div>';
