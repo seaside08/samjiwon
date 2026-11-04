@@ -72,7 +72,7 @@ function widgetSize(fam) {
 
 // ───────── 달력 그리기
 function draw(size, data, tex, fam) {
-  const { events, todos } = data;
+  const { events } = data;
   const W = size.width, H = size.height, P = 14;
   const c = new DrawContext();
   c.size = size; c.opaque = true; c.respectScreenScale = true;
@@ -91,20 +91,18 @@ function draw(size, data, tex, fam) {
   const rows = Math.ceil((first.getDay() + last) / 7);
 
   // 머리
-  text(`${y0}. ${pad(m0 + 1)}`, P, P - 3, 160, 24, Font.boldMonospacedSystemFont(19));
+  text(`${y0}. ${pad(m0 + 1)}`, P, P - 3, 160, 22, Font.boldMonospacedSystemFont(17));
   const workDays = new Set(events.filter((e) => e.kind === 'work' && e.day.startsWith(`${y0}-${pad(m0 + 1)}`)).map((e) => e.day)).size;
-  text(`근무 ${workDays}일`, W - P - 120, P + 1, 120, 16, Font.boldMonospacedSystemFont(10), INK, 'right');
+  text(`근무 ${workDays}일`, W - P - 120, P, 120, 16, Font.boldMonospacedSystemFont(10), INK, 'right');
 
   // 요일
-  const top = P + 30, cw = (W - P * 2) / 7;
+  const top = P + 25, cw = (W - P * 2) / 7;
   WD.forEach((d, i) => text(d, P + i * cw + 3, top, cw, 12, Font.boldMonospacedSystemFont(7.5)));
 
-  const gy = top + 14, LW = 0.8;
+  const gy = top + 12, LW = 0.8;
   const ch = (H - P + 2 - gy) / rows;
   const byDay = {};
   for (const e of events) (byDay[e.day] ||= []).push(e);
-  const todoBy = {};
-  for (const t of todos) { const x = (todoBy[t.day] ||= [0, 0]); x[1]++; if (t.done) x[0]++; }
 
   for (let r = 0; r < rows; r++) {
     const ry = gy + r * ch;
@@ -116,26 +114,22 @@ function draw(size, data, tex, fam) {
       // 날짜
       const num = String(d.getDate());
       if (ds === today) {
-        const bw = num.length * 7.2 + 6;
-        c.setFillColor(INK); c.fillRect(new Rect(x + 3, ry + 3, bw, 14));
-        text(num, x + 6, ry + 3, bw, 14, Font.boldMonospacedSystemFont(11), PAPER);
+        const bw = num.length * 5.6 + 5;
+        c.setFillColor(INK); c.fillRect(new Rect(x + 2.5, ry + 2.5, bw, 11));
+        text(num, x + 5, ry + 2.5, bw, 11, Font.boldMonospacedSystemFont(8.5), PAPER);
       } else {
-        text(num, x + 4, ry + 3, cw, 14, inM ? Font.boldMonospacedSystemFont(11) : Font.regularMonospacedSystemFont(11));
+        text(num, x + 4, ry + 2.5, cw, 11, inM ? Font.boldMonospacedSystemFont(8.5) : Font.regularMonospacedSystemFont(8.5));
       }
       // 내용
-      const lh = 9.6, maxL = Math.floor((ch - 20) / lh);
+      const lh = 9, maxL = Math.floor((ch - 15) / lh);
       const evs = (byDay[ds] || []).sort((a, b) => (a.kind === 'work' ? -1 : 0) - (b.kind === 'work' ? -1 : 0) || (a.start_min ?? -1) - (b.start_min ?? -1));
       const lines = evs.map((e) => ({ e }));
-      const td = todoBy[ds];
-      if (td) lines.push({ todo: td });
-      let ly = ry + 19;
+      let ly = ry + 14.5;
       const f = Font.boldSystemFont(7.5);
       for (let i = 0; i < Math.min(maxL, lines.length); i++) {
         const L = lines[i];
         if (i === maxL - 1 && lines.length > maxL) { text(`+${lines.length - i}`, x + 4, ly, cw - 5, lh, Font.boldMonospacedSystemFont(7.5)); break; }
-        if (L.todo) {
-          text(`[${L.todo[0]}/${L.todo[1]}]`, x + 4, ly, cw - 5, lh, Font.boldMonospacedSystemFont(7.5), RED);
-        } else if (L.e.kind === 'work') {
+        if (L.e.kind === 'work') {
           c.setFillColor(INK); c.fillRect(new Rect(x + 4, ly + 2.6, 4.2, 4.2));
           text(SHORT[L.e.place] || L.e.title, x + 10, ly, cw - 11, lh, f);
         } else if (L.e.start_min == null) {
@@ -164,12 +158,11 @@ async function main() {
     const tk = await token();
     const y = now.getFullYear(), m = now.getMonth();
     const from = ymd(new Date(y, m, 1 - new Date(y, m, 1).getDay())), to = ymd(new Date(y, m + 1, 14));
-    const [events, todos, tex] = await Promise.all([
+    const [events, tex] = await Promise.all([
       get(tk, `events?select=day,start_min,title,kind,place&day=gte.${from}&day=lte.${to}`),
-      get(tk, `todos?select=day,done&day=gte.${from}&day=lte.${to}`),
       texture(),
     ]);
-    w.backgroundImage = draw(widgetSize(fam), { events, todos }, tex, fam);
+    w.backgroundImage = draw(widgetSize(fam), { events }, tex, fam);
   } catch (e) {
     const t = w.addText(e.message);
     t.font = Font.boldSystemFont(12); t.textColor = RED;
