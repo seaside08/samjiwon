@@ -115,9 +115,85 @@ nav.tabs a.on{padding:3px 10px;margin-right:-10px;transform:rotate(-1.5deg)}
 
 /* 근무 */
 .mr{display:grid;grid-template-columns:minmax(0,1fr) 84px 104px 60px;column-gap:12px;align-items:baseline;border-top:1.5px solid var(--ink);padding:10px 0 11px;cursor:pointer}
+.hd2{font-size:12px;border-top:0!important;padding:0 0 6px!important;cursor:default!important}
+.hd2 .r{font-size:12px}
 .mr.hd2{font-size:12px;border-top:0;padding:0 0 6px;cursor:default}
 .mr.hd2 .r{font-size:12px}
 .mr .nm{font-size:19px}
 .mr .sub{font-size:13px;margin-top:5px;line-height:1.25}
 .r{text-align:right;font-size:15px}
 .kv{display:flex;justify-content:space-between}
+
+.mu{color:#6a6a66}
+.ul{border-bottom:2.5px solid var(--ink);padding:2px 0;font-size:14px;align-self:flex-start}
+.lk{align-self:flex-start;margin-top:14px;font-size:13px}
+.lb{font-size:13px;margin-top:12px;cursor:pointer}
+.side [data-act="pf"],.side [data-act="pl-name"],.side [data-act="pl-int"]{cursor:text}
+textarea.edit{font:inherit;font-size:14px;line-height:1.4;resize:none;border:1.5px solid var(--ink);padding:4px 6px}
+
+/* 오늘 · 작업 중 */
+.nw{margin-top:18px;display:flex;flex-direction:column;gap:6px}
+.nw.idle{gap:8px}
+.nw.idle .ul{font-size:14px}
+.big-t{font-weight:600;font-size:48px;line-height:1;letter-spacing:.02em}
+
+/* 프로젝트 */
+.pr{display:grid;grid-template-columns:minmax(0,1fr) 92px 104px;column-gap:12px;align-items:baseline;border-top:1.5px solid var(--ink);padding:10px 0 11px;cursor:pointer}
+.pr.last{border-bottom:1.5px solid var(--ink)}
+.pr .nm{font-size:19px}
+.pr .st{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;margin-top:5px}
+.dn{text-decoration:line-through;text-decoration-color:var(--red);text-decoration-thickness:2.5px}
+.cur{border-bottom:2.5px solid var(--ink)}
+.scroll{overflow-y:auto;min-height:0;flex-shrink:1}
+.lnk{color:var(--ink);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;word-break:break-all;font-size:14px}
+.note{margin:0;font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR','Noto Sans CJK KR',sans-serif;font-size:14px;font-weight:600;line-height:1.4;word-break:keep-all;white-space:pre-wrap}
+.acts{display:flex;gap:14px;margin-top:14px}
+.acts .ul{font-size:13px}
+
+/* 기록 */
+.strip{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);padding:7px 0}
+.dlb{font-size:13px;width:30px;flex:none}
+.vowtx{font-size:19px;padding:0 4px;margin-left:-4px;min-width:240px}
+.diary{margin:0;flex-grow:1;align-self:stretch;overflow-y:auto;font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR','Noto Sans CJK KR',sans-serif;font-size:16px;line-height:1.45;word-spacing:-.04em;word-break:keep-all;white-space:pre-wrap;max-width:600px;min-height:200px}
+.ent{display:flex;flex-direction:column;gap:3px;border-top:1.5px solid var(--ink);padding:7px 0 8px;font-size:13px;cursor:pointer}
+.ent.last{border-bottom:1.5px solid var(--ink)}
+
+/* 식물 */
+.tl-hd,.tl-row{display:grid;grid-template-columns:150px repeat(28,minmax(0,1fr));align-items:center;position:relative}
+.tl-hd{font-size:11px;padding-bottom:6px}
+.tl-row{border-top:1.5px solid var(--ink);height:40px}
+.tl-row:last-child{border-bottom:1.5px solid var(--ink)}
+.tl-row .nm{display:flex;flex-direction:column;gap:2px;min-width:0;cursor:pointer}
+.tl-row .nm b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-row .nm small{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-row.sel .nm b{text-decoration:underline;text-decoration-thickness:2.5px;text-underline-offset:3px}
+.tl-row i{display:block;width:12px;height:12px;box-sizing:border-box;margin:0 auto;position:relative;cursor:pointer}
+.tl-row i::before{content:"";position:absolute;inset:-14px -4px}
+.tl-row i.w{border:1.5px solid var(--ink)}
+.tl-row i.m::after{content:"";position:absolute;right:-5px;top:-6px;width:6px;height:6px;border-radius:50%;background:var(--ink)}
+.tl-row i.on{outline:2px solid var(--red);outline-offset:2px}
+.tday{position:relative;text-align:center}
+.tday i{position:absolute;left:50%;bottom:-5px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--red)}
+.pop{position:absolute;bottom:34px;z-index:2;background:var(--paper);border:1.5px solid var(--ink);padding:6px 8px;width:168px;font-size:12px;line-height:1.3;display:flex;flex-direction:column;gap:3px}
+.pop span{font-weight:600}
+.pmemo{width:100%;box-sizing:border-box;border:0;border-bottom:3px solid var(--ink);background:transparent;font-size:14px;padding:4px 0}
+.gr{display:grid;grid-template-columns:200px minmax(0,1fr) 60px;gap:12px;align-items:baseline;border-top:1.5px solid var(--ink);padding:9px 0;font-size:14px;cursor:pointer}
+.gr b{font-size:17px}
+.gr.last{border-bottom:1.5px solid var(--ink)}
+
+/* 통계 */
+.big{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)}
+.big div{padding:8px 0 9px;display:flex;flex-direction:column;gap:4px}
+.big div+div{border-left:1.5px solid var(--ink);padding-left:10px}
+.big b{font-size:30px;letter-spacing:-.01em}
+.big span{font-size:12px}
+.chart{display:flex;align-items:flex-end;gap:3px;height:150px;border-bottom:1.5px solid var(--ink)}
+.dy{flex:1 1 0;display:flex;flex-direction:column;justify-content:flex-end;position:relative;height:100%;cursor:pointer}
+.dy i{display:block}
+.jb{background:var(--ink)}
+.dy span{position:absolute;bottom:-17px;left:0;font-size:11px}
+.dy.sel::after{content:"";position:absolute;left:50%;bottom:-30px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:var(--red)}
+.hb{display:flex;align-items:flex-end;gap:3px;height:62px;border-bottom:1.5px solid var(--ink)}
+.hb i{flex:1 1 0;display:block}
+.pb{display:grid;grid-template-columns:110px minmax(0,1fr) 44px;column-gap:10px;align-items:center;font-size:13px}
+.pb i{display:block;height:12px}
