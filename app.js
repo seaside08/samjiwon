@@ -198,7 +198,7 @@ async function load() {
 }
 function plantRange() {
   const e = parseYmd(S.plantEnd), t = new Date();
-  return [ymd(new Date(Math.min(+addDays(e, -27), +addDays(t, -150)))), ymd(new Date(Math.max(+e, +t)))];
+  return [ymd(new Date(Math.min(+addDays(e, -28), +addDays(t, -150)))), ymd(new Date(Math.max(+addDays(e, 28), +t)))];
 }
 function ensureLoaded() {
   const [from, to] = wantedRange(), [lf, lt] = plantRange();
@@ -421,7 +421,7 @@ function viewMonth() {
     for (let c = 0; c < 7; c++) {
       const d = addDays(gs, r * 7 + c), ds = ymd(d), inMonth = d.getMonth() === mo;
       const evs = eventsOf(ds), todos = todosOf(ds), done = todos.filter((t) => t.done).length;
-      const cls = ds === today ? 'now' : (ds === S.sel ? 'riso3' : '') + (inMonth ? '' : ' dim');
+      const cls = ds === today ? 'now' : (ds === S.sel ? 'pick' : '') + (inMonth ? '' : ' dim');
       grid += `<div class="cell" data-act="sel" data-day="${ds}"><b class="${cls}">${d.getDate()}</b>
         ${evs.map((e, i) => e.kind === 'work'
           ? `<span class="ln">${workCode(e.start_min)} ${esc(wpOf(e)?.short || e.title)}</span>`
@@ -490,7 +490,7 @@ function viewWeek() {
   });
   const heads = days.map((d) => {
     const ds = ymd(d);
-    return `<span class="dh" data-act="sel" data-day="${ds}">${WD_EN[d.getDay()]} <span class="n ${ds === today ? 'now' : ds === S.sel ? 'riso3' : ''}">${pad(d.getDate())}</span></span>`;
+    return `<span class="dh" data-act="sel" data-day="${ds}">${WD_EN[d.getDay()]} <span class="n ${ds === today ? 'now' : ds === S.sel ? 'pick' : ''}">${pad(d.getDate())}</span></span>`;
   });
   const hours = [10, 12, 14, 16, 18, 20, 22].map((h, i) => `<span style="top:${4 + i * 80}px">${h}</span>`).join('');
   return `${header(`이번 주 작업 ${dur(weekSess)} &#183; 근무 ${dur(weekWork)}`)}
@@ -1125,7 +1125,7 @@ function viewPlants() {
     <div class="main">
       <section class="left">
         <div class="row"><span class="bk">추억의 전당</span><span style="font-size:15px">[ ${gone.length} ]</span></div>
-        ${gone.map((p, i) => `<div class="gr${i === gone.length - 1 ? ' last' : ''}" data-act="plant" data-id="${p.id}"><b class="${p === sel ? 'riso-hl' : ''}" style="padding:0 3px;margin-left:-3px">${esc(p.name)}</b><span>${esc(p.species || '')}</span><span>${p.gone_day ? md(p.gone_day) : ''}</span></div>`).join('')}
+        ${gone.map((p, i) => `<div class="gr${i === gone.length - 1 ? ' last' : ''}" data-act="plant" data-id="${p.id}"><b class="${p === sel ? 'pick' : ''}" style="padding:0 4px;margin-left:-4px">${esc(p.name)}</b><span>${esc(p.species || '')}</span><span>${p.gone_day ? md(p.gone_day) : ''}</span></div>`).join('')}
         <button class="lk" data-act="plant-gone">&#8592; 함께 사는 식물</button>
       </section>
       <section class="side">${sel ? `<span class="bk" style="margin-bottom:8px">${esc(sel.name)}</span><span style="font-size:13px">${esc(sel.species || '')}</span>
@@ -1133,7 +1133,8 @@ function viewPlants() {
     </div>`;
   }
   const N = PHONE ? 14 : 28;
-  const end = parseYmd(S.plantEnd), start = addDays(end, -(N - 1));
+  // 가운데 날(S.plantEnd)이 표 한가운데 오도록
+  const start = addDays(parseYmd(S.plantEnd), -Math.floor(N / 2)), end = addDays(start, N - 1);
   const days = [...Array(N)].map((_, i) => ymd(addDays(start, i)));
   const sel = alive.find((p) => p.id === S.plant) || alive[0];
   const selDay = days.includes(S.plantDay) || S.plantDay === today ? S.plantDay : today;
@@ -1153,7 +1154,7 @@ function viewPlants() {
       const l = logOf(p.id, selDay), idx = days.indexOf(selDay);
       if (l?.memo && idx >= 0) pop = `<div class="pop" style="left:calc(var(--nw) + (100% - var(--nw)) * ${idx} / ${N} - ${idx > N / 2 ? 160 : -10}px)"><b>${md(selDay)} ${WD_EN[parseYmd(selDay).getDay()]}</b><span>${esc(l.memo)}</span></div>`;
     }
-    return `<div class="tl-row${p === sel ? ' sel' : ''}" style="--n:${N}"><span class="nm" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b><small>${esc(p.species || '')}</small></span>${cells}${pop}</div>`;
+    return `<div class="tl-row${p === sel ? ' sel' : ''}" style="--n:${N}"><span class="nm" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b></span>${cells}${pop}</div>`;
   }).join('');
   let side = '<section class="side"></section>';
   if (sel) {
@@ -1180,7 +1181,7 @@ function viewPlants() {
         <button aria-label="식물 추가" data-act="plant-add" style="font-size:20px;padding:0 2px;margin-left:8px">+</button></div>
       ${S.plantAdd ? addForm('plant', '식물 추가', 'width:60%;margin:-4px 0 10px') : ''}
       <div class="tlg">
-        <div class="tl-hd" style="--n:${N}"><span>이름 &#183; 종류</span>${hd}</div>
+        <div class="tl-hd" style="--n:${N}"><span>이름</span>${hd}</div>
         ${rows}
       </div>
       <button class="lk" data-act="plant-gone">추억의 전당 [ ${gone.length} ] &#8594;</button>

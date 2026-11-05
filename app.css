@@ -165,9 +165,10 @@ textarea.edit{font:inherit;font-size:14px;line-height:1.4;resize:none;border:1.5
 .tl-row{border-top:1.5px solid var(--ink);height:40px}
 .tl-row:last-child{border-bottom:1.5px solid var(--ink)}
 .tl-row .nm{display:flex;flex-direction:column;gap:2px;min-width:0;cursor:pointer}
-.tl-row .nm b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-row .nm{align-items:flex-start}
+.tl-row .nm b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:1px 4px;margin-left:-4px}
 .tl-row .nm small{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tl-row.sel .nm b{text-decoration:underline;text-decoration-thickness:2.5px;text-underline-offset:3px}
+.tl-row.sel .nm b{background:var(--ink);color:var(--paper)}
 .tl-row i{display:block;width:12px;height:12px;box-sizing:border-box;margin:0 auto;position:relative;cursor:pointer}
 .tl-row i::before{content:"";position:absolute;inset:-14px -4px}
 .tl-row i.w{border:1.5px solid var(--ink)}
@@ -259,7 +260,7 @@ body.phone .row{flex-wrap:wrap;row-gap:8px}
 body.phone .diary{min-height:260px;font-size:17px}
 /* 식물 */
 body.phone .tlg{--nw:96px}
-body.phone .tl-row .nm b{font-size:13px}
+body.phone .tl-row .nm b{font-size:14px}
 body.phone .tl-row i{width:11px;height:11px}
 /* 통계 */
 body.phone .big{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -334,3 +335,4 @@ body.phone .sheet{position:fixed;left:16px;right:16px;top:50%;bottom:auto;transf
 .cell b:not(.now){margin-top:-1px;margin-bottom:7px}
 body.phone .cell b.now{margin:-4px -3px 1px;padding:3px 3px 2px}
 body.phone .cell b:not(.now){margin-top:-1px;margin-bottom:3px}
+.pick{background:var(--ink);color:var(--paper)}
