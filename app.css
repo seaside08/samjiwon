@@ -357,7 +357,4 @@ body.phone .cell b:not(.now){margin-top:-1px;margin-bottom:3px}
 body.phone .plist{width:auto}
 body.phone .pv{grid-template-columns:90px minmax(0,1fr);gap:10px}
 .live{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--red);margin-right:7px;vertical-align:1px}
-.pl .live{position:absolute;left:-18px;top:50%;margin:-4.5px 0 0}
-body.phone .pl .live{left:-15px;width:7px;height:7px;margin-top:-3.5px}
-.plist .scroll{margin-left:-22px;padding-left:22px}
-body.phone .plist .scroll{margin-left:-18px;padding-left:18px}
+.pl .live{margin:0 0 0 8px;vertical-align:2px}
