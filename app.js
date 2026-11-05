@@ -8,6 +8,8 @@ const WORKPLACES = [
   { name: '언더워터', short: '워터', keys: ['언더워터', '워터'], shifts: { 1: [1020, 1350], 2: [1020, 1350] }, rate: 10320, payday: 10 },
   { name: '라운지돌돌', short: '돌돌', keys: ['라운지돌돌', '라운지', '돌돌'], shifts: { 4: [930, 1170], 5: [630, 1050] }, rate: 11000, payday: 25, juhu: true, holiday: '월요일' },
   { name: '다락', short: '다락', keys: ['다락'], shifts: { 6: [660, 840], 0: [660, 840] }, rate: 11000, payday: 0 }, // 0 = 말일
+  // 보관함 (지금은 가지 않는 근무지)
+  { name: '연우재', short: '연우재', keys: ['연우재'], shifts: { 1: [630, 870], 2: [630, 870], 3: [630, 870], 4: [630, 870], 5: [630, 870] }, rate: 11000, payday: null, archived: true },
 ];
 
 const TABS = [
@@ -394,7 +396,7 @@ function daySide() {
     ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))} ~${hm(minOfDay(s.end_at))}</span></div>`).join('')}
     <div class="kinds">${KINDS.map(([k, l]) => `<button data-act="ak" data-k="${k}" class="${S.addKind === k ? 'riso3' : ''}">${l}</button>`).join('')}</div>
     ${S.addKind === 'task' ? `<div class="opts">${activeProjects().map((p, i) => `<button data-act="ap" data-id="${p.id}" class="${(S.addProj ? S.addProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('') || '<span class="mu">진행 중인 프로젝트 없음</span>'}</div>` : ''}
-    ${S.addKind === 'work' ? `<div class="opts">${WORKPLACES.map((w, i) => `<button data-act="aw" data-n="${w.name}" class="${(S.addWp ? S.addWp === w.name : i === 0) ? 'on' : ''}">${w.name}</button>`).join('')}</div>` : ''}
+    ${S.addKind === 'work' ? `<div class="opts">${WORKPLACES.filter((w) => !w.archived).map((w, i) => `<button data-act="aw" data-n="${w.name}" class="${(S.addWp ? S.addWp === w.name : i === 0) ? 'on' : ''}">${w.name}</button>`).join('')}</div>` : ''}
     ${addForm('event', '일정 추가', 'margin-top:2px')}
     <span class="lbl red">할 일 [ ${done} / ${todos.length} ]</span>
     <div class="todos">${todos.map(todoRow).join('')}</div>
@@ -508,7 +510,7 @@ function viewWeek() {
 // ───────── 근무
 const won = (n) => Math.round(n).toLocaleString('ko-KR');
 const KDAY = ['일', '월', '화', '수', '목', '금', '토'];
-const paydayLabel = (w) => (w.payday ? `${w.payday}일` : '말일');
+const paydayLabel = (w) => (w.payday == null ? '&#8212;' : w.payday ? `${w.payday}일` : '말일');
 function routineLabel(w) {
   const groups = {};
   for (const [d, [a, b]] of Object.entries(w.shifts)) (groups[`${a}-${b}`] ||= { a, b, days: [] }).days.push(+d);
@@ -536,25 +538,30 @@ function workStats(w, until) {
 
 function viewWork() {
   const m = S.month, mo = m.getMonth(), today = todayStr();
-  const sel = WORKPLACES.find((w) => w.name === S.wp) || WORKPLACES[0];
-  const all = WORKPLACES.map((w) => ({ w, s: workStats(w), sofar: workStats(w, today) }));
-  const sum = all.reduce((a, r) => ({ mins: a.mins + r.s.mins, total: a.total + r.s.total, sofar: a.sofar + r.sofar.total }), { mins: 0, total: 0, sofar: 0 });
-  const cur = all.find((r) => r.w === sel).s;
+  const every = WORKPLACES.map((w) => ({ w, s: workStats(w), sofar: workStats(w, today) }));
+  const sum = every.reduce((a, r) => ({ mins: a.mins + r.s.mins, total: a.total + r.s.total, sofar: a.sofar + r.sofar.total }), { mins: 0, total: 0, sofar: 0 });
+  // 보관함이 아니면: 다니는 곳 + 이 달에 기록이 있는 보관 근무지
+  const all = every.filter((r) => (S.wpArchive ? r.w.archived : !r.w.archived || r.s.mins > 0));
+  const nArch = WORKPLACES.filter((w) => w.archived).length;
+  const sel = (all.find((r) => r.w.name === S.wp) || all[0] || every[0]).w;
+  const cur = every.find((r) => r.w === sel).s;
+  const shown = all.reduce((a, r) => ({ mins: a.mins + r.s.mins, total: a.total + r.s.total }), { mins: 0, total: 0 });
   const isNow = m.getFullYear() === new Date().getFullYear() && mo === new Date().getMonth();
   const rows = all.map(({ w, s }) => `<div class="mr" data-act="wp" data-wp="${w.name}">
       <div style="display:flex;flex-direction:column"><span class="nm">${w === sel ? `<span class="riso-hl" style="padding:0 3px">${w.name}</span>` : w.name}</span>
-      <span class="sub">${routineLabel(w)} &#183; ${won(w.rate)}${w.juhu ? ' &#183; 주휴' : ''}</span></div>
+      <span class="sub">${w.archived ? '그만둔 곳 &#183; ' : ''}${routineLabel(w)} &#183; ${won(w.rate)}${w.juhu ? ' &#183; 주휴' : ''}</span></div>
       <span class="r">${dur(s.mins)}</span><span class="r">${won(s.total)}</span><span class="r">${paydayLabel(w)}</span></div>`).join('');
   return `${header(`${mo + 1}월 ${isNow ? `지금까지 ${won(sum.sofar)} &#183; ` : ''}예상 ${won(sum.total)}`)}
   <div class="main">
     <section class="left">
-      <div class="row"><span class="bk">WORK / 근무</span><span style="font-size:15px">[ ${WORKPLACES.length} ]</span>
+      <div class="row"><span class="bk">WORK / ${S.wpArchive ? '보관함' : '근무'}</span><span style="font-size:15px">[ ${all.length} ]</span>
         <span style="margin-left:auto;font-size:22px;letter-spacing:-.01em">${m.getFullYear()}. ${pad(mo + 1)}</span>
         <span class="arr" style="display:flex;gap:8px;margin-left:10px;font-size:15px"><button data-act="prev" aria-label="이전 달">&#8592;</button><button data-act="next" aria-label="다음 달">&#8594;</button></span></div>
       <div class="mr hd2"><span>근무지 &#183; 기본 근무</span><span class="r">시간</span><span class="r">세전</span><span class="r">지급</span></div>
       ${rows}
       <div class="mr" style="border-top:3px solid #141414;border-bottom:1.5px solid #141414;cursor:default">
-        <span class="nm">${mo + 1}월 합계</span><span class="r">${dur(sum.mins)}</span><span class="r">${won(sum.total)}</span><span class="r"></span></div>
+        <span class="nm">${mo + 1}월 합계</span><span class="r">${dur(shown.mins)}</span><span class="r">${won(shown.total)}</span><span class="r"></span></div>
+      <button class="lk" data-act="wp-archive">${S.wpArchive ? '&#8592; 다니는 곳' : `보관함 [ ${nArch} ] &#8594;`}</button>
     </section>
     <section class="side">
       <span class="bk" style="margin-bottom:8px">${sel.name}</span>
@@ -564,8 +571,8 @@ function viewWork() {
       ${sel.juhu ? `<div class="kv"><span>주휴수당</span><span>${won(cur.juhu)}</span></div><div class="kv" style="font-size:13px"><span>주휴일</span><span>${sel.holiday}</span></div>` : ''}
       <span style="margin-top:14px;font-size:13px">${mo + 1}월 세전</span>
       <span style="font-size:34px;letter-spacing:-.01em">${won(cur.total)}</span>
-      <span style="font-size:13px">매월 ${paydayLabel(sel)} 지급</span>
-      <button class="btn" style="margin-top:18px" data-act="fill" data-wp="${sel.name}">${mo + 1}월 기본 근무 채우기</button>
+      ${sel.payday === null ? '' : `<span style="font-size:13px">매월 ${paydayLabel(sel)} 지급</span>`}
+      ${sel.archived ? '' : `<button class="btn" style="margin-top:18px" data-act="fill" data-wp="${sel.name}">${mo + 1}월 기본 근무 채우기</button>`}
     </section>
   </div>`;
 }
@@ -817,6 +824,8 @@ board.addEventListener('click', async (e) => {
       S.sel = t >= ymd(S.week) && t <= ymd(addDays(S.week, 6)) ? t : ymd(S.week);
     }
     render(); ensureLoaded();
+  } else if (act === 'wp-archive') {
+    S.wpArchive = !S.wpArchive; S.wp = null; render();
   } else if (act === 'wp') {
     S.wp = el.dataset.wp; render();
   } else if (act === 'fill') {
