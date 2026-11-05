@@ -330,5 +330,7 @@ body.phone .sync{font-size:15px}
 body.phone .sh-bg{position:fixed}
 body.phone .sheet{position:fixed;left:16px;right:16px;top:50%;bottom:auto;transform:translateY(-50%);width:auto;max-height:80vh;padding:18px 20px 20px}
 /* 오늘: 날짜 줄을 칸 너비로 꽉 채운 검은 띠 */
-.cell b.now{align-self:stretch;margin:-6px -7px 3px;padding:4px 7px 4px}
+.cell b.now{align-self:stretch;margin:-6px -7px 3px;padding:5px 7px 4px}
+.cell b:not(.now){margin-top:-1px;margin-bottom:7px}
 body.phone .cell b.now{margin:-4px -3px 1px;padding:3px 3px 2px}
+body.phone .cell b:not(.now){margin-top:-1px;margin-bottom:3px}

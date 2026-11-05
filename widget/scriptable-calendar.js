@@ -130,7 +130,7 @@ function draw(size, data, tex, fam) {
         c.setFillColor(INK); c.fillRect(new Rect(x + (k ? LW / 2 : 0), ry, cw - (k ? LW / 2 : 0), 14.5));
         text(num, x + 4, ry + 1.5, cw, 12.5, Font.boldMonospacedSystemFont(9.5), PAPER);
       } else {
-        text(num, x + 4, ry + 2.5, cw, 12.5, inM ? Font.boldMonospacedSystemFont(9.5) : Font.regularMonospacedSystemFont(9.5));
+        text(num, x + 4, ry + 1.5, cw, 12.5, inM ? Font.boldMonospacedSystemFont(9.5) : Font.regularMonospacedSystemFont(9.5));
       }
       // 내용
       const lh = 9.6, maxL = Math.floor((ch - 16) / lh);
