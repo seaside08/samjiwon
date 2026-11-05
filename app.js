@@ -1028,7 +1028,7 @@ function viewProjects() {
       <span class="lb" data-act="pf" data-f="link">링크</span>${sel.link ? `<a class="lnk" href="${esc(/^https?:/.test(sel.link) ? sel.link : 'https://' + sel.link)}" target="_blank" rel="noopener">${esc(sel.link.replace(/^https?:\/\//, ''))}</a>` : '<span data-act="pf" data-f="link" class="mu">&#8212;</span>'}
       <span class="lb" data-act="pf" data-f="note">작가 노트</span><p class="note" data-act="pf" data-f="note">${sel.note ? esc(sel.note) : '<span class="mu">&#8212;</span>'}</p>
       ${sel.status === 'active'
-        ? `${r && r.project_id === sel.id ? '<button class="btn" style="margin-top:16px" data-act="stop">멈추고 기록</button>' : `<div style="margin-top:16px">${dialHTML(170, sel.id)}</div>`}
+        ? `${r && r.project_id === sel.id ? '<button class="btn" style="margin-top:16px" data-act="stop">멈추고 기록</button>' : `<button class="btn" style="margin-top:16px" data-act="log-open" data-id="${sel.id}">작업시간 기록하기</button>`}
            <div class="acts"><button class="ul" data-act="pstatus" data-s="done">완료</button><button class="ul" data-act="pstatus" data-s="archived">보관</button><button class="ul" data-act="pstatus" data-s="stopped">중단</button></div>`
         : `<div class="acts" style="margin-top:16px"><button class="ul" data-act="pstatus" data-s="active">다시 진행</button><button class="ul" data-act="pdel">삭제</button></div>`}
     </section>` : '<section class="side"></section>';
@@ -1265,7 +1265,9 @@ function handleMore(act, el, ev) {
   if (act === 'start') { if (S.sheet?.type === 'log') S.sheet = null; startWork(projOf(el.dataset.id || S.dialProj) || activeProjects()[0]); return true; }
   if (act === 'dial-p') { S.dialProj = el.dataset.id; render(true); return true; }
   if (act === 'dial-save') { dialSave(el.closest('.dialbox')?.dataset.proj).then((ok) => { if (ok && S.sheet?.type === 'log') closeSheet(); }); return true; }
-  if (act === 'log-open') { S.dialMin = 0; S.sheet = { type: 'log', mode: 'log' }; render(true); return true; }
+  if (act === 'log-open') { S.sheet = { type: 'log', mode: 'log', day: todayStr(), v: logVals(), proj: el.dataset.id || null }; render(true); return true; }
+  if (act === 'log-p') { S.sheet.proj = el.dataset.id; render(true); return true; }
+  if (act === 'log-save') { logSave(); return true; }
   if (act === 'dial-reset') { dialSet(0); return true; }
   if (act === 'stop') { const r = running(); if (r) stopWork(r); return true; }
   if (act === 'discard') { const r = running(); if (r) discardWork(r); return true; }
@@ -1401,14 +1403,33 @@ function wheelsHTML(v, { end = true } = {}) {
     ${end ? `<span class="wt${v.noEnd ? ' off' : ''}">~</span><div class="wgrp${v.noEnd ? ' off' : ''}"><div class="wrow">${wheel('eh', 24, 1, v.eh)}<span class="wc">:</span>${wheel('em', 12, 5, v.em)}</div></div>` : ''}
   </div>`;
 }
+// 작업시간 기록하기: 날짜 + 시작~끝 바퀴 + 프로젝트
+function logVals() {
+  const n = new Date(), e = Math.floor((n.getHours() * 60 + n.getMinutes()) / 5) * 5, st = Math.max(0, e - 60);
+  return { sh: Math.floor(st / 60), sm: st % 60, eh: Math.floor(e / 60), em: e % 60 };
+}
 function logSheetHTML() {
-  const ap = activeProjects();
+  const ap = activeProjects(), sh = S.sheet;
+  const pid = sh.proj || S.dialProj || ap[0]?.id;
   return `<div class="sh-bg" data-act="sh-close"></div>
   <div class="sheet" role="dialog" aria-label="작업시간 기록하기">
-    <div class="sh-head"><span>작업시간 기록하기 &#183; ${dayLabel(todayStr())}</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
-    ${ap.length ? `<div class="opts" style="font-size:15px;gap:6px 14px;margin:4px 0 8px">${ap.map((p, i) => `<button data-act="dial-p" data-id="${p.id}" class="${(S.dialProj ? S.dialProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('')}</div>
-    <div class="logdial">${dialHTML(PHONE ? 220 : 200)}</div>` : '<span class="mu" style="font-size:14px">진행 중인 프로젝트가 없어요</span>'}
+    <div class="sh-head"><span>작업시간 기록하기</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
+    ${ap.length ? `<div class="opts" style="font-size:15px;gap:6px 14px;margin:2px 0 4px">${ap.map((p) => `<button data-act="log-p" data-id="${p.id}" class="${pid === p.id ? 'on' : ''}">${esc(p.name)}</button>`).join('')}</div>
+    <input type="date" class="sh-date log-date" value="${sh.day}">
+    ${wheelsHTML(sh.v)}
+    <div class="sh-acts"><button class="btn" data-act="log-save">기록</button></div>` : '<span class="mu" style="font-size:14px">진행 중인 프로젝트가 없어요</span>'}
   </div>`;
+}
+async function logSave() {
+  const sh = S.sheet, p = projOf(sh.proj || S.dialProj) || activeProjects()[0]; if (!p) return;
+  const day = board.querySelector('.log-date')?.value || sh.day, v = sh.v;
+  const a = v.sh * 60 + v.sm; let b = v.eh * 60 + v.em; if (b <= a) b += 1440;
+  const base = parseYmd(day), at = (mm) => new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, mm).toISOString();
+  const row = { project_id: p.id, title: p.name, day, start_at: at(a), end_at: at(b) };
+  const tmp = { id: 'tmp' + Date.now(), ...row };
+  S.sessions.push(tmp); S.dialProj = p.id; closeSheet();
+  toast(`${p.name} ${hm(a)}–${hm(b)} 기록했어요`);
+  try { Object.assign(tmp, await api.insert('sessions', row)); } catch (e) { fail(e); S.sessions = S.sessions.filter((x) => x !== tmp); render(); }
 }
 function sheetHTML() {
   const sh = S.sheet; if (!sh) return '';
