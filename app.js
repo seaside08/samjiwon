@@ -366,12 +366,14 @@ function viewToday() {
       ${addForm('todo', '할 일 추가', 'margin-top:14px;width:75%')}
     </section>
     <section class="today-side">
+      <div style="flex:2 1 0"></div>
       <div class="sched riso">
         <div class="h"><span>SCHEDULE</span></div>
         ${items.map((x) => x.h).join('')}
       </div>
       <span class="cap">오늘의 일정 ${evs.length} &#183; ${work ? '근무 ' + dur(work) : '근무 없음'}</span>
       ${now}
+      <div style="flex:1 1 0"></div>
       <div class="mini">작업 ${dur(sess)}<br>근무 ${dur(work)}<br>이번 주 작업 ${dur(weekSess)}</div>
     </section>
   </div>`;

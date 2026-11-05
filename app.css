@@ -62,7 +62,7 @@ nav.tabs a.on{padding:3px 10px;margin-right:-10px;transform:rotate(-1.5deg)}
 .sched .e .n{flex-grow:1}
 .sched .e .x{font-size:13px}
 .cap{align-self:flex-end;font-size:12px}
-.mini{margin-top:auto;align-self:flex-end;text-align:right;font-size:12px}
+.mini{align-self:flex-end;text-align:right;font-size:12px}
 
 /* 달력 공통 */
 .ctl{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}
