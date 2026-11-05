@@ -195,6 +195,7 @@ async function load() {
         pl.interval_days = -10; api.update('plants', pl.id, { interval_days: -10 }).catch(fail);
       }
       S.loaded = [from, to];
+      waterTodo();
       render();
     } catch (e) { fail(e); }
   })();
@@ -347,8 +348,6 @@ function viewToday() {
     ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="edit-event" data-id="${e.id}"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n">${esc(e.title)}</span><span class="x">${e.end_min != null ? '~' + hm(e.end_min) : ''}</span></div>` })),
     ...sessOf(day).map((s) => ({ k: minOfDay(s.start_at), h: `<div class="e"${s.end_at ? ` data-act="edit-sess" data-id="${s.id}"` : ''}><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))}</span><span class="x">${s.end_at ? '~' + hm(minOfDay(s.end_at)) : 'REC'}</span></div>` })),
   ].sort((a, b) => a.k - b.k);
-  const thirsty = S.plants.filter((p) => !p.gone && !logOf(p.id, day)?.watered && (plantStats(p).next || '9') <= day);
-  if (thirsty.length) items.unshift({ k: -2, h: `<div class="e" data-act="go-plants"><span class="t">물</span><span class="n">${esc(thirsty.map((p) => p.name).join(', '))}</span><span class="x"></span></div>` });
   const active = S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
   // 지금 하는 작업: 돌고 있는 기록 → 가장 최근 기록 → 진행 중 첫 프로젝트
   const lastS = S.sessions.slice().sort((a, b) => (a.start_at < b.start_at ? 1 : -1))[0];
@@ -795,6 +794,7 @@ board.addEventListener('click', async (e) => {
   if (act === 'toggle') {
     const t = S.todos.find((x) => x.id === el.closest('.todo').dataset.id); if (!t) return;
     t.done = !t.done; t.done_at = t.done ? new Date().toISOString() : null; render();
+    waterFromTodo(t);
     try { await api.update('todos', t.id, { done: t.done, done_at: t.done_at }); } catch (er) { fail(er); }
   } else if (act === 'edit-todo') {
     openSheet('todo', el.closest('.todo').dataset.id);
@@ -1124,6 +1124,27 @@ function plantStats(p) {
   } else if (lastW && p.interval_days) next = ymd(addDays(parseYmd(lastW), p.interval_days));
   return { lastW, lastM, next };
 }
+// 물 줄 날이 된 식물은 오늘 할 일에 '물 주기 · 이름들'로 넣기 (하루 한 번)
+const WATER = '물 주기 · ';
+async function waterTodo() {
+  const day = todayStr();
+  if (S.waterTodoDay === day || DEMO && S.waterTodoDay) return;
+  if (todosOf(day).some((t) => t.text.startsWith(WATER))) { S.waterTodoDay = day; return; }
+  const due = S.plants.filter((p) => !p.gone && !logOf(p.id, day)?.watered && (plantStats(p).next || '9') <= day);
+  if (!due.length) return;
+  S.waterTodoDay = day;
+  const row = { day, text: WATER + due.map((p) => p.name).join(', '), tag: '식물', pos: -1 };
+  try { S.todos.push(await api.insert('todos', row)); render(); } catch (e) { fail(e); }
+}
+// 그 할 일을 체크하면 적힌 식물들에 물 줬음 기록
+function waterFromTodo(t) {
+  if (!t.text.startsWith(WATER)) return;
+  for (const name of t.text.slice(WATER.length).split(', ')) {
+    const p = S.plants.find((x) => x.name === name && !x.gone);
+    if (p && !!logOf(p.id, t.day)?.watered !== t.done) saveLog(p, t.day, { watered: t.done });
+  }
+}
+
 // 물 주기 표시: 7 → 7일 / -10 → 매달 10일
 const waterLabel = (p) => (p.interval_days < 0 ? `매달 ${-p.interval_days}일` : p.interval_days ? `${p.interval_days}일` : '');
 const logOf = (pid, day) => S.plogs.find((l) => l.plant_id === pid && l.day === day);
@@ -1357,7 +1378,6 @@ function handleMore(act, el, ev) {
     });
     return true;
   }
-  if (act === 'go-plants') { location.hash = '#plants'; return true; }
   if (act === 'pl-int' && plant) {
     inlineEdit(el.lastElementChild, waterLabel(plant), async (v) => {
       const mo = v.match(/매달\s*(\d{1,2})/), n = parseInt(v, 10);
