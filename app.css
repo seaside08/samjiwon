@@ -374,3 +374,6 @@ body.phone .dh{align-items:center;padding-left:0}
 body.phone .wd{font-size:14px}
 .cell b{font-weight:600}
 .cell b.dim{font-weight:400}
+.cell b{font-size:16px}
+body.phone .cell b{font-size:13px}
+.wd{font-weight:900}
