@@ -147,7 +147,7 @@ function build(list, err) {
   const w = new ListWidget();
   w.backgroundColor = PAPER;
   w.url = SITE;
-  w.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
+  w.refreshAfterDate = new Date(Date.now() + 5 * 60 * 1000);   // 5분 뒤 새로 고침 요청 (실제 시각은 iOS가 정함)
   const fam = config.widgetFamily || 'medium';
   w.setPadding(16, 18, 16, 18);
 

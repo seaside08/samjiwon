@@ -126,9 +126,9 @@ function draw(size, data, tex, fam) {
       // 날짜
       const num = String(d.getDate());
       if (ds === today) {
-        const bw = num.length * 6.2 + 5;
-        c.setFillColor(INK); c.fillRect(new Rect(x + 2.5, ry + 2.5, bw, 12.5));
-        text(num, x + 5, ry + 2.5, bw, 12.5, Font.boldMonospacedSystemFont(9.5), PAPER);
+        // 오늘: 칸 너비로 꽉 찬 검은 띠
+        c.setFillColor(INK); c.fillRect(new Rect(x + (k ? LW / 2 : 0), ry, cw - (k ? LW / 2 : 0), 14.5));
+        text(num, x + 4, ry + 1.5, cw, 12.5, Font.boldMonospacedSystemFont(9.5), PAPER);
       } else {
         text(num, x + 4, ry + 2.5, cw, 12.5, inM ? Font.boldMonospacedSystemFont(9.5) : Font.regularMonospacedSystemFont(9.5));
       }
@@ -164,7 +164,7 @@ async function main() {
   w.url = SITE;
   w.setPadding(0, 0, 0, 0);
   w.backgroundColor = PAPER;
-  w.refreshAfterDate = new Date(Date.now() + 30 * 60 * 1000);
+  w.refreshAfterDate = new Date(Date.now() + 5 * 60 * 1000);   // 5분 뒤 새로 고침 요청 (실제 시각은 iOS가 정함)
   try {
     const tk = await token();
     const y = now.getFullYear(), m = now.getMonth();
