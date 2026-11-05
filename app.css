@@ -365,3 +365,7 @@ body.phone .pv{grid-template-columns:90px minmax(0,1fr);gap:10px}
 #clock{cursor:pointer}
 .sync[hidden]{display:none}
 #syncing{margin-left:-5px;padding:0}
+.wd span{text-align:center}
+.dh{justify-content:center;padding-left:0}
+body.phone .dh{align-items:center;padding-left:0}
+.hj{font-style:normal;font-size:.86em}

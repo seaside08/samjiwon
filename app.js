@@ -1077,7 +1077,7 @@ function viewDiary() {
     <section class="left" style="gap:14px">
       <div style="display:flex;align-items:center;gap:10px">
         <span class="bk">DIARY / 일기</span>
-        <span style="margin-left:18px;font-size:22px;letter-spacing:-.01em">${pad(mo + 1)}. ${pad(d.getDate())} ${WD_EN[d.getDay()]}</span>
+        <span style="margin-left:18px;font-size:22px;letter-spacing:-.01em">${pad(mo + 1)}. ${pad(d.getDate())} <i class="hj">${WD_EN[d.getDay()]}</i></span>
         <button data-act="prev" aria-label="이전 날" style="font-size:15px;padding:0 2px">&#8592;</button>
         <button data-act="next" aria-label="다음 날" style="font-size:15px;padding:0 2px">&#8594;</button>
         ${day !== todayStr() ? '<button class="ul" data-act="diary-today" style="margin-left:8px;font-size:13px">오늘</button>' : ''}
@@ -1093,7 +1093,7 @@ function viewDiary() {
     </section>
     <section class="side" style="gap:0">
       <span class="bk" style="margin-bottom:14px">지난 기록</span>
-      ${recent.map((r, i) => `<div class="ent${i === recent.length - 1 ? ' last' : ''}" data-act="diary-go" data-day="${r.day}"><b>${md(r.day)} ${WD_EN[parseYmd(r.day).getDay()]}</b><span>${esc(firstLine(r.diary))}</span></div>`).join('')}
+      ${recent.map((r, i) => `<div class="ent${i === recent.length - 1 ? ' last' : ''}" data-act="diary-go" data-day="${r.day}"><b>${md(r.day)} <i class="hj">${WD_EN[parseYmd(r.day).getDay()]}</i></b><span>${esc(firstLine(r.diary))}</span></div>`).join('')}
     </section>
   </div>`;
 }
