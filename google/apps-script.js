@@ -175,7 +175,7 @@ function backup() {
     '일정': [['날짜', '종류', '제목', '시작', '끝', '근무지', '프로젝트'], ...data.events.sort(byDay).map((r) => [r.day, KO[r.kind] || r.kind, r.title, r.start_min == null ? '' : hm_(r.start_min), r.end_min == null ? '' : hm_(r.end_min), r.place || '', pname(r.project_id)])],
     '작업 기록': [['날짜', '프로젝트', '시작', '끝', '분'], ...data.sessions.sort(byDay).map((r) => [r.day, pname(r.project_id) || r.title || '', iso(r.start_at), iso(r.end_at), mins(r)])],
     '일기': [['날짜', '일기'], ...data.days.filter((d) => d.diary && d.diary.trim()).sort(byDay).map((d) => [d.day, d.diary.trim()])],
-    '프로젝트': [['이름', '상태', '단계', '시작', '끝', '보수', '프로그램', '링크', '작가 노트'], ...data.projects.map((r) => [r.name, ST[r.status] || r.status, (r.stages || []).join(' > '), r.start_day || '', r.end_day || '', r.pay || '', r.programs || '', r.link || '', r.note || ''])],
+    '프로젝트': [['이름', '상태', '분류', '함께한 사람', '결과물', '단계', '시작', '끝', '보수', '프로그램', '링크', '작가 노트'], ...data.projects.map((r) => [r.name, ST[r.status] || r.status, r.category || '', r.people || '', r.output || '', (r.stages || []).join(' > '), r.start_day || '', r.end_day || '', r.pay || '', r.programs || '', r.link || '', r.note || ''])],
     '식물': [['종류', '이름', '물 주기(일)', '추억의 전당', '보낸 날'], ...data.plants.map((r) => [r.species || '', r.name, r.interval_days || '', r.gone ? 'O' : '', r.gone_day || ''])],
     '식물 기록': [['날짜', '식물', '물', '메모'], ...data.plant_logs.sort(byDay).map((r) => [r.day, plname(r.plant_id), r.watered ? 'O' : '', r.memo || ''])],
   };

@@ -134,7 +134,7 @@ function demoApi() {
     days: [{ day: d(0), vow: '오늘은 한 장만 제대로.', diary: '오전에 피보테 배경 채색을 시작했다. 색을 두 번 갈아엎었는데 세 번째가 마음에 든다.' },
       { day: d(-1), diary: '언더워터 마감하고 늦게 귀가. 손이 피곤함.' }, { day: d(-2), diary: '선화 끝. 피보테 1차 전달.' }],
     projects: [
-      { id: 'p1', name: '피보테 배경 외주', stages: ['선화', '채색', '납품'], stage: 1, start_day: d(-15), end_day: d(16), pay: 400000, programs: '클립스튜디오, 포토샵', link: 'https://youtu.be/', note: '단편에 들어갈 배경 두 장.', status: 'active', pos: 1 },
+      { id: 'p1', name: '피보테 배경 외주', stages: ['선화', '채색', '납품'], stage: 1, start_day: d(-15), end_day: d(16), pay: 400000, programs: '클립스튜디오, 포토샵', link: 'https://youtu.be/', note: '단편에 들어갈 배경 두 장.', status: 'active', pos: 1 , category: '외주', people: '스튜디오 피보테 (담당 김OO)', output: '배경 일러스트 2장 · 3840×2160 · 디지털'},
       { id: 'p2', name: '오리엉덩이 zine', stages: ['원고', '레이아웃', '인쇄·제본', '판매'], stage: 1, pay: 160000, status: 'active', pos: 2 },
       { id: 'p3', name: '지난 외주', stages: ['작업'], stage: 1, status: 'done', pos: 3 },
     ],
@@ -674,7 +674,7 @@ async function backup(btn) {
     f.file('할일.csv', toCSV(todos.sort(byDay), [['day', '날짜'], ['text', '할 일'], ['tag', '태그'], ['done', '완료', (r) => (r.done ? 'O' : '')], ['done_at', '완료 시각', (r) => isoLocal(r.done_at)]]));
     f.file('일정.csv', toCSV(events.sort(byDay), [['day', '날짜'], ['kind', '종류', (r) => KO[r.kind] || r.kind], ['title', '제목'], ['start_min', '시작', (r) => (r.start_min == null ? '' : hm(r.start_min))], ['end_min', '끝', (r) => (r.end_min == null ? '' : hm(r.end_min))], ['place', '근무지'], ['project_id', '프로젝트', (r) => pname(r.project_id)]]));
     f.file('작업기록.csv', toCSV(sessions.sort(byDay), [['day', '날짜'], ['project_id', '프로젝트', (r) => pname(r.project_id) || r.title], ['start_at', '시작', (r) => isoLocal(r.start_at)], ['end_at', '끝', (r) => isoLocal(r.end_at)], ['min', '분', (r) => (r.end_at ? sessMin(r) : '')]]));
-    f.file('프로젝트.csv', toCSV(projects, [['name', '이름'], ['status', '상태', (r) => ST[r.status] || r.status], ['stages', '단계'], ['start_day', '시작'], ['end_day', '끝'], ['pay', '보수'], ['programs', '프로그램'], ['link', '링크'], ['note', '작가 노트'], ['min', '작업 분', (r) => sessions.filter((x) => x.project_id === r.id).reduce((a, x) => a + (x.end_at ? sessMin(x) : 0), 0)]]));
+    f.file('프로젝트.csv', toCSV(projects, [['name', '이름'], ['status', '상태', (r) => ST[r.status] || r.status], ['category', '분류'], ['people', '함께한 사람'], ['output', '결과물'], ['stages', '단계'], ['start_day', '시작'], ['end_day', '끝'], ['pay', '보수'], ['programs', '프로그램'], ['link', '링크'], ['note', '작가 노트'], ['min', '작업 분', (r) => sessions.filter((x) => x.project_id === r.id).reduce((a, x) => a + (x.end_at ? sessMin(x) : 0), 0)]]));
     f.file('식물.csv', toCSV(plants, [['species', '종류'], ['name', '이름'], ['interval_days', '물 주기(일)'], ['gone', '추억의 전당', (r) => (r.gone ? 'O' : '')], ['gone_day', '보낸 날']]));
     f.file('식물기록.csv', toCSV(plogs.sort(byDay), [['day', '날짜'], ['plant_id', '식물', (r) => plname(r.plant_id)], ['watered', '물', (r) => (r.watered ? 'O' : '')], ['memo', '메모']]));
     f.file('일기.md', `# 삼중일기 · 일기\n\n${diary}`);
@@ -1015,14 +1015,17 @@ function viewProjects() {
   const total = active.reduce((a, p) => a + projMin(p), 0);
   const rows = list.map((p, i) => `<div class="pr${i === list.length - 1 ? ' last' : ''}" data-act="proj" data-id="${p.id}">
       <div style="display:flex;flex-direction:column;min-width:0"><span class="nm">${p === sel ? `<span class="riso-hl" style="padding:0 3px">${esc(p.name)}</span>` : esc(p.name)}${r && r.project_id === p.id ? ' <span class="red" style="font-size:12px">&#9679; REC</span>' : ''}</span>
-      <span class="st">${S.projArchive ? `<span>${STATUS[p.status]}</span>` : ''}${stageChain(p)}</span></div>
+      <span class="st">${S.projArchive ? `<span>${STATUS[p.status]}</span>` : ''}${p.category ? `<span class="cat">${esc(p.category)}</span>` : ''}${stageChain(p)}</span></div>
       <span class="r">${dur(projMin(p))}</span><span class="r${p.pay ? '' : ' mu'}">${p.pay ? won(p.pay) : '&#8212;'}</span></div>`).join('');
   const f = (label, key, val) => `<div class="kv" data-act="pf" data-f="${key}"><span>${label}</span><span>${val}</span></div>`;
   const side = sel ? `<section class="side">
       <span class="bk" style="margin-bottom:8px" data-act="pf" data-f="name">${esc(sel.name)}</span>
+      ${f('분류', 'category', sel.category ? esc(sel.category) : '<span class="mu">&#8212;</span>')}
       ${f('기간', 'period', periodLabel(sel))}
       ${f('보수', 'pay', sel.pay ? won(sel.pay) : '<span class="mu">&#8212;</span>')}
       <div class="kv"><span>작업</span><span>${dur(projMin(sel))}</span></div>
+      <span class="lb" data-act="pf" data-f="people">함께한 사람</span><span data-act="pf" data-f="people">${sel.people ? esc(sel.people) : '<span class="mu">&#8212;</span>'}</span>
+      <span class="lb" data-act="pf" data-f="output">결과물</span><span data-act="pf" data-f="output">${sel.output ? esc(sel.output) : '<span class="mu">&#8212;</span>'}</span>
       <span class="lb" data-act="pf" data-f="stages">단계</span><span data-act="pf" data-f="stages" style="font-size:14px">${(sel.stages || []).length ? esc(sel.stages.join(' → ')) : '<span class="mu">&#8212;</span>'}</span>
       <span class="lb" data-act="pf" data-f="programs">프로그램</span><span data-act="pf" data-f="programs">${sel.programs ? esc(sel.programs) : '<span class="mu">&#8212;</span>'}</span>
       <span class="lb" data-act="pf" data-f="link">링크</span>${sel.link ? `<a class="lnk" href="${esc(/^https?:/.test(sel.link) ? sel.link : 'https://' + sel.link)}" target="_blank" rel="noopener">${esc(sel.link.replace(/^https?:\/\//, ''))}</a>` : '<span data-act="pf" data-f="link" class="mu">&#8212;</span>'}

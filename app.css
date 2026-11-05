@@ -341,3 +341,4 @@ body.phone .cell b:not(.now){margin-top:-1px;margin-bottom:3px}
 .logdial .dialbox{align-items:center;width:100%}
 .wu{font-size:15px;padding:0 6px 0 1px;align-self:center}
 .wt{font-size:15px}
+.pr .st .cat{border:1.5px solid var(--ink);padding:0 4px;line-height:1.3}
