@@ -1009,15 +1009,16 @@ async function saveProj(p, patch) {
 function viewProjects() {
   const active = S.projects.filter((p) => p.status === 'active');
   const archived = S.projects.filter((p) => p.status !== 'active');
-  const list = (S.projArchive ? archived : active).sort((a, b) => a.pos - b.pos);
+  const list = S.projects.slice().sort((a, b) => a.pos - b.pos);
   const sel = list.find((p) => p.id === S.proj) || list[0];
   const rows = list.map((p, i) => `<div class="pl${p === sel ? ' on' : ''}${i === list.length - 1 ? ' last' : ''}" data-act="proj" data-id="${p.id}">
-      <span class="nm">${esc(p.name)}</span></div>`).join('');
+      <span class="nm">${p.status === 'active' ? '<i class="live"></i>' : ''}${esc(p.name)}</span></div>`).join('');
   const none = '<span class="mu">&#8212;</span>';
   const row = (label, key, val) => `<div class="pv" data-act="pf" data-f="${key}"><span class="pk">${label}</span><span class="pval">${val || none}</span></div>`;
   const link = sel?.link ? `<a class="lnk" href="${esc(/^https?:/.test(sel.link) ? sel.link : 'https://' + sel.link)}" target="_blank" rel="noopener">${esc(sel.link.replace(/^https?:\/\//, ''))}</a>` : '';
   const detail = sel ? `<section class="pdet">
       <span class="ptitle" data-act="pf" data-f="name">${esc(sel.name)}</span>
+      <div class="pv" data-act="pstate"><span class="pk">상태</span><span class="pval">${sel.status === 'active' ? '<i class="live"></i>진행 중' : '끝남'}</span></div>
       ${row('분류', 'category', sel.category && esc(sel.category))}
       ${row('기간', 'period', (sel.start_day || sel.end_day) && periodLabel(sel))}
       ${row('보수', 'pay', sel.pay && won(sel.pay))}
@@ -1025,15 +1026,14 @@ function viewProjects() {
       ${row('결과물', 'output', sel.output && esc(sel.output))}
       ${row('프로그램', 'programs', sel.programs && esc(sel.programs))}
       ${row('링크', 'link', link)}
-      <div class="pv note-row" data-act="pf" data-f="note"><span class="pk">작가 노트</span><p class="note pval">${sel.note ? esc(sel.note) : none}</p></div>
+      <div class="pv note-row" data-act="pf" data-f="note"><span class="pk">노트</span><p class="note pval">${sel.note ? esc(sel.note) : none}</p></div>
     </section>` : '<section class="pdet"></section>';
   return `${header(`진행 중 ${active.length}`)}
   <div class="main">
     <section class="plist">
-      <div class="row"><span class="bk">${S.projArchive ? '보관함' : 'PROJECTS'}</span><span style="font-size:15px">[ ${list.length} ]</span>
-        ${S.projArchive ? '' : '<button aria-label="프로젝트 추가" data-act="proj-add" style="margin-left:auto;font-size:20px;padding:0 2px">+</button>'}</div>
+      <div class="row"><span class="bk">PROJECTS</span><span style="font-size:15px">[ ${list.length} ]</span>
+        <button aria-label="프로젝트 추가" data-act="proj-add" style="margin-left:auto;font-size:20px;padding:0 2px">+</button></div>
       <div class="scroll">${rows}</div>
-      <button class="lk" data-act="proj-archive">${S.projArchive ? '&#8592; 진행 중' : `보관함 [ ${archived.length} ] &#8594;`}</button>
     </section>
     ${detail}
   </div>`;
@@ -1284,8 +1284,12 @@ function handleMore(act, el, ev) {
     const p = projOf(el.dataset.id), i = +el.dataset.i; if (!p || p.status !== 'active') return true;
     S.proj = p.id; saveProj(p, { stage: p.stage === i ? i + 1 : i }); return true;
   }
+  if (act === 'pstate') {
+    const p = projOf(S.proj) || S.projects.slice().sort((a, b) => a.pos - b.pos)[0]; if (!p) return true;
+    S.proj = p.id; saveProj(p, { status: p.status === 'active' ? 'done' : 'active' }); return true;
+  }
   if (act === 'pf') {
-    const p = projOf(S.proj) || S.projects.filter((x) => (S.projArchive ? x.status !== 'active' : x.status === 'active')).sort((a, b) => a.pos - b.pos)[0];
+    const p = projOf(S.proj) || S.projects.slice().sort((a, b) => a.pos - b.pos)[0];
     if (!p) return true;
     const fld = el.dataset.f;
     if (ev.target.closest('a.lnk')) return true;   // 링크는 열기

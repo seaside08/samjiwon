@@ -357,3 +357,5 @@ body.phone .cell b:not(.now){margin-top:-1px;margin-bottom:3px}
 .pdet .note{font-size:15px;line-height:1.5}
 body.phone .plist{width:auto}
 body.phone .pv{grid-template-columns:90px minmax(0,1fr);gap:10px}
+.live{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--red);margin-right:7px;vertical-align:1px}
+.pl.on .live{box-shadow:0 0 0 1.5px var(--paper)}
