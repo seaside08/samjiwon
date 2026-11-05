@@ -734,10 +734,20 @@ function render(force) {
   else html = viewSoon();
   const focusAdd = a && a.closest && a.closest('form[data-add]')?.dataset.add;
   board.innerHTML = html + nav() + sheetHTML();
+  tilt();
   if (S.sheet) initWheels();
   else if (focusAdd) board.querySelector(`form[data-add="${focusAdd}"] input`)?.focus();
 }
 let pendingRender = false;
+
+// 초록 상자를 살짝, 상자마다 다른 각도로 기울이기 (글자로 정해서 다시 그려도 같은 각도)
+function tilt() {
+  board.querySelectorAll('.sched, .ptitle, .ctl .sw a.riso3, .kinds button.riso3, .sh-tg button.riso3').forEach((el) => {
+    let h = 7; for (const ch of el.textContent.trim()) h = (h * 31 + ch.charCodeAt(0)) % 997;
+    const deg = ((h % 9) - 4) * 0.45 || 0.9;          // -1.8° ~ 1.8°
+    el.style.transform = `rotate(${deg}deg)`;
+  });
+}
 
 // ───────── 동작
 async function addTodo(day, raw) {
