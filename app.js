@@ -1018,7 +1018,7 @@ function viewProjects() {
   const link = sel?.link ? `<a class="lnk" href="${esc(/^https?:/.test(sel.link) ? sel.link : 'https://' + sel.link)}" target="_blank" rel="noopener">${esc(sel.link.replace(/^https?:\/\//, ''))}</a>` : '';
   const detail = sel ? `<section class="pdet">
       <span class="ptitle" data-act="pf" data-f="name">${esc(sel.name)}</span>
-      <div class="pv" data-act="pstate"><span class="pk">상태</span><span class="pval">${sel.status === 'active' ? '<i class="live"></i>진행 중' : '끝남'}</span></div>
+      <div class="pv" data-act="pstate"><span class="pk">상태</span><span class="pval">${sel.status === 'active' ? '진행 중' : '끝남'}</span></div>
       ${row('분류', 'category', sel.category && esc(sel.category))}
       ${row('기간', 'period', (sel.start_day || sel.end_day) && periodLabel(sel))}
       ${row('보수', 'pay', sel.pay && won(sel.pay))}
