@@ -1406,7 +1406,7 @@ function wheelsHTML(v, { end = true } = {}) {
 // 작업시간 기록하기: 날짜 + 시작~끝 바퀴 + 프로젝트
 function logVals() {
   const n = new Date(), e = Math.floor((n.getHours() * 60 + n.getMinutes()) / 5) * 5, st = Math.max(0, e - 60);
-  return { sh: Math.floor(st / 60), sm: st % 60, eh: Math.floor(e / 60), em: e % 60 };
+  return { sh: Math.floor(st / 60), sm: st % 60, dh: 1, dm: 0 };
 }
 function logSheetHTML() {
   const ap = activeProjects(), sh = S.sheet;
@@ -1416,19 +1416,24 @@ function logSheetHTML() {
     <div class="sh-head"><span>작업시간 기록하기</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
     ${ap.length ? `<div class="opts" style="font-size:15px;gap:6px 14px;margin:2px 0 4px">${ap.map((p) => `<button data-act="log-p" data-id="${p.id}" class="${pid === p.id ? 'on' : ''}">${esc(p.name)}</button>`).join('')}</div>
     <input type="date" class="sh-date log-date" value="${sh.day}">
-    ${wheelsHTML(sh.v)}
+    <div class="wheels">
+      <div class="wrow">${wheel('sh', 24, 1, sh.v.sh)}<span class="wc">:</span>${wheel('sm', 12, 5, sh.v.sm)}</div>
+      <span class="wt">부터</span>
+      <div class="wrow">${wheel('dh', 13, 1, sh.v.dh)}<span class="wu">h</span>${wheel('dm', 12, 5, sh.v.dm)}<span class="wu">m</span></div>
+    </div>
     <div class="sh-acts"><button class="btn" data-act="log-save">기록</button></div>` : '<span class="mu" style="font-size:14px">진행 중인 프로젝트가 없어요</span>'}
   </div>`;
 }
 async function logSave() {
   const sh = S.sheet, p = projOf(sh.proj || S.dialProj) || activeProjects()[0]; if (!p) return;
   const day = board.querySelector('.log-date')?.value || sh.day, v = sh.v;
-  const a = v.sh * 60 + v.sm; let b = v.eh * 60 + v.em; if (b <= a) b += 1440;
+  const a = v.sh * 60 + v.sm, b = a + v.dh * 60 + v.dm;
+  if (b === a) { toast('작업한 시간을 정해 주세요'); return; }
   const base = parseYmd(day), at = (mm) => new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, mm).toISOString();
   const row = { project_id: p.id, title: p.name, day, start_at: at(a), end_at: at(b) };
   const tmp = { id: 'tmp' + Date.now(), ...row };
   S.sessions.push(tmp); S.dialProj = p.id; closeSheet();
-  toast(`${p.name} ${hm(a)}–${hm(b)} 기록했어요`);
+  toast(`${p.name} ${hm(a)}부터 ${dur(b - a)} 기록했어요`);
   try { Object.assign(tmp, await api.insert('sessions', row)); } catch (e) { fail(e); S.sessions = S.sessions.filter((x) => x !== tmp); render(); }
 }
 function sheetHTML() {
