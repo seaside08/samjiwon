@@ -348,16 +348,13 @@ function viewToday() {
         <div style="display:flex;align-items:center;gap:12px"><span class="bk">NOW WORKING &#8212; ${esc(sessLabel(r))}</span><span class="red" style="font-size:12px;letter-spacing:.04em">&#9679; REC</span></div>
         <span id="elapsed" class="big-t">${elapsed(r)}</span>
         <div style="display:flex;gap:14px;align-items:center;margin-top:4px"><button class="btn" data-act="stop">멈추고 기록</button><button class="ul" data-act="discard">기록 안 함</button></div>
-      </div>` : active.length ? `<div class="nw idle">
-        <div class="opts" style="font-size:14px;gap:6px 14px">${active.map((p, i) => `<button data-act="dial-p" data-id="${p.id}" class="${(S.dialProj ? S.dialProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('')}</div>
-        ${dialHTML(PHONE ? 210 : 176)}
-      </div>` : '';
+      </div>` : `<button class="btn logbtn" data-act="log-open">작업시간 기록하기</button>`;
   if (PHONE) return `${header('')}
   <section class="ph">
     <div class="row"><span class="bk">TODAY / 오늘 할 일</span><span class="red" style="font-size:16px">[ ${done} / ${todos.length} ]</span></div>
     <div class="todos">${todos.map(todoRow).join('')}</div>
     ${addForm('todo', '할 일 추가', 'margin-top:12px')}
-    ${items.length ? `<div class="sched riso"><div class="h"><span>SCHEDULE</span><span>${pad(d.getMonth() + 1)} / ${pad(d.getDate())}</span></div>${items.map((x) => x.h.replace(' data-act="go-day"', '')).join('')}</div>` : ''}
+    ${items.length ? `<div class="sched riso"><div class="h"><span>SCHEDULE</span></div>${items.map((x) => x.h.replace(' data-act="go-day"', '')).join('')}</div>` : ''}
     ${now}
     <div class="ph-sum">작업 ${dur(sess)} &#183; 근무 ${dur(work)} &#183; 이번 주 작업 ${dur(weekSess)}</div>
   </section>`;
@@ -370,7 +367,7 @@ function viewToday() {
     </section>
     <section class="today-side">
       <div class="sched riso">
-        <div class="h"><span>SCHEDULE</span><span>${pad(d.getMonth() + 1)} / ${pad(d.getDate())}</span></div>
+        <div class="h"><span>SCHEDULE</span></div>
         ${items.map((x) => x.h).join('')}
       </div>
       <span class="cap">오늘의 일정 ${evs.length} &#183; ${work ? '근무 ' + dur(work) : '근무 없음'}</span>
@@ -945,14 +942,15 @@ board.addEventListener('pointerup', dialEnd); board.addEventListener('pointercan
 
 async function dialSave(projId) {
   const p = projOf(projId || S.dialProj) || activeProjects()[0];
-  if (!p) return;
-  const m = S.dialMin; if (!m) { toast('다이얼을 돌려 시간을 정해 주세요'); return; }
+  if (!p) return false;
+  const m = S.dialMin; if (!m) { toast('다이얼을 돌려 시간을 정해 주세요'); return false; }
   const end = new Date(), start = new Date(end - m * 60000);   // 지금 끝난 것으로, 시작한 날에 기록
   const row = { project_id: p.id, title: p.name, day: ymd(start), start_at: start.toISOString(), end_at: end.toISOString() };
   const tmp = { id: 'tmp' + Date.now(), ...row };
   S.sessions.push(tmp); S.dialMin = 0; render();
   toast(`${p.name} ${dur(m)} 기록했어요`);
   try { Object.assign(tmp, await api.insert('sessions', row)); } catch (e) { fail(e); S.sessions = S.sessions.filter((x) => x !== tmp); render(); }
+  return true;
 }
 
 // ───────── 타이머
@@ -1264,9 +1262,10 @@ function viewStats() {
 function handleMore(act, el, ev) {
   if (act === 'imp-ok') { el.disabled = true; el.textContent = '넣는 중…'; runImport(); return true; }
   if (act === 'imp-no') { S.imp = null; location.hash = '#work'; return true; }
-  if (act === 'start') { startWork(projOf(el.dataset.id || S.dialProj) || activeProjects()[0]); return true; }
-  if (act === 'dial-p') { S.dialProj = el.dataset.id; render(); return true; }
-  if (act === 'dial-save') { dialSave(el.closest('.dialbox')?.dataset.proj); return true; }
+  if (act === 'start') { if (S.sheet?.type === 'log') S.sheet = null; startWork(projOf(el.dataset.id || S.dialProj) || activeProjects()[0]); return true; }
+  if (act === 'dial-p') { S.dialProj = el.dataset.id; render(true); return true; }
+  if (act === 'dial-save') { dialSave(el.closest('.dialbox')?.dataset.proj).then((ok) => { if (ok && S.sheet?.type === 'log') closeSheet(); }); return true; }
+  if (act === 'log-open') { S.dialMin = 0; S.sheet = { type: 'log', mode: 'log' }; render(true); return true; }
   if (act === 'dial-reset') { dialSet(0); return true; }
   if (act === 'stop') { const r = running(); if (r) stopWork(r); return true; }
   if (act === 'discard') { const r = running(); if (r) discardWork(r); return true; }
@@ -1402,8 +1401,18 @@ function wheelsHTML(v, { end = true } = {}) {
     ${end ? `<span class="wt${v.noEnd ? ' off' : ''}">~</span><div class="wgrp${v.noEnd ? ' off' : ''}"><div class="wrow">${wheel('eh', 24, 1, v.eh)}<span class="wc">:</span>${wheel('em', 12, 5, v.em)}</div></div>` : ''}
   </div>`;
 }
+function logSheetHTML() {
+  const ap = activeProjects();
+  return `<div class="sh-bg" data-act="sh-close"></div>
+  <div class="sheet" role="dialog" aria-label="작업시간 기록하기">
+    <div class="sh-head"><span>작업시간 기록하기 &#183; ${dayLabel(todayStr())}</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
+    ${ap.length ? `<div class="opts" style="font-size:15px;gap:6px 14px;margin:4px 0 8px">${ap.map((p, i) => `<button data-act="dial-p" data-id="${p.id}" class="${(S.dialProj ? S.dialProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('')}</div>
+    <div class="logdial">${dialHTML(PHONE ? 220 : 200)}</div>` : '<span class="mu" style="font-size:14px">진행 중인 프로젝트가 없어요</span>'}
+  </div>`;
+}
 function sheetHTML() {
   const sh = S.sheet; if (!sh) return '';
+  if (sh.type === 'log') return logSheetHTML();
   const it = sheetItem(); if (!it) { S.sheet = null; return ''; }
   const t = sh.type;
   let head, title;
