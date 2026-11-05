@@ -3,6 +3,7 @@
  *
  * 1) 달력 연동: 삼중일기 일정·근무·작업 기록 → 구글 캘린더 '삼중일기' (5분마다)
  * 2) 자동 백업: 매일 새벽 4시 → 구글 드라이브 '삼중일기 백업' 폴더(JSON) + 구글 시트 '삼중일기 기록'
+ * 3) 도굴꾼 코워크 근무표 → 삼중일기 라운지돌돌 근무 (30분마다, 스크립트 속성 COWORK_JSON 이 있을 때)
  *
  * 처음 한 번: 프로젝트 설정에서 스크립트 속성 SB_EMAIL, SB_PASSWORD 를 넣고 setup 을 실행.
  */
@@ -25,6 +26,7 @@ function setup() {
   ScriptApp.getProjectTriggers().forEach((t) => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('syncCalendar').timeBased().everyMinutes(5).create();
   ScriptApp.newTrigger('backup').timeBased().everyDays(1).atHour(4).inTimezone('Asia/Seoul').create();
+  if (p.getProperty('COWORK_JSON')) { ScriptApp.newTrigger('syncCowork').timeBased().everyMinutes(30).create(); syncCowork(); }
   syncCalendar();
   backup();
   Logger.log('준비 끝! 캘린더 "%s", 드라이브 폴더 "%s", 시트 "%s"', CAL_NAME, FOLDER_NAME, SHEET_NAME);
@@ -57,6 +59,15 @@ function all_(table, query) {
     out = out.concat(j);
     if (j.length < 1000) return out;
   }
+}
+
+function rest_(method, path, body) {
+  const r = UrlFetchApp.fetch(`${SB_URL}/rest/v1/${path}`, {
+    method, contentType: 'application/json', muteHttpExceptions: true,
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${token_()}`, Prefer: 'return=minimal' },
+    payload: body ? JSON.stringify(body) : undefined,
+  });
+  if (r.getResponseCode() >= 300) throw new Error(`${method} ${path} 실패: ${r.getContentText()}`);
 }
 
 // ───────── 날짜 도우미 (모두 한국 시간)
@@ -179,4 +190,47 @@ function backup() {
   const first = ss.getSheetByName('Sheet1') || ss.getSheetByName('시트1');
   if (first && ss.getSheets().length > 1) ss.deleteSheet(first);
   Logger.log('백업 끝: %s', name);
+}
+
+// ───────── 3) 도굴꾼 코워크 근무표 → 삼중일기 (라운지돌돌)
+// 근무표가 기준: 근무표에 있는 날짜 범위(~ 오늘+31일)의 라운지돌돌 근무를 근무표와 똑같이 맞춤
+const COWORK_PLACE = '라운지돌돌';
+function coworkItems_() {
+  const url = PropertiesService.getScriptProperties().getProperty('COWORK_JSON');
+  if (!url) return null;
+  const r = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+  if (r.getResponseCode() !== 200) throw new Error(`근무표를 못 불러왔어요 (${r.getResponseCode()}): ${r.getContentText().slice(0, 200)}`);
+  const j = JSON.parse(r.getContentText());
+  const list = Array.isArray(j) ? j : j.shifts || j.data || j.items || j.events || [];
+  const toMin = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); };
+  return list.map((x) => {
+    let day = x.date || x.day, s = x.start || x.start_time || x.startTime || x.from, e = x.end || x.end_time || x.endTime || x.to;
+    if (s && /T/.test(s)) { const d = new Date(s); day = day || ymd_(d); s = Utilities.formatDate(d, 'Asia/Seoul', 'HH:mm'); }
+    if (e && /T/.test(e)) e = Utilities.formatDate(new Date(e), 'Asia/Seoul', 'HH:mm');
+    if (!day || !s || !e) return null;
+    const a = toMin(s); let b = toMin(e); if (b <= a) b += 1440;
+    return { day: String(day).slice(0, 10), start_min: a, end_min: b };
+  }).filter(Boolean);
+}
+function syncCowork() {
+  const items = coworkItems_();
+  if (!items) return;
+  if (!items.length) { Logger.log('근무표에 근무가 없어요'); return; }
+  const days = items.map((x) => x.day).sort();
+  const from = days[0], to = [days[days.length - 1], ymd_(new Date(Date.now() + 31 * 864e5))].sort()[1];
+  const cur = all_('events', `kind=eq.work&place=eq.${encodeURIComponent(COWORK_PLACE)}&day=gte.${from}&day=lte.${to}`);
+  const key = (x) => `${x.day}|${x.start_min}|${x.end_min}`;
+  const want = new Set(items.map(key)), have = new Set(cur.map(key));
+  const gone = cur.filter((x) => !want.has(key(x)));
+  const add = items.filter((x, i, arr) => !have.has(key(x)) && arr.findIndex((y) => key(y) === key(x)) === i);
+  if (gone.length) rest_('delete', `events?id=in.(${gone.map((x) => x.id).join(',')})`);
+  if (add.length) rest_('post', 'events', add.map((x) => ({ ...x, title: COWORK_PLACE, kind: 'work', place: COWORK_PLACE })));
+  if (gone.length || add.length) Logger.log('코워크 근무표: 새로 %s · 지움 %s (%s ~ %s)', add.length, gone.length, from, to);
+}
+// 근무표가 어떻게 읽히는지 보기만 (아무것도 바꾸지 않음)
+function testCowork() {
+  const items = coworkItems_();
+  if (!items) { Logger.log('스크립트 속성에 COWORK_JSON 이 없어요'); return; }
+  Logger.log('근무 %s개', items.length);
+  items.slice(0, 10).forEach((x) => Logger.log('%s  %s–%s', x.day, hm_(x.start_min), hm_(x.end_min)));
 }
