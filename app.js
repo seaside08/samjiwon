@@ -1532,6 +1532,27 @@ async function sheetDo(d) {
   }
 }
 
+// ───────── 휴대폰: 옆으로 쓸어서 탭 넘기기
+let swipe = null;
+addEventListener('touchstart', (e) => {
+  if (!PHONE || S.sheet || e.touches.length !== 1) { swipe = null; return; }
+  const t = e.touches[0], el = e.target;
+  if (t.clientX < 24 || t.clientX > innerWidth - 24) { swipe = null; return; }   // 화면 가장자리는 브라우저 뒤로가기 몫
+  if (el.closest('input,textarea,[contenteditable],.wheel,.dial,.tlg,.chart')) { swipe = null; return; }
+  swipe = { x: t.clientX, y: t.clientY, t: Date.now() };
+}, { passive: true });
+addEventListener('touchend', (e) => {
+  if (!swipe) return;
+  const t = e.changedTouches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y, dt = Date.now() - swipe.t;
+  swipe = null;
+  if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || dt > 700) return;
+  const keys = TABS.map(([k]) => k), i = keys.indexOf(S.view); if (i < 0) return;
+  const j = i + (dx < 0 ? 1 : -1); if (j < 0 || j >= keys.length) return;
+  location.hash = '#' + keys[j];
+  scrollTo(0, 0);
+  board.animate([{ transform: `translateX(${dx < 0 ? 28 : -28}px)`, opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 180, easing: 'ease-out' });
+}, { passive: true });
+
 // ───────── 화면 맞춤 · 시계 · 동기화
 // 휴대폰 세로 화면이면 '오늘'만 따로 그린다
 var PHONE = false;
