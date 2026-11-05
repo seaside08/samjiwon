@@ -1028,7 +1028,7 @@ function viewProjects() {
       <span class="lb" data-act="pf" data-f="link">링크</span>${sel.link ? `<a class="lnk" href="${esc(/^https?:/.test(sel.link) ? sel.link : 'https://' + sel.link)}" target="_blank" rel="noopener">${esc(sel.link.replace(/^https?:\/\//, ''))}</a>` : '<span data-act="pf" data-f="link" class="mu">&#8212;</span>'}
       <span class="lb" data-act="pf" data-f="note">작가 노트</span><p class="note" data-act="pf" data-f="note">${sel.note ? esc(sel.note) : '<span class="mu">&#8212;</span>'}</p>
       ${sel.status === 'active'
-        ? `${r && r.project_id === sel.id ? '<button class="btn" style="margin-top:16px" data-act="stop">멈추고 기록</button>' : `<button class="btn" style="margin-top:16px" data-act="log-open" data-id="${sel.id}">작업시간 기록하기</button>`}
+        ? `${r && r.project_id === sel.id ? '<button class="btn" style="margin-top:16px" data-act="stop">멈추고 기록</button>' : ''}
            <div class="acts"><button class="ul" data-act="pstatus" data-s="done">완료</button><button class="ul" data-act="pstatus" data-s="archived">보관</button><button class="ul" data-act="pstatus" data-s="stopped">중단</button></div>`
         : `<div class="acts" style="margin-top:16px"><button class="ul" data-act="pstatus" data-s="active">다시 진행</button><button class="ul" data-act="pdel">삭제</button></div>`}
     </section>` : '<section class="side"></section>';
