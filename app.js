@@ -835,6 +835,7 @@ board.addEventListener('click', async (e) => {
   } else if (act === 'sync') {
     if (S.syncing) return;
     S.syncing = true; el.textContent = '동기화 중';
+    if (await newVersion()) { el.textContent = '새 버전'; location.reload(); return; }
     const t0 = Date.now();
     await load();
     await new Promise((r) => setTimeout(r, Math.max(0, 500 - (Date.now() - t0))));
@@ -1532,6 +1533,20 @@ async function sheetDo(d) {
     try { S.todos.push(await api.insert('todos', { day: it.day, text: it.title, tag: null, pos })); await api.remove('events', it.id); render(); } catch (e) { fail(e); }
   }
 }
+
+// ───────── 새로 배포된 버전이 있는지 (동기화 버튼 · 앱으로 돌아올 때)
+const MY_VER = (document.querySelector('script[src*="app.js"]')?.getAttribute('src').match(/v=(\w+)/) || [])[1] || '';
+async function newVersion() {
+  if (DEMO || !MY_VER) return false;
+  try {
+    const r = await fetch(`index.html?check=${Date.now()}`, { cache: 'no-store' });
+    const v = ((await r.text()).match(/app\.js\?v=(\w+)/) || [])[1];
+    return !!v && v !== MY_VER;
+  } catch (e) { return false; }
+}
+document.addEventListener('visibilitychange', async () => {
+  if (!document.hidden && !S.sheet && (await newVersion())) location.reload();
+});
 
 // ───────── 휴대폰: 옆으로 쓸어서 탭 넘기기
 let swipe = null;
