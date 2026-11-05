@@ -190,6 +190,10 @@ async function load() {
       S.projects = projects; S.sessions = sessions; S.plants = plants; S.plogs = plogs; S.recent = recent;
       S.plogRange = [lf, lt];
       if (!plants.length && !S.seeded) { S.seeded = true; S.plants = await api.insertMany('plants', PLANT_SEED); }
+      // 금전수는 매달 10일 물 (아직 물 주기를 안 정한 금전수만)
+      for (const pl of S.plants.filter((x) => x.species === '금전수' && x.interval_days == null && !x.gone)) {
+        pl.interval_days = -10; api.update('plants', pl.id, { interval_days: -10 }).catch(fail);
+      }
       S.loaded = [from, to];
       render();
     } catch (e) { fail(e); }
@@ -343,6 +347,8 @@ function viewToday() {
     ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="edit-event" data-id="${e.id}"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n">${esc(e.title)}</span><span class="x">${e.end_min != null ? '~' + hm(e.end_min) : ''}</span></div>` })),
     ...sessOf(day).map((s) => ({ k: minOfDay(s.start_at), h: `<div class="e"${s.end_at ? ` data-act="edit-sess" data-id="${s.id}"` : ''}><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))}</span><span class="x">${s.end_at ? '~' + hm(minOfDay(s.end_at)) : 'REC'}</span></div>` })),
   ].sort((a, b) => a.k - b.k);
+  const thirsty = S.plants.filter((p) => !p.gone && !logOf(p.id, day)?.watered && (plantStats(p).next || '9') <= day);
+  if (thirsty.length) items.unshift({ k: -2, h: `<div class="e" data-act="go-plants"><span class="t">물</span><span class="n">${esc(thirsty.map((p) => p.name).join(', '))}</span><span class="x"></span></div>` });
   const active = S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
   // 지금 하는 작업: 돌고 있는 기록 → 가장 최근 기록 → 진행 중 첫 프로젝트
   const lastS = S.sessions.slice().sort((a, b) => (a.start_at < b.start_at ? 1 : -1))[0];
@@ -1106,9 +1112,20 @@ function plantStats(p) {
   const logs = S.plogs.filter((l) => l.plant_id === p.id);
   const lastW = logs.filter((l) => l.watered).map((l) => l.day).sort().pop();
   const lastM = logs.filter((l) => l.memo).sort((a, b) => (a.day < b.day ? -1 : 1)).pop();
-  const next = lastW && p.interval_days ? ymd(addDays(parseYmd(lastW), p.interval_days)) : null;
+  let next = null;
+  if (p.interval_days < 0) {
+    // 매달 n일: 마지막으로 물 준 다음 날(없으면 이번 달 1일)부터 처음 오는 n일
+    const n = -p.interval_days, t = new Date();
+    let d = lastW ? addDays(parseYmd(lastW), 1) : new Date(t.getFullYear(), t.getMonth(), 1);
+    for (let k = 0; k < 3; k++) {
+      const c = new Date(d.getFullYear(), d.getMonth() + k, Math.min(n, new Date(d.getFullYear(), d.getMonth() + k + 1, 0).getDate()));
+      if (c >= d) { next = ymd(c); break; }
+    }
+  } else if (lastW && p.interval_days) next = ymd(addDays(parseYmd(lastW), p.interval_days));
   return { lastW, lastM, next };
 }
+// 물 주기 표시: 7 → 7일 / -10 → 매달 10일
+const waterLabel = (p) => (p.interval_days < 0 ? `매달 ${-p.interval_days}일` : p.interval_days ? `${p.interval_days}일` : '');
 const logOf = (pid, day) => S.plogs.find((l) => l.plant_id === pid && l.day === day);
 async function saveLog(p, day, patch) {
   let l = logOf(p.id, day);
@@ -1165,7 +1182,7 @@ function viewPlants() {
     side = `<section class="side">
       <span class="bk" style="margin-bottom:8px" data-act="pl-name">${esc(sel.name)}</span>
       <span style="font-size:13px" data-act="pl-name">${esc(sel.species || '')}</span>
-      <div class="kv" style="margin-top:8px" data-act="pl-int"><span>물 주기</span><span>${sel.interval_days ? sel.interval_days + '일' : '<span class="mu">&#8212;</span>'}</span></div>
+      <div class="kv" style="margin-top:8px" data-act="pl-int"><span>물 주기</span><span>${waterLabel(sel) || '<span class="mu">&#8212;</span>'}</span></div>
       <div class="kv"><span>마지막 물</span><span>${st.lastW ? md(st.lastW) : '<span class="mu">&#8212;</span>'}</span></div>
       <div class="kv"><span>다음 물</span><span class="${st.next && st.next <= today ? 'red' : ''}">${st.next ? md(st.next) : '<span class="mu">&#8212;</span>'}</span></div>
       <button class="btn" style="margin-top:12px" data-act="water">${selDay === today ? '' : md(selDay) + ' '}${l?.watered ? '물 취소' : '물 줬음'}</button>
@@ -1340,9 +1357,11 @@ function handleMore(act, el, ev) {
     });
     return true;
   }
+  if (act === 'go-plants') { location.hash = '#plants'; return true; }
   if (act === 'pl-int' && plant) {
-    inlineEdit(el.lastElementChild, plant.interval_days ? String(plant.interval_days) : '', async (v) => {
-      const n = parseInt(v, 10); plant.interval_days = n > 0 ? n : null; render();
+    inlineEdit(el.lastElementChild, waterLabel(plant), async (v) => {
+      const mo = v.match(/매달\s*(\d{1,2})/), n = parseInt(v, 10);
+      plant.interval_days = mo ? -Math.min(31, +mo[1]) : n > 0 ? n : null; render();
       try { await api.update('plants', plant.id, { interval_days: plant.interval_days }); } catch (er) { fail(er); }
     });
     return true;
