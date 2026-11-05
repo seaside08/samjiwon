@@ -354,7 +354,7 @@ function viewToday() {
     <div class="todos">${todos.map(todoRow).join('')}</div>
     ${addForm('todo', '할 일 추가', 'margin-top:12px')}
     ${now}
-    ${items.length ? `<div class="sched riso"><div class="h"><span>SCHEDULE</span></div>${items.map((x) => x.h.replace(' data-act="go-day"', '')).join('')}</div>` : ''}
+    ${items.length ? `<div class="sched riso">${items.map((x) => x.h.replace(' data-act="go-day"', '')).join('')}</div>` : ''}
     <div class="ph-sum">작업 ${dur(sess)} &#183; 근무 ${dur(work)} &#183; 이번 주 작업 ${dur(weekSess)}</div>
   </section>`;
   return `${header('')}
@@ -368,7 +368,7 @@ function viewToday() {
       <div style="flex:2 1 0"></div>
       ${now}
       <div class="sched riso">
-        <div class="h"><span>SCHEDULE</span></div>
+        
         ${items.map((x) => x.h).join('')}
       </div>
       <div style="flex:1 1 0"></div>
