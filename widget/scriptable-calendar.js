@@ -127,16 +127,16 @@ function draw(size, data, tex, fam) {
       const num = String(d.getDate());
       if (ds === today) {
         // 오늘: 칸 너비로 꽉 찬 검은 띠
-        c.setFillColor(INK); c.fillRect(new Rect(x + (k ? LW / 2 : 0), ry, cw - (k ? LW / 2 : 0), 14.5));
-        text(num, x + 4, ry + 1.5, cw, 12.5, Font.boldMonospacedSystemFont(9.5), PAPER);
+        c.setFillColor(INK); c.fillRect(new Rect(x + (k ? LW / 2 : 0), ry, cw - (k ? LW / 2 : 0), 16.5));
+        text(num, x + 4, ry + 3, cw, 12.5, Font.boldMonospacedSystemFont(9.5), PAPER);
       } else {
-        text(num, x + 4, ry + 1.5, cw, 12.5, inM ? Font.boldMonospacedSystemFont(9.5) : Font.regularMonospacedSystemFont(9.5));
+        text(num, x + 4, ry + 3, cw, 12.5, inM ? Font.boldMonospacedSystemFont(9.5) : Font.regularMonospacedSystemFont(9.5));
       }
       // 내용
-      const lh = 9.6, maxL = Math.floor((ch - 16) / lh);
+      const lh = 9.6, maxL = Math.floor((ch - 19) / lh);
       const evs = (byDay[ds] || []).sort((a, b) => (a.kind === 'work' ? -1 : 0) - (b.kind === 'work' ? -1 : 0) || (a.start_min ?? -1) - (b.start_min ?? -1));
       const lines = evs.map((e) => ({ e }));
-      let ly = ry + 16;
+      let ly = ry + 19;
       const f = Font.boldSystemFont(8);
       for (let i = 0; i < Math.min(maxL, lines.length); i++) {
         const L = lines[i];
