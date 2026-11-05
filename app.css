@@ -368,4 +368,5 @@ body.phone .pv{grid-template-columns:90px minmax(0,1fr);gap:10px}
 .wd span{text-align:center}
 .dh{justify-content:center;padding-left:0}
 body.phone .dh{align-items:center;padding-left:0}
-.hj{font-style:normal;font-size:.86em}
+.hj{font-style:normal;font-family:'Apple SD Gothic Neo','Noto Sans CJK KR','Noto Sans KR',sans-serif;font-size:.86em;font-weight:700;position:relative;top:-.07em}
+.ent .hj{font-weight:900}
