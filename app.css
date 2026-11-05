@@ -364,3 +364,4 @@ body.phone .pv{grid-template-columns:90px minmax(0,1fr);gap:10px}
 .ph .nowbtn{margin:28px 0 -16px;font-size:14px}
 #clock{cursor:pointer}
 .sync[hidden]{display:none}
+#syncing{margin-left:-5px;padding:0}
