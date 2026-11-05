@@ -30,7 +30,7 @@ function workCode(min) {
   if (h >= 10) return m ? `${h}${Math.floor(m / 10)}` : `${h}`;
   return m ? `${h}${String(m).padStart(2, '0')}` : `0${h}`;
 }
-const WD_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const WD_EN = ['日', '月', '火', '水', '木', '金', '土'];
 const WD_HJ = ['日', '月', '火', '水', '木', '金', '土'];
 
 // ───────── 날짜 도우미

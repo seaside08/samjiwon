@@ -11,7 +11,7 @@ const INK = new Color('#141414'), PAPER = new Color('#fbfbf8'), RED = new Color(
 const pad = (n) => String(n).padStart(2, '0');
 const now = new Date();
 const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-const WD = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const WD = ['日', '月', '火', '水', '木', '金', '土'];
 
 async function auth(body, grant) {
   const r = new Request(`${SB_URL}/auth/v1/token?grant_type=${grant}`);
