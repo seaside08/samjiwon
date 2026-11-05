@@ -1011,40 +1011,31 @@ function viewProjects() {
   const archived = S.projects.filter((p) => p.status !== 'active');
   const list = (S.projArchive ? archived : active).sort((a, b) => a.pos - b.pos);
   const sel = list.find((p) => p.id === S.proj) || list[0];
-  const r = running();
-  const total = active.reduce((a, p) => a + projMin(p), 0);
-  const rows = list.map((p, i) => `<div class="pr${i === list.length - 1 ? ' last' : ''}" data-act="proj" data-id="${p.id}">
-      <div style="display:flex;flex-direction:column;min-width:0"><span class="nm">${p === sel ? `<span class="riso-hl" style="padding:0 3px">${esc(p.name)}</span>` : esc(p.name)}${r && r.project_id === p.id ? ' <span class="red" style="font-size:12px">&#9679; REC</span>' : ''}</span>
-      <span class="st">${S.projArchive ? `<span>${STATUS[p.status]}</span>` : ''}${p.category ? `<span class="cat">${esc(p.category)}</span>` : ''}${stageChain(p)}</span></div>
-      <span class="r">${dur(projMin(p))}</span><span class="r${p.pay ? '' : ' mu'}">${p.pay ? won(p.pay) : '&#8212;'}</span></div>`).join('');
-  const f = (label, key, val) => `<div class="kv" data-act="pf" data-f="${key}"><span>${label}</span><span>${val}</span></div>`;
-  const side = sel ? `<section class="side">
-      <span class="bk" style="margin-bottom:8px" data-act="pf" data-f="name">${esc(sel.name)}</span>
-      ${f('분류', 'category', sel.category ? esc(sel.category) : '<span class="mu">&#8212;</span>')}
-      ${f('기간', 'period', periodLabel(sel))}
-      ${f('보수', 'pay', sel.pay ? won(sel.pay) : '<span class="mu">&#8212;</span>')}
-      <div class="kv"><span>작업</span><span>${dur(projMin(sel))}</span></div>
-      <span class="lb" data-act="pf" data-f="people">함께한 사람</span><span data-act="pf" data-f="people">${sel.people ? esc(sel.people) : '<span class="mu">&#8212;</span>'}</span>
-      <span class="lb" data-act="pf" data-f="output">결과물</span><span data-act="pf" data-f="output">${sel.output ? esc(sel.output) : '<span class="mu">&#8212;</span>'}</span>
-      <span class="lb" data-act="pf" data-f="stages">단계</span><span data-act="pf" data-f="stages" style="font-size:14px">${(sel.stages || []).length ? esc(sel.stages.join(' → ')) : '<span class="mu">&#8212;</span>'}</span>
-      <span class="lb" data-act="pf" data-f="programs">프로그램</span><span data-act="pf" data-f="programs">${sel.programs ? esc(sel.programs) : '<span class="mu">&#8212;</span>'}</span>
-      <span class="lb" data-act="pf" data-f="link">링크</span>${sel.link ? `<a class="lnk" href="${esc(/^https?:/.test(sel.link) ? sel.link : 'https://' + sel.link)}" target="_blank" rel="noopener">${esc(sel.link.replace(/^https?:\/\//, ''))}</a>` : '<span data-act="pf" data-f="link" class="mu">&#8212;</span>'}
-      <span class="lb" data-act="pf" data-f="note">작가 노트</span><p class="note" data-act="pf" data-f="note">${sel.note ? esc(sel.note) : '<span class="mu">&#8212;</span>'}</p>
-      ${sel.status === 'active'
-        ? `${r && r.project_id === sel.id ? '<button class="btn" style="margin-top:16px" data-act="stop">멈추고 기록</button>' : ''}
-           <div class="acts"><button class="ul" data-act="pstatus" data-s="done">완료</button><button class="ul" data-act="pstatus" data-s="archived">보관</button><button class="ul" data-act="pstatus" data-s="stopped">중단</button></div>`
-        : `<div class="acts" style="margin-top:16px"><button class="ul" data-act="pstatus" data-s="active">다시 진행</button><button class="ul" data-act="pdel">삭제</button></div>`}
-    </section>` : '<section class="side"></section>';
-  return `${header(`진행 중 ${active.length} &#183; 작업 ${dur(total)}`)}
+  const rows = list.map((p, i) => `<div class="pl${p === sel ? ' on' : ''}${i === list.length - 1 ? ' last' : ''}" data-act="proj" data-id="${p.id}">
+      <span class="nm">${esc(p.name)}</span>${p.category ? `<span class="cat">${esc(p.category)}</span>` : ''}</div>`).join('');
+  const none = '<span class="mu">&#8212;</span>';
+  const row = (label, key, val) => `<div class="pv" data-act="pf" data-f="${key}"><span class="pk">${label}</span><span class="pval">${val || none}</span></div>`;
+  const link = sel?.link ? `<a class="lnk" href="${esc(/^https?:/.test(sel.link) ? sel.link : 'https://' + sel.link)}" target="_blank" rel="noopener">${esc(sel.link.replace(/^https?:\/\//, ''))}</a>` : '';
+  const detail = sel ? `<section class="pdet">
+      <span class="ptitle" data-act="pf" data-f="name">${esc(sel.name)}</span>
+      ${row('분류', 'category', sel.category && esc(sel.category))}
+      ${row('기간', 'period', (sel.start_day || sel.end_day) && periodLabel(sel))}
+      ${row('보수', 'pay', sel.pay && won(sel.pay))}
+      ${row('함께한 사람', 'people', sel.people && esc(sel.people))}
+      ${row('결과물', 'output', sel.output && esc(sel.output))}
+      ${row('프로그램', 'programs', sel.programs && esc(sel.programs))}
+      ${row('링크', 'link', link)}
+      <div class="pv note-row" data-act="pf" data-f="note"><span class="pk">작가 노트</span><p class="note pval">${sel.note ? esc(sel.note) : none}</p></div>
+    </section>` : '<section class="pdet"></section>';
+  return `${header(`진행 중 ${active.length}`)}
   <div class="main">
-    <section class="left">
-      <div class="row"><span class="bk">PROJECTS / ${S.projArchive ? '보관함' : '진행 중'}</span><span style="font-size:15px">[ ${list.length} ]</span>
+    <section class="plist">
+      <div class="row"><span class="bk">${S.projArchive ? '보관함' : 'PROJECTS'}</span><span style="font-size:15px">[ ${list.length} ]</span>
         ${S.projArchive ? '' : '<button aria-label="프로젝트 추가" data-act="proj-add" style="margin-left:auto;font-size:20px;padding:0 2px">+</button>'}</div>
-      <div class="pr hd2"><span>이름 &#183; 단계</span><span class="r">작업</span><span class="r">보수</span></div>
       <div class="scroll">${rows}</div>
       <button class="lk" data-act="proj-archive">${S.projArchive ? '&#8592; 진행 중' : `보관함 [ ${archived.length} ] &#8594;`}</button>
     </section>
-    ${side}
+    ${detail}
   </div>`;
 }
 
@@ -1297,8 +1288,10 @@ function handleMore(act, el, ev) {
     const p = projOf(S.proj) || S.projects.filter((x) => (S.projArchive ? x.status !== 'active' : x.status === 'active')).sort((a, b) => a.pos - b.pos)[0];
     if (!p) return true;
     const fld = el.dataset.f;
-    let target = el.classList.contains('kv') ? el.lastElementChild : el;
+    if (ev.target.closest('a.lnk')) return true;   // 링크는 열기
+    let target = el.classList.contains('kv') ? el.lastElementChild : el.classList.contains('pv') ? el.querySelector('.pval') : el;
     if (el.classList.contains('lb')) target = el.nextElementSibling;
+    if (el.classList.contains('pv') && target.tagName === 'P') { const sp = document.createElement('span'); target.replaceWith(sp); target = sp; }
     inlineEdit(target, projField(p, fld), (v) => { const patch = parseProjField(fld, v); patch ? saveProj(p, patch) : render(); }, fld === 'note');
     return true;
   }

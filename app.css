@@ -342,3 +342,19 @@ body.phone .cell b:not(.now){margin-top:-1px;margin-bottom:3px}
 .wu{font-size:15px;padding:0 6px 0 1px;align-self:center}
 .wt{font-size:15px}
 .pr .st .cat{border:1.5px solid var(--ink);padding:0 4px;line-height:1.3}
+/* 프로젝트: 좁은 목록 + 넓은 상세 */
+.plist{width:220px;flex:none;display:flex;flex-direction:column;min-height:0}
+.pl{display:flex;flex-direction:column;align-items:flex-start;gap:4px;border-top:1.5px solid var(--ink);padding:9px 0 10px;cursor:pointer}
+.pl.last{border-bottom:1.5px solid var(--ink)}
+.pl .nm{font-size:17px;line-height:1.2;word-break:keep-all;padding:1px 4px;margin-left:-4px}
+.pl.on .nm{background:var(--ink);color:var(--paper)}
+.pl .cat{font-size:11px;border:1.5px solid var(--ink);padding:0 4px;line-height:1.3}
+.pdet{flex:1 1 0;min-width:0;display:flex;flex-direction:column;overflow-y:auto;font-size:16px}
+.ptitle{font-size:26px;letter-spacing:-.01em;line-height:1.2;margin:-2px 0 14px;cursor:text;word-break:keep-all}
+.pv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:baseline;border-top:1.5px solid var(--ink);padding:10px 0 11px;cursor:text}
+.pv:last-child{border-bottom:1.5px solid var(--ink)}
+.pk{font-size:13px}
+.pval{line-height:1.35;word-break:keep-all}
+.pdet .note{font-size:15px;line-height:1.5}
+body.phone .plist{width:auto}
+body.phone .pv{grid-template-columns:90px minmax(0,1fr);gap:10px}
