@@ -1012,7 +1012,7 @@ function viewProjects() {
   const list = (S.projArchive ? archived : active).sort((a, b) => a.pos - b.pos);
   const sel = list.find((p) => p.id === S.proj) || list[0];
   const rows = list.map((p, i) => `<div class="pl${p === sel ? ' on' : ''}${i === list.length - 1 ? ' last' : ''}" data-act="proj" data-id="${p.id}">
-      <span class="nm">${esc(p.name)}</span>${p.category ? `<span class="cat">${esc(p.category)}</span>` : ''}</div>`).join('');
+      <span class="nm">${esc(p.name)}</span></div>`).join('');
   const none = '<span class="mu">&#8212;</span>';
   const row = (label, key, val) => `<div class="pv" data-act="pf" data-f="${key}"><span class="pk">${label}</span><span class="pval">${val || none}</span></div>`;
   const link = sel?.link ? `<a class="lnk" href="${esc(/^https?:/.test(sel.link) ? sel.link : 'https://' + sel.link)}" target="_blank" rel="noopener">${esc(sel.link.replace(/^https?:\/\//, ''))}</a>` : '';

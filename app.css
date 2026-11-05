@@ -351,8 +351,7 @@ body.phone .cell b:not(.now){margin-top:-1px;margin-bottom:3px}
 .pl .cat{font-size:11px;border:1.5px solid var(--ink);padding:0 4px;line-height:1.3}
 .pdet{flex:1 1 0;min-width:0;display:flex;flex-direction:column;overflow-y:auto;font-size:16px}
 .ptitle{font-size:26px;letter-spacing:-.01em;line-height:1.2;margin:-2px 0 14px;cursor:text;word-break:keep-all}
-.pv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:baseline;border-top:1.5px solid var(--ink);padding:10px 0 11px;cursor:text}
-.pv:last-child{border-bottom:1.5px solid var(--ink)}
+.pv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:baseline;padding:7px 0;cursor:text}
 .pk{font-size:13px}
 .pval{line-height:1.35;word-break:keep-all}
 .pdet .note{font-size:15px;line-height:1.5}
