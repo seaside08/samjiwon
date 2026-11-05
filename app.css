@@ -349,7 +349,8 @@ body.phone .cell b:not(.now){margin-top:-1px;margin-bottom:3px}
 .pl .nm{font-size:17px;line-height:1.2;word-break:keep-all;padding:1px 4px;margin-left:-4px}
 .pl .cat{font-size:11px;border:1.5px solid var(--ink);padding:0 4px;line-height:1.3}
 .pdet{flex:1 1 0;min-width:0;display:flex;flex-direction:column;overflow-y:auto;font-size:16px}
-.ptitle{font-size:26px;letter-spacing:-.01em;line-height:1.2;margin:-2px 0 14px;cursor:text;word-break:keep-all}
+.ptitle{align-self:flex-end;text-align:right;font-size:34px;letter-spacing:-.02em;line-height:1.15;padding:14px 20px 16px;margin:0 0 22px;max-width:90%;cursor:text;word-break:keep-all}
+body.phone .ptitle{font-size:26px;padding:10px 14px 12px}
 .pv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:baseline;padding:7px 0;cursor:text}
 .pk{font-size:13px}
 .pval{line-height:1.35;word-break:keep-all}
