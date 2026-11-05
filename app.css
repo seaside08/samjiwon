@@ -55,7 +55,7 @@ nav.tabs a.on{padding:3px 10px;margin-right:-10px;transform:rotate(-1.5deg)}
 
 /* 오늘 오른쪽 */
 .today-side{width:400px;flex:none;display:flex;flex-direction:column;gap:6px}
-.sched{padding:19px 18px 17px;display:flex;flex-direction:column;gap:3px}
+.sched{padding:21px 18px 23px;display:flex;flex-direction:column;gap:3px}
 .sched .h{display:flex;justify-content:space-between;font-size:13px;letter-spacing:.04em}
 .sched .e{display:flex;gap:12px;align-items:baseline}
 .sched .e .t{width:52px;flex:none}
