@@ -336,8 +336,9 @@ body.phone .sheet{position:fixed;left:16px;right:16px;top:50%;bottom:auto;transf
 body.phone .cell b.now{margin:-4px -3px 1px;padding:3px 3px 2px}
 body.phone .cell b:not(.now){margin-top:-1px;margin-bottom:3px}
 .pick{background:var(--ink);color:var(--paper)}
-.logbtn{margin-top:22px;align-self:flex-start;font-size:15px;padding:5px 12px}
-.ph .logbtn{margin-top:24px}
+.logbtn{align-self:flex-start;font-size:15px;padding:5px 12px}
+.nw{margin-top:22px;gap:12px}
+
 .logdial .dialbox{align-items:center;width:100%}
 .wu{font-size:15px;padding:0 6px 0 1px;align-self:center}
 .wt{font-size:15px}

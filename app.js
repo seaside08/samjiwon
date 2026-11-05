@@ -344,11 +344,11 @@ function viewToday() {
     ...sessOf(day).map((s) => ({ k: minOfDay(s.start_at), h: `<div class="e"${s.end_at ? ` data-act="edit-sess" data-id="${s.id}"` : ''}><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))}</span><span class="x">${s.end_at ? '~' + hm(minOfDay(s.end_at)) : 'REC'}</span></div>` })),
   ].sort((a, b) => a.k - b.k);
   const active = S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
-  const now = r ? `<div class="nw">
-        <div style="display:flex;align-items:center;gap:12px"><span class="bk">NOW WORKING &#8212; ${esc(sessLabel(r))}</span><span class="red" style="font-size:12px;letter-spacing:.04em">&#9679; REC</span></div>
-        <span id="elapsed" class="big-t">${elapsed(r)}</span>
-        <div style="display:flex;gap:14px;align-items:center;margin-top:4px"><button class="btn" data-act="stop">멈추고 기록</button><button class="ul" data-act="discard">기록 안 함</button></div>
-      </div>` : `<button class="btn logbtn" data-act="log-open">작업시간 기록하기</button>`;
+  // 지금 하는 작업: 돌고 있는 기록 → 가장 최근 기록 → 진행 중 첫 프로젝트
+  const lastS = S.sessions.slice().sort((a, b) => (a.start_at < b.start_at ? 1 : -1))[0];
+  const cur = (r && sessLabel(r)) || (lastS && projOf(lastS.project_id)?.status === 'active' && sessLabel(lastS)) || active[0]?.name;
+  const now = `<div class="nw">${cur ? `<span class="bk">NOW WORKING &#8212; ${esc(cur)}</span>` : ''}
+      <button class="btn logbtn" data-act="log-open">작업시간 기록하기</button></div>`;
   if (PHONE) return `${header('')}
   <section class="ph">
     <div class="row"><span class="bk">TODAY / 오늘 할 일</span><span class="red" style="font-size:16px">[ ${done} / ${todos.length} ]</span></div>
@@ -358,7 +358,7 @@ function viewToday() {
     ${now}
     <div class="ph-sum">작업 ${dur(sess)} &#183; 근무 ${dur(work)} &#183; 이번 주 작업 ${dur(weekSess)}</div>
   </section>`;
-  return `${header(`할 일 ${done}/${todos.length} &#183; 작업 ${dur(sess)}`)}
+  return `${header('')}
   <div class="main" style="gap:36px">
     <section class="left">
       <div class="row"><span class="bk">TODAY / 오늘 할 일</span><span class="red" style="font-size:15px">[ ${done} / ${todos.length} ]</span></div>
@@ -371,7 +371,6 @@ function viewToday() {
         <div class="h"><span>SCHEDULE</span></div>
         ${items.map((x) => x.h).join('')}
       </div>
-      <span class="cap">오늘의 일정 ${evs.length} &#183; ${work ? '근무 ' + dur(work) : '근무 없음'}</span>
       ${now}
       <div style="flex:1 1 0"></div>
       <div class="mini">작업 ${dur(sess)}<br>근무 ${dur(work)}<br>이번 주 작업 ${dur(weekSess)}</div>
