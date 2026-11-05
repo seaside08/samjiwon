@@ -398,7 +398,6 @@ function daySide() {
     ${addForm('event', '일정 추가', 'margin-top:2px')}
     <span class="lbl red">할 일 [ ${done} / ${todos.length} ]</span>
     <div class="todos">${todos.map(todoRow).join('')}</div>
-    ${addForm('todo-sel', '할 일 추가')}
   </section>`;
 }
 
@@ -618,6 +617,64 @@ async function runImport() {
     location.hash = '#work';
     toast(`근무 ${I.work.length}회를 달력에 넣었어요`);
   } catch (e) { fail(e); }
+}
+
+// ───────── 백업 (zip: CSV · 일기 · 캘린더 · JSON)
+const csvCell = (v) => { if (v == null) return ''; const t = Array.isArray(v) ? v.join(' > ') : String(v); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+function toCSV(rows, cols) {
+  return '\ufeff' + [cols.map((c) => c[1]).join(','), ...rows.map((r) => cols.map(([k, , f]) => csvCell(f ? f(r) : r[k])).join(','))].join('\r\n');
+}
+const isoLocal = (iso) => { if (!iso) return ''; const d = new Date(iso); return `${ymd(d)} ${hm(d.getHours() * 60 + d.getMinutes())}`; };
+const icsEsc = (t) => String(t || '').replace(/[\\;,]/g, (c) => '\\' + c).replace(/\n/g, '\\n');
+function toICS(events, projects) {
+  const dt = (day, min) => { const d = parseYmd(day); d.setMinutes(min); return `${ymd(d).replace(/-/g, '')}T${pad(d.getHours())}${pad(d.getMinutes())}00`; };
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//samjung//KO', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:삼중일기', 'X-WR-TIMEZONE:Asia/Seoul'];
+  for (const e of events) {
+    lines.push('BEGIN:VEVENT', `UID:${e.id}@samjung`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`);
+    if (e.start_min == null) {
+      lines.push(`DTSTART;VALUE=DATE:${e.day.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${ymd(addDays(parseYmd(e.day), 1)).replace(/-/g, '')}`);
+    } else {
+      lines.push(`DTSTART;TZID=Asia/Seoul:${dt(e.day, e.start_min)}`, `DTEND;TZID=Asia/Seoul:${dt(e.day, e.end_min ?? e.start_min + 60)}`);
+    }
+    const p = projects.find((x) => x.id === e.project_id);
+    lines.push(`SUMMARY:${icsEsc((e.kind === 'work' ? '근무 · ' : e.kind === 'task' ? '작업 · ' : '') + e.title)}`);
+    if (p) lines.push(`DESCRIPTION:${icsEsc('프로젝트: ' + p.name)}`);
+    lines.push('END:VEVENT');
+  }
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+async function backup(btn) {
+  btn.disabled = true; btn.textContent = '모으는 중…';
+  try {
+    const [todos, events, days, sessions, projects, plants, plogs] = await Promise.all(
+      ['todos', 'events', 'days', 'sessions', 'projects', 'plants', 'plant_logs'].map((t) => api.all(t)));
+    const byDay = (a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0);
+    const pname = (id) => projects.find((p) => p.id === id)?.name || '';
+    const plname = (id) => plants.find((p) => p.id === id)?.name || '';
+    const KO = { task: '작업', event: '약속', work: '근무' };
+    const ST = { active: '진행 중', done: '완료', archived: '보관', stopped: '중단' };
+    const diary = days.filter((d) => d.diary && d.diary.trim()).sort(byDay)
+      .map((d) => `## ${d.day} ${WD_EN[parseYmd(d.day).getDay()]}\n\n${d.diary.trim()}\n`).join('\n');
+    if (!window.JSZip) await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'vendor/jszip.min.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+    const JSZip = window.JSZip;
+    const z = new JSZip(), stamp = todayStr().replace(/-/g, '');
+    const f = z.folder(`삼중일기-백업-${stamp}`);
+    f.file('할일.csv', toCSV(todos.sort(byDay), [['day', '날짜'], ['text', '할 일'], ['tag', '태그'], ['done', '완료', (r) => (r.done ? 'O' : '')], ['done_at', '완료 시각', (r) => isoLocal(r.done_at)]]));
+    f.file('일정.csv', toCSV(events.sort(byDay), [['day', '날짜'], ['kind', '종류', (r) => KO[r.kind] || r.kind], ['title', '제목'], ['start_min', '시작', (r) => (r.start_min == null ? '' : hm(r.start_min))], ['end_min', '끝', (r) => (r.end_min == null ? '' : hm(r.end_min))], ['place', '근무지'], ['project_id', '프로젝트', (r) => pname(r.project_id)]]));
+    f.file('작업기록.csv', toCSV(sessions.sort(byDay), [['day', '날짜'], ['project_id', '프로젝트', (r) => pname(r.project_id) || r.title], ['start_at', '시작', (r) => isoLocal(r.start_at)], ['end_at', '끝', (r) => isoLocal(r.end_at)], ['min', '분', (r) => (r.end_at ? sessMin(r) : '')]]));
+    f.file('프로젝트.csv', toCSV(projects, [['name', '이름'], ['status', '상태', (r) => ST[r.status] || r.status], ['stages', '단계'], ['start_day', '시작'], ['end_day', '끝'], ['pay', '보수'], ['programs', '프로그램'], ['link', '링크'], ['note', '작가 노트'], ['min', '작업 분', (r) => sessions.filter((x) => x.project_id === r.id).reduce((a, x) => a + (x.end_at ? sessMin(x) : 0), 0)]]));
+    f.file('식물.csv', toCSV(plants, [['species', '종류'], ['name', '이름'], ['interval_days', '물 주기(일)'], ['gone', '추억의 전당', (r) => (r.gone ? 'O' : '')], ['gone_day', '보낸 날']]));
+    f.file('식물기록.csv', toCSV(plogs.sort(byDay), [['day', '날짜'], ['plant_id', '식물', (r) => plname(r.plant_id)], ['watered', '물', (r) => (r.watered ? 'O' : '')], ['memo', '메모']]));
+    f.file('일기.md', `# 삼중일기 · 일기\n\n${diary}`);
+    f.file('일정.ics', toICS(events, projects));
+    f.file('전체.json', JSON.stringify({ exported_at: new Date().toISOString(), todos, events, days, sessions, projects, plants, plant_logs: plogs }, null, 1));
+    const blob = await z.generateAsync({ type: 'blob' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `삼중일기-백업-${stamp}.zip`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    btn.textContent = '백업 받았어요';
+  } catch (e) { fail(e); btn.textContent = '백업 받기'; }
+  btn.disabled = false;
 }
 
 function viewSoon() {
@@ -1170,6 +1227,7 @@ function viewStats() {
           ${pl.map(([k, v], i) => `<div class="pb"><span class="ln">${esc(k)}</span><i class="${['riso', 'riso2', 'riso3'][i % 3]}" style="width:${(v / pmax) * 100}%"></i><span style="text-align:right">${Math.round(v / 60) || '&lt;1'}H</span></div>`).join('')}
         </div>
       </div>
+      <button class="ul" data-act="backup" style="margin-top:auto;font-size:13px">백업 받기</button>
     </section>
     <section class="side">
       <span class="bk" style="margin-bottom:8px">${pad(sd.getMonth() + 1)} / ${pad(sd.getDate())} ${WD_EN[sd.getDay()]}</span>
@@ -1270,6 +1328,7 @@ function handleMore(act, el, ev) {
     api.update('plants', plant.id, { gone: false, gone_day: null }).catch(fail); return true;
   }
   // 통계
+  if (act === 'backup') { backup(el); return true; }
   if (act === 'stat-day') { S.statDay = el.dataset.day; render(); return true; }
   return false;
 }
@@ -1339,7 +1398,7 @@ function sheetHTML() {
   let body = '';
   if (sh.mode === 'menu') {
     if (t === 'todo') body = row('edit', '수정하기') + row('tomorrow', '내일 하기') + row('date', '날짜 바꾸기') + row('toEvent', '일정으로 바꾸기') + row('del', '지우기');
-    else if (t === 'event') body = (it.kind !== 'work' ? row('edit', '수정하기') : '') + row('time', '시간 바꾸기') + row('date', '날짜 바꾸기') + row('tomorrow', '내일로 옮기기') + (it.kind !== 'work' ? row('kind', it.kind === 'task' ? '약속으로 바꾸기' : '작업으로 바꾸기') + row('toTodo', '할 일로 바꾸기') : '') + row('del', '지우기');
+    else if (t === 'event') body = (it.kind !== 'work' ? row('edit', '수정하기') : '') + row('time', '시간 바꾸기') + row('date', '날짜 바꾸기') + row('tomorrow', '내일 하기') + (it.kind !== 'work' ? row('kind', it.kind === 'task' ? '약속으로 바꾸기' : '작업으로 바꾸기') + row('toTodo', '할 일로 바꾸기') : '') + row('del', '지우기');
     else body = row('time', '시간 바꾸기') + row('del', '지우기');
   } else if (sh.mode === 'edit') {
     body = `<form class="sh-form" data-sh="edit"><input class="edit" autocomplete="off" enterkeyhint="done" value="${esc(t === 'todo' ? todoInput(it) : it.title)}"></form>
@@ -1436,7 +1495,6 @@ async function sheetDo(d) {
     return upd({ start_min: a, end_min: v.noEnd && it.kind !== 'work' ? null : b });
   }
   if (d === 'del') {
-    if (!sh.sure) { sh.sure = true; const b = board.querySelector('[data-do="del"]'); if (b) { b.textContent = '정말 지우기'; b.classList.add('red'); } return; }
     if (t === 'todo') S.todos = S.todos.filter((x) => x !== it);
     else if (t === 'event') S.events = S.events.filter((x) => x !== it);
     else S.sessions = S.sessions.filter((x) => x !== it);

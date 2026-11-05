@@ -102,7 +102,10 @@ function draw(size, data, tex, fam) {
   // 머리
   text(`${y0}. ${pad(m0 + 1)}`, P, P - 3, 160, 22, Font.boldMonospacedSystemFont(17));
   const workDays = new Set(events.filter((e) => e.kind === 'work' && e.day.startsWith(`${y0}-${pad(m0 + 1)}`)).map((e) => e.day)).size;
-  text(`근무 ${workDays}일`, W - P - 120, P, 120, 16, Font.boldMonospacedSystemFont(10), INK, 'right');
+  const mPrefix = `${y0}-${pad(m0 + 1)}`;
+  const taskDays = new Set([...events.filter((e) => e.kind === 'task' && e.day.startsWith(mPrefix)).map((e) => e.day), ...(data.sessions || []).filter((x) => x.day.startsWith(mPrefix)).map((x) => x.day)]).size;
+  text(`작업 ${taskDays}일`, W - P - 120, P - 6, 120, 13, Font.boldMonospacedSystemFont(9), INK, 'right');
+  text(`근무 ${workDays}일`, W - P - 120, P + 6, 120, 13, Font.boldMonospacedSystemFont(9), INK, 'right');
 
   // 요일
   const top = P + 25, cw = (W - P * 2) / 7;
@@ -166,11 +169,12 @@ async function main() {
     const tk = await token();
     const y = now.getFullYear(), m = now.getMonth();
     const from = ymd(new Date(y, m, 1 - new Date(y, m, 1).getDay())), to = ymd(new Date(y, m + 1, 14));
-    const [events, tex] = await Promise.all([
+    const [events, sessions, tex] = await Promise.all([
       get(tk, `events?select=day,start_min,title,kind,place&day=gte.${from}&day=lte.${to}`),
+      get(tk, `sessions?select=day&day=gte.${from}&day=lte.${to}`).catch(() => []),
       texture(),
     ]);
-    w.backgroundImage = draw(widgetSize(fam), { events }, tex, fam);
+    w.backgroundImage = draw(widgetSize(fam), { events, sessions }, tex, fam);
   } catch (e) {
     const t = w.addText(e.message);
     t.font = Font.boldSystemFont(12); t.textColor = RED;

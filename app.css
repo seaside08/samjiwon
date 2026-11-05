@@ -328,4 +328,4 @@ body.phone .sync{font-size:15px}
 .wi.on{color:var(--ink);font-weight:700}
 .wc{font-size:22px;padding:0;margin-top:-3px}
 body.phone .sh-bg{position:fixed}
-body.phone .sheet{position:fixed;left:0;right:0;top:auto;bottom:0;transform:none;width:auto;max-height:85vh;border-width:2.5px 0 0;padding:18px 20px calc(env(safe-area-inset-bottom) + 22px)}
+body.phone .sheet{position:fixed;left:16px;right:16px;top:50%;bottom:auto;transform:translateY(-50%);width:auto;max-height:80vh;padding:18px 20px 20px}
