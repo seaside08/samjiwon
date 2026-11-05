@@ -589,33 +589,40 @@ async function fillRoutine(w) {
 
 // ───────── 근무표 가져오기 (#import=… 링크)
 // { from, to, work: [[day, 근무지, 시작분, 끝분], …] } — 기간 안의 기존 근무는 지우고 바꿔 넣음
+// 가져올 일정 목록으로 정리: [{ day, kind, title, start_min, end_min, place }]
+function impItems(I) {
+  if (I.events) return I.events.map(([day, kind, title, a, b]) => ({ day, kind, title, start_min: a ?? null, end_min: b ?? null, place: kind === 'work' ? title : null }));
+  return (I.work || []).map(([day, place, a, b]) => ({ day, kind: 'work', title: place, start_min: a, end_min: b, place }));
+}
+const impHit = (I, e) => (I.replace === 'all' ? true : e.kind === 'work' && (!I.places || I.places.includes(e.place)));
 function viewImport() {
-  const I = S.imp || { work: [] };
-  const hit = (e) => e.kind === 'work' && (!I.places || I.places.includes(e.place));
-  const old = S.events.filter((e) => hit(e) && e.day >= I.from && e.day <= I.to).length;
-  const rows = I.work.map(([day, place, a, b]) => {
-    const d = parseYmd(day);
-    return `<div class="ir"><span>${md(day)} ${WD_EN[d.getDay()]}</span><span>${esc(place)}</span><span>${hm(a)}&#8211;${hm(b)}</span><span class="r">${dur(b - a)}</span></div>`;
+  const I = S.imp || { work: [] }, items = impItems(I);
+  const old = S.events.filter((e) => impHit(I, e) && e.day >= I.from && e.day <= I.to).length;
+  const rows = items.map((e) => {
+    const d = parseYmd(e.day);
+    const t = e.start_min == null ? '' : `${hm(e.start_min)}${e.end_min != null ? '&#8211;' + hm(e.end_min) : ''}`;
+    return `<div class="ir"><span>${md(e.day)} ${WD_EN[d.getDay()]}</span><span>${e.kind === 'work' ? '' : `<span class="mu">${KIND_KO[e.kind]}</span> `}${esc(e.title)}</span><span>${t}</span><span class="r">${e.kind === 'work' && e.end_min != null ? dur(e.end_min - e.start_min) : ''}</span></div>`;
   }).join('');
-  const total = I.work.reduce((x, w) => x + (w[3] - w[2]), 0);
-  return `${header(`근무 ${I.work.length}회 &#183; ${dur(total)}`)}
+  const work = items.filter((e) => e.kind === 'work'), total = work.reduce((x, w) => x + (w.end_min - w.start_min), 0);
+  return `${header(`일정 ${items.length}개 &#183; 근무 ${work.length}회 ${dur(total)}`)}
   <div class="main"><section class="left">
-    <div class="row"><span class="bk">IMPORT / 근무표 가져오기</span><span style="font-size:15px">${md(I.from)} &#8212; ${md(I.to)}</span></div>
+    <div class="row"><span class="bk">IMPORT / 일정 가져오기</span><span style="font-size:15px">${md(I.from)} &#8212; ${md(I.to)}</span></div>
     <div class="ilist">${rows}</div>
-    <span style="margin-top:14px;font-size:13px">${old ? `이 기간에 이미 있는 ${I.places ? I.places.join('·') + ' ' : ''}근무 ${old}개는 지우고 바꿔 넣어요` : ''}</span>
+    <span style="margin-top:14px;font-size:13px">${old ? `이 기간에 이미 있는 ${I.replace === 'all' ? '일정' : (I.places ? I.places.join('·') + ' ' : '') + '근무'} ${old}개는 지우고 바꿔 넣어요` : ''}</span>
     <div style="display:flex;gap:16px;align-items:center;margin-top:14px"><button class="btn" data-act="imp-ok">달력에 넣기</button><button class="ul" data-act="imp-no">취소</button></div>
   </section></div>`;
 }
 async function runImport() {
   const I = S.imp; if (!I) return;
+  const items = impItems(I);
   try {
     const cur = await api.list('events', I.from, I.to);
-    for (const e of cur.filter((x) => x.kind === 'work' && (!I.places || I.places.includes(x.place)))) await api.remove('events', e.id);
-    await api.insertMany('events', I.work.map(([day, place, a, b]) => ({ day, start_min: a, end_min: b, title: place, kind: 'work', place })));
+    for (const e of cur.filter((x) => impHit(I, x))) await api.remove('events', e.id);
+    for (let k = 0; k < items.length; k += 200) await api.insertMany('events', items.slice(k, k + 200));
     S.imp = null; S.loaded = [null, null];
     S.month = new Date(parseYmd(I.from).getFullYear(), parseYmd(I.from).getMonth(), 1);
-    location.hash = '#work';
-    toast(`근무 ${I.work.length}회를 달력에 넣었어요`);
+    S.sel = I.from; location.hash = I.events ? '#cal' : '#work';
+    toast(`일정 ${items.length}개를 달력에 넣었어요`);
   } catch (e) { fail(e); }
 }
 
