@@ -23,7 +23,7 @@ const pad = (n) => String(n).padStart(2, '0');
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const now = new Date();
 const today = ymd(now);
-const WD = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const WD = ['日', '月', '火', '水', '木', '金', '土'];
 
 // ───────── 로그인 (오늘 위젯과 같은 열쇠를 씀)
 async function auth(body, grant) {

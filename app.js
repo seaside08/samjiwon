@@ -31,6 +31,7 @@ function workCode(min) {
   return m ? `${h}${String(m).padStart(2, '0')}` : `0${h}`;
 }
 const WD_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const WD_HJ = ['日', '月', '火', '水', '木', '金', '土'];
 
 // ───────── 날짜 도우미
 const pad = (n) => String(n).padStart(2, '0');
@@ -439,7 +440,7 @@ function viewMonth() {
   <div class="main">
     <section class="left" style="--rowh:${rows > 5 ? 96 : 110}px">
       ${calCtl(`${y}. ${pad(mo + 1)}`, '이전 달', '다음 달')}
-      <div class="wd">${WD_EN.map((w) => `<span>${w}</span>`).join('')}</div>
+      <div class="wd">${WD_HJ.map((w) => `<span>${w}</span>`).join('')}</div>
       ${grid}
     </section>
     ${daySide()}
@@ -492,7 +493,7 @@ function viewWeek() {
   });
   const heads = days.map((d) => {
     const ds = ymd(d);
-    return `<span class="dh" data-act="sel" data-day="${ds}">${WD_EN[d.getDay()]} <span class="n ${ds === today ? 'now' : ds === S.sel ? 'pick' : ''}">${pad(d.getDate())}</span></span>`;
+    return `<span class="dh" data-act="sel" data-day="${ds}">${WD_HJ[d.getDay()]} <span class="n ${ds === today ? 'now' : ds === S.sel ? 'pick' : ''}">${pad(d.getDate())}</span></span>`;
   });
   const hours = [10, 12, 14, 16, 18, 20, 22].map((h, i) => `<span style="top:${4 + i * 80}px">${h}</span>`).join('');
   return `${header(`이번 주 작업 ${dur(weekSess)} &#183; 근무 ${dur(weekWork)}`)}
