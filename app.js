@@ -313,7 +313,7 @@ const X = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0L10 10M10 0L
 
 function header(sum) {
   const d = new Date();
-  return `<header class="hd"><span id="date">${dateLabel(d)}</span><span id="clock">${clockLabel(d)}</span><button class="sync" data-act="sync" aria-label="동기화">${S.syncLabel || '&#8635;'}</button><span class="sum">${sum || ''}</span></header>`;
+  return `<header class="hd"><span id="date">${dateLabel(d)}</span><span id="clock" class="${S.syncing ? 'busy' : ''}" data-act="sync" role="button" aria-label="동기화">${clockLabel(d)}</span><span class="sum">${sum || ''}</span></header>`;
 }
 const dateLabel = (d) => `${d.getFullYear()}. ${pad(d.getMonth() + 1)}. ${pad(d.getDate())}. ${WD_EN[d.getDay()]}`;
 const clockLabel = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
@@ -846,16 +846,15 @@ board.addEventListener('click', async (e) => {
   } else if (handleMore(act, el, e)) {
     // 처리됨
   } else if (act === 'sync') {
+    // 시계를 누르면: 새 버전이 있으면 새로고침, 아니면 데이터 새로 받기 (받는 동안 시계가 흐려짐)
     if (S.syncing) return;
-    S.syncing = true; el.textContent = '동기화 중';
-    if (await newVersion()) { el.textContent = '새 버전'; location.reload(); return; }
+    S.syncing = true; el.classList.add('busy');
+    if (await newVersion()) { location.reload(); return; }
     const t0 = Date.now();
     await load();
     await new Promise((r) => setTimeout(r, Math.max(0, 500 - (Date.now() - t0))));
     S.syncing = false;
-    const d = new Date(); S.syncLabel = `&#8635; ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    render();
-    setTimeout(() => { S.syncLabel = null; const b = board.querySelector('.sync'); if (b) b.innerHTML = '&#8635;'; }, 4000);
+    board.querySelector('#clock')?.classList.remove('busy');
   } else if (act === 'logout') {
     await sb.auth.signOut();
   }

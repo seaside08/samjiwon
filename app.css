@@ -362,3 +362,5 @@ body.phone .pv{grid-template-columns:90px minmax(0,1fr);gap:10px}
 .pl .live{margin:0 0 0 8px;vertical-align:2px}
 .nowbtn{align-self:flex-start;margin-bottom:12px;cursor:pointer;font-size:13px}
 .ph .nowbtn{margin:28px 0 -16px;font-size:14px}
+#clock{cursor:pointer;transition:opacity .2s}
+#clock.busy{opacity:.3}
