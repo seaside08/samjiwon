@@ -347,15 +347,14 @@ function viewToday() {
   // 지금 하는 작업: 돌고 있는 기록 → 가장 최근 기록 → 진행 중 첫 프로젝트
   const lastS = S.sessions.slice().sort((a, b) => (a.start_at < b.start_at ? 1 : -1))[0];
   const cur = (r && sessLabel(r)) || (lastS && projOf(lastS.project_id)?.status === 'active' && sessLabel(lastS)) || active[0]?.name;
-  const now = `<div class="nw">${cur ? `<span class="bk">NOW WORKING &#8212; ${esc(cur)}</span>` : ''}
-      <button class="btn logbtn" data-act="log-open">작업시간 기록하기</button></div>`;
+  const now = `<button class="bk nowbtn" data-act="log-open" aria-label="작업시간 기록하기">NOW WORKING${cur ? ` &#8212; ${esc(cur)}` : ''}</button>`;
   if (PHONE) return `${header('')}
   <section class="ph">
     <div class="row"><span class="bk">TODAY / 오늘 할 일</span><span class="red" style="font-size:16px">[ ${done} / ${todos.length} ]</span></div>
     <div class="todos">${todos.map(todoRow).join('')}</div>
     ${addForm('todo', '할 일 추가', 'margin-top:12px')}
-    ${items.length ? `<div class="sched riso"><div class="h"><span>SCHEDULE</span></div>${items.map((x) => x.h.replace(' data-act="go-day"', '')).join('')}</div>` : ''}
     ${now}
+    ${items.length ? `<div class="sched riso"><div class="h"><span>SCHEDULE</span></div>${items.map((x) => x.h.replace(' data-act="go-day"', '')).join('')}</div>` : ''}
     <div class="ph-sum">작업 ${dur(sess)} &#183; 근무 ${dur(work)} &#183; 이번 주 작업 ${dur(weekSess)}</div>
   </section>`;
   return `${header('')}
@@ -367,11 +366,11 @@ function viewToday() {
     </section>
     <section class="today-side">
       <div style="flex:2 1 0"></div>
+      ${now}
       <div class="sched riso">
         <div class="h"><span>SCHEDULE</span></div>
         ${items.map((x) => x.h).join('')}
       </div>
-      ${now}
       <div style="flex:1 1 0"></div>
       <div class="mini">작업 ${dur(sess)}<br>근무 ${dur(work)}<br>이번 주 작업 ${dur(weekSess)}</div>
     </section>
