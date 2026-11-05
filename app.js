@@ -32,6 +32,7 @@ function workCode(min) {
 }
 const WD_EN = ['日', '月', '火', '水', '木', '金', '土'];
 const WD_HJ = ['日', '月', '火', '水', '木', '金', '土'];
+const wdh = (i) => `<i class="hj">${WD_EN[i]}</i>`;
 
 // ───────── 날짜 도우미
 const pad = (n) => String(n).padStart(2, '0');
@@ -316,7 +317,7 @@ function header(sum) {
   const d = new Date();
   return `<header class="hd"><span id="date">${dateLabel(d)}</span><span id="clock" data-act="sync" role="button" aria-label="동기화">${clockLabel(d)}</span><span id="syncing" class="sync"${S.syncing ? '' : ' hidden'}>&#8635;</span><span class="sum">${sum || ''}</span></header>`;
 }
-const dateLabel = (d) => `${d.getFullYear()}. ${pad(d.getMonth() + 1)}. ${pad(d.getDate())}. ${WD_EN[d.getDay()]}`;
+const dateLabel = (d) => `${d.getFullYear()}. ${pad(d.getMonth() + 1)}. ${pad(d.getDate())}. ${wdh(d.getDay())}`;
 const clockLabel = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 
 function nav() {
@@ -394,7 +395,7 @@ function daySide() {
   const day = S.sel, d = parseYmd(day);
   const evs = eventsOf(day), todos = todosOf(day), done = todos.filter((t) => t.done).length;
   return `<section class="side">
-    <span class="bk" style="margin-bottom:8px">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${WD_EN[d.getDay()]}</span>
+    <span class="bk" style="margin-bottom:8px">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${wdh(d.getDay())}</span>
     ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(e.title)}</span>${e.end_min != null ? ' ~' + hm(e.end_min) : ''}</span></div>`).join('')}
     ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))} ~${hm(minOfDay(s.end_at))}</span></div>`).join('')}
     <div class="kinds">${KINDS.map(([k, l]) => `<button data-act="ak" data-k="${k}" class="${S.addKind === k ? 'riso3' : ''}">${l}</button>`).join('')}</div>
@@ -611,7 +612,7 @@ function viewImport() {
   const rows = items.map((e) => {
     const d = parseYmd(e.day);
     const t = e.start_min == null ? '' : `${hm(e.start_min)}${e.end_min != null ? '&#8211;' + hm(e.end_min) : ''}`;
-    return `<div class="ir"><span>${md(e.day)} ${WD_EN[d.getDay()]}</span><span>${e.kind === 'work' ? '' : `<span class="mu">${KIND_KO[e.kind]}</span> `}${esc(e.title)}</span><span>${t}</span><span class="r">${e.kind === 'work' && e.end_min != null ? dur(e.end_min - e.start_min) : ''}</span></div>`;
+    return `<div class="ir"><span>${md(e.day)} ${wdh(d.getDay())}</span><span>${e.kind === 'work' ? '' : `<span class="mu">${KIND_KO[e.kind]}</span> `}${esc(e.title)}</span><span>${t}</span><span class="r">${e.kind === 'work' && e.end_min != null ? dur(e.end_min - e.start_min) : ''}</span></div>`;
   }).join('');
   const work = items.filter((e) => e.kind === 'work'), total = work.reduce((x, w) => x + (w.end_min - w.start_min), 0);
   return `${header(`일정 ${items.length}개 &#183; 근무 ${work.length}회 ${dur(total)}`)}
@@ -1077,7 +1078,7 @@ function viewDiary() {
     <section class="left" style="gap:14px">
       <div style="display:flex;align-items:center;gap:10px">
         <span class="bk">DIARY / 일기</span>
-        <span style="margin-left:18px;font-size:22px;letter-spacing:-.01em">${pad(mo + 1)}. ${pad(d.getDate())} <i class="hj">${WD_EN[d.getDay()]}</i></span>
+        <span style="margin-left:18px;font-size:22px;letter-spacing:-.01em">${pad(mo + 1)}. ${pad(d.getDate())} ${wdh(d.getDay())}</span>
         ${day !== todayStr() ? '<button class="ul" data-act="diary-today" style="margin-left:8px;font-size:13px">오늘</button>' : ''}
       </div>
       <div class="strip">${strip}</div>
@@ -1091,7 +1092,7 @@ function viewDiary() {
     </section>
     <section class="side" style="gap:0">
       <span class="bk" style="margin-bottom:14px">지난 기록</span>
-      ${recent.map((r, i) => `<div class="ent${i === recent.length - 1 ? ' last' : ''}" data-act="diary-go" data-day="${r.day}"><b>${md(r.day)} <i class="hj">${WD_EN[parseYmd(r.day).getDay()]}</i></b><span>${esc(firstLine(r.diary))}</span></div>`).join('')}
+      ${recent.map((r, i) => `<div class="ent${i === recent.length - 1 ? ' last' : ''}" data-act="diary-go" data-day="${r.day}"><b>${md(r.day)} ${wdh(parseYmd(r.day).getDay())}</b><span>${esc(firstLine(r.diary))}</span></div>`).join('')}
     </section>
   </div>`;
 }
@@ -1191,7 +1192,7 @@ function viewPlants() {
     let pop = '';
     if (p === sel) {
       const l = logOf(p.id, selDay), idx = days.indexOf(selDay);
-      if (l?.memo && idx >= 0) pop = `<div class="pop" style="left:calc(var(--nw) + (100% - var(--nw)) * ${idx} / ${N} - ${idx > N / 2 ? 160 : -10}px)"><b>${md(selDay)} ${WD_EN[parseYmd(selDay).getDay()]}</b><span>${esc(l.memo)}</span></div>`;
+      if (l?.memo && idx >= 0) pop = `<div class="pop" style="left:calc(var(--nw) + (100% - var(--nw)) * ${idx} / ${N} - ${idx > N / 2 ? 160 : -10}px)"><b>${md(selDay)} ${wdh(parseYmd(selDay).getDay())}</b><span>${esc(l.memo)}</span></div>`;
     }
     return `<div class="tl-row${p === sel ? ' sel' : ''}" style="--n:${N}"><span class="nm" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b></span>${cells}${pop}</div>`;
   }).join('');
@@ -1286,7 +1287,7 @@ function viewStats() {
       <button class="ul" data-act="backup" style="margin-top:auto;font-size:13px">백업 받기</button>
     </section>
     <section class="side">
-      <span class="bk" style="margin-bottom:8px">${pad(sd.getMonth() + 1)} / ${pad(sd.getDate())} ${WD_EN[sd.getDay()]}</span>
+      <span class="bk" style="margin-bottom:8px">${pad(sd.getMonth() + 1)} / ${pad(sd.getDate())} ${wdh(sd.getDay())}</span>
       <div class="kv"><span>작업</span><span>${dur(daySess(statDay))}</span></div>
       <div class="kv"><span>근무</span><span>${dur(dayWork(statDay))}</span></div>
       <div class="kv"><span>할 일</span><span class="red">[ ${st.filter((t) => t.done).length} / ${st.length} ]</span></div>
@@ -1421,7 +1422,7 @@ function sheetItem() {
     : sh.type === 'event' ? S.events.find((x) => x.id === sh.id)
     : S.sessions.find((x) => x.id === sh.id);
 }
-const dayLabel = (ds) => `${md(ds)} ${WD_EN[parseYmd(ds).getDay()]}`;
+const dayLabel = (ds) => `${md(ds)} ${wdh(parseYmd(ds).getDay())}`;
 function openSheet(type, id) {
   const it = (type === 'todo' ? S.todos : type === 'event' ? S.events : S.sessions).find((x) => x.id === id);
   if (!it) return;
@@ -1667,7 +1668,7 @@ let lastDay = todayStr();
 setInterval(() => {
   const d = new Date();
   const c = document.getElementById('clock'); if (c) c.textContent = clockLabel(d);
-  const dt = document.getElementById('date'); if (dt) dt.textContent = dateLabel(d);
+  const dt = document.getElementById('date'); if (dt) dt.innerHTML = dateLabel(d);
   const el = document.getElementById('elapsed'), r = running(); if (el && r) el.textContent = elapsed(r);
   if (ymd(d) !== lastDay) { lastDay = ymd(d); S.sel = S.diaryDay = S.plantDay = S.plantEnd = S.statDay = lastDay; render(); load(); }
 }, 1000);
