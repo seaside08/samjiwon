@@ -171,7 +171,7 @@ textarea.edit{font:inherit;font-size:14px;line-height:1.4;resize:none;border:1.5
 .tl-row.sel .nm b{background:var(--ink);color:var(--paper)}
 .tl-row i{display:block;width:12px;height:12px;box-sizing:border-box;margin:0 auto;position:relative;cursor:pointer}
 .tl-row i::before{content:"";position:absolute;inset:-14px -4px}
-.tl-row i.w{border:1.5px solid var(--ink)}
+.tl-row i.w{border:0}
 .tl-row i.m::after{content:"";position:absolute;right:-5px;top:-6px;width:6px;height:6px;border-radius:50%;background:var(--ink)}
 .tl-row i.on{outline:2px solid var(--red);outline-offset:2px}
 .tday{position:relative;text-align:center}
