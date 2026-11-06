@@ -1221,13 +1221,12 @@ function viewPlants() {
   }).join('');
   const ml = sel && logOf(sel.id, selDay);
   const pop = ml?.memo ? `<div class="pop" style="visibility:hidden"><b>${md(selDay)} ${wdh(parseYmd(selDay).getDay())}</b><span>${esc(ml.memo)}</span></div>` : '';
-  const names = alive.map((p) => `<span class="nm${p === sel ? ' sel' : ''}" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b>${p.species ? `<small>${esc(p.species)}</small>` : ''}</span>`).join('');
+  const names = alive.map((p) => `<span class="nm${p === sel ? ' sel' : ''}" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b></span>`).join('');
   let side = '<section class="side"></section>';
   if (sel) {
     const st = plantStats(sel), l = logOf(sel.id, selDay);
     side = `<section class="side">
-      <span class="bk" style="margin-bottom:8px" data-act="pl-name">${esc(sel.name)}</span>
-      <span style="font-size:13px" data-act="pl-name">${esc(sel.species || '')}</span>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span class="bk" data-act="pl-name">${esc(sel.name)}</span><span style="font-size:13px" data-act="pl-name">${esc(sel.species || '')}</span></div>
       <div class="kv" style="margin-top:8px" data-act="pl-int"><span>물 주기</span><span>${waterLabel(sel) || '<span class="mu">&#8212;</span>'}</span></div>
       <div class="kv"><span>마지막 물</span><span>${st.lastW ? md(st.lastW) : '<span class="mu">&#8212;</span>'}</span></div>
       <div class="kv"><span>다음 물</span><span class="${st.next && st.next <= today ? 'red' : ''}">${st.next ? md(st.next) : '<span class="mu">&#8212;</span>'}</span></div>
