@@ -47,10 +47,17 @@ async function token() {
   return login();
 }
 
-async function todos(tk) {
+async function todos(tk, again) {
   const r = new Request(`${SB_URL}/rest/v1/todos?select=text,tag,done&day=eq.${today}&order=pos.asc`);
   r.headers = { apikey: SB_KEY, Authorization: `Bearer ${tk}` };
-  return r.loadJSON();
+  const j = await r.loadJSON();
+  if (Array.isArray(j)) return j;
+  // 열쇠가 낡았으면 한 번 새로 받아서 다시
+  if (!again) {
+    if (Keychain.contains(K + '_at')) Keychain.remove(K + '_at');
+    return todos(await token(), true);
+  }
+  throw new Error((j && (j.message || j.msg)) || '할 일을 불러오지 못했어요');
 }
 
 // 체크 칸: 검은 테두리 네모, 완료면 안을 꽉 채우는 빨간 X
