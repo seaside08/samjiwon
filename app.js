@@ -752,7 +752,7 @@ let pendingRender = false;
 // 식물 타임라인: 처음엔 오늘이 가운데, 그 뒤로는 보던 자리 그대로
 let plantX = null;
 function plantScroll() {
-  const g = board.querySelector('.tlg'); if (!g) return;
+  const g = board.querySelector('.tl-sc'); if (!g) return;
   const t = g.querySelector('.tday');
   if (plantX == null && t) plantX = t.offsetLeft - g.clientWidth / 2;
   g.scrollLeft = plantX ?? 0;
@@ -1202,13 +1202,9 @@ function viewPlants() {
       const on = p === sel && ds === selDay;
       return `<i data-act="pcell" data-id="${p.id}" data-day="${ds}" class="${l?.watered ? 'riso w' : ''}${l?.memo ? ' m' : ''}${on ? ' on' : ''}"></i>`;
     }).join('');
-    let pop = '';
-    if (p === sel) {
-      const l = logOf(p.id, selDay), idx = days.indexOf(selDay);
-      if (l?.memo && idx >= 0) pop = `<div class="pop" style="left:calc(var(--nw) + ${idx * CW - (idx > N - 10 ? 160 : -10)}px)"><b>${md(selDay)} ${wdh(parseYmd(selDay).getDay())}</b><span>${esc(l.memo)}</span></div>`;
-    }
-    return `<div class="tl-row${p === sel ? ' sel' : ''}" style="--n:${N};--cw:${CW}px"><span class="nm" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b></span>${cells}${pop}</div>`;
+    return `<div class="tl-row" style="--n:${N};--cw:${CW}px">${cells}</div>`;
   }).join('');
+  const names = alive.map((p) => `<span class="nm${p === sel ? ' sel' : ''}" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b></span>`).join('');
   let side = '<section class="side"></section>';
   if (sel) {
     const st = plantStats(sel), l = logOf(sel.id, selDay);
@@ -1232,8 +1228,9 @@ function viewPlants() {
         <button aria-label="식물 추가" data-act="plant-add" style="font-size:20px;padding:0 2px;margin-left:auto">+</button></div>
       ${S.plantAdd ? addForm('plant', '식물 추가', 'width:60%;margin:-4px 0 10px') : ''}
       <div class="tlg">
-        <div class="tl-in"><b class="tl-now" style="left:calc(var(--nw) + ${days.indexOf(today) * CW + CW / 2}px)"></b><div class="tl-hd" style="--n:${N};--cw:${CW}px"><span>이름</span>${hd}</div>
-        ${rows}</div>
+        <div class="tl-names"><span class="tl-h">이름</span>${names}</div>
+        <div class="tl-sc"><div class="tl-in"><b class="tl-now" style="left:${days.indexOf(today) * CW + CW / 2}px"></b><div class="tl-hd" style="--n:${N};--cw:${CW}px">${hd}</div>
+        ${rows}</div></div>
       </div>
       <button class="lk" data-act="plant-gone">추억의 전당 [ ${gone.length} ] &#8594;</button>
     </section>

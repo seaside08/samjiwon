@@ -381,14 +381,24 @@ body.phone .cell b{font-size:13px}
 .hj,.wd{font-family:'Noto Sans KR','Noto Sans CJK KR','Apple SD Gothic Neo',sans-serif}
 body.phone .col{height:364px}
 body.phone [data-act="prev"],body.phone [data-act="next"]{display:none}
-/* 식물 타임라인 옆으로 밀어 보기 */
-.tlg{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.tlg::-webkit-scrollbar{display:none}
-.tl-in{width:max-content;min-width:100%}
-.tl-hd,.tl-row{grid-template-columns:var(--nw) repeat(var(--n),var(--cw))}
+/* 식물 타임라인: 이름 칸은 고정, 오른쪽만 옆으로 밀어 보기 */
+.tlg{display:flex;align-items:flex-start}
+.tl-names{flex:0 0 var(--nw);display:flex;flex-direction:column;min-width:0}
+.tl-names .tl-h{height:22px;font-size:11px;box-sizing:border-box;border-bottom:1.5px solid var(--ink)}
+.tl-names .nm{height:40px;box-sizing:border-box;border-bottom:1.5px solid var(--ink);display:flex;align-items:center;min-width:0;cursor:pointer;padding-right:8px}
+.tl-names .nm b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:1px 4px;margin-left:-4px}
+.tl-names .nm.sel b{background:var(--ink);color:var(--paper)}
+body.phone .tl-names .nm b{font-size:14px}
+.tl-sc{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tl-sc::-webkit-scrollbar{display:none}
+.tl-in{width:max-content;min-width:100%;position:relative}
+.tl-hd,.tl-row{grid-template-columns:repeat(var(--n),var(--cw))}
+.tl-hd{height:22px;box-sizing:border-box;padding-bottom:0;border-bottom:1.5px solid var(--ink)}
 .tl-hd>span{white-space:nowrap;overflow:visible}
-.tl-hd>span:first-child,.tl-row .nm{position:sticky;left:0;z-index:3;background:var(--paper);align-self:stretch;justify-content:center}
-.tl-in{position:relative}
-.tl-now{position:absolute;top:20px;bottom:0;width:1.5px;margin-left:-.75px;background:var(--red);z-index:0;pointer-events:none}
+.tl-row{height:40px;box-sizing:border-box;border-top:0;border-bottom:1.5px solid var(--ink)}
+.tl-row:last-child{border-bottom:1.5px solid var(--ink)}
+.tl-now{position:absolute;top:22px;bottom:0;width:1.5px;margin-left:-.75px;background:var(--red);z-index:0;pointer-events:none}
 .tl-row i{z-index:1}
 .tday i{display:none}
+.tl-names .tl-h{display:flex;align-items:center}
+.tl-hd{align-items:center}
