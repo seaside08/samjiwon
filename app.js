@@ -1234,7 +1234,7 @@ function viewPlants() {
       ${st.lastM ? `<span style="margin-top:18px;font-size:13px">최근 메모 &#183; ${md(st.lastM.day)}</span><span style="font-size:14px;font-weight:600;line-height:1.3">${esc(st.lastM.memo)}</span>` : ''}
       <span style="margin-top:14px;font-size:13px">${md(selDay)} 메모</span>
       <form data-add="pmemo"><input class="pmemo" aria-label="${md(selDay)} 메모" autocomplete="off" enterkeyhint="done" value="${esc(l?.memo || '')}"></form>
-      <button class="ul" style="align-self:flex-start;margin-top:auto;font-size:12px" data-act="plant-bye">추억의 전당으로</button>
+      <button style="align-self:flex-end;margin-top:auto;font-size:12px" data-act="plant-bye">추억하기</button>
     </section>`;
   }
   return `${header_}
