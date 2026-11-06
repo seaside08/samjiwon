@@ -381,3 +381,10 @@ body.phone .cell b{font-size:13px}
 .hj,.wd{font-family:'Noto Sans KR','Noto Sans CJK KR','Apple SD Gothic Neo',sans-serif}
 body.phone .col{height:364px}
 body.phone [data-act="prev"],body.phone [data-act="next"]{display:none}
+/* 식물 타임라인 옆으로 밀어 보기 */
+.tlg{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tlg::-webkit-scrollbar{display:none}
+.tl-in{width:max-content;min-width:100%}
+.tl-hd,.tl-row{grid-template-columns:var(--nw) repeat(var(--n),var(--cw))}
+.tl-hd>span{white-space:nowrap;overflow:visible}
+.tl-hd>span:first-child,.tl-row .nm{position:sticky;left:0;z-index:3;background:var(--paper);align-self:stretch;justify-content:center}

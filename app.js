@@ -743,10 +743,21 @@ function render(force) {
   const focusAdd = a && a.closest && a.closest('form[data-add]')?.dataset.add;
   board.innerHTML = html + nav() + sheetHTML();
   tilt();
+  plantScroll();
   if (S.sheet) initWheels();
   else if (focusAdd) board.querySelector(`form[data-add="${focusAdd}"] input`)?.focus();
 }
 let pendingRender = false;
+
+// 식물 타임라인: 처음엔 오늘이 가운데, 그 뒤로는 보던 자리 그대로
+let plantX = null;
+function plantScroll() {
+  const g = board.querySelector('.tlg'); if (!g) return;
+  const t = g.querySelector('.tday');
+  if (plantX == null && t) plantX = t.offsetLeft - g.clientWidth / 2;
+  g.scrollLeft = plantX ?? 0;
+  g.addEventListener('scroll', () => { plantX = g.scrollLeft; }, { passive: true });
+}
 
 // 초록 상자를 살짝, 상자마다 다른 각도로 기울이기 (글자로 정해서 다시 그려도 같은 각도)
 function tilt() {
@@ -1175,16 +1186,15 @@ function viewPlants() {
         <button class="ul" style="align-self:flex-start;margin-top:16px;font-size:13px" data-act="plant-back">다시 함께 살기</button>` : ''}</section>
     </div>`;
   }
-  const N = PHONE ? 14 : 28;
-  // 가운데 날(S.plantEnd)이 표 한가운데 오도록
-  const start = addDays(parseYmd(S.plantEnd), -Math.floor(N / 2)), end = addDays(start, N - 1);
+  // 150일 전부터 4주 뒤까지 한 줄로 길게 — 옆으로 밀어서 본다
+  const start = addDays(parseYmd(today), -150), N = 150 + 28 + 1, CW = 20;
   const days = [...Array(N)].map((_, i) => ymd(addDays(start, i)));
   const sel = alive.find((p) => p.id === S.plant) || alive[0];
   const selDay = days.includes(S.plantDay) || S.plantDay === today ? S.plantDay : today;
   const hd = days.map((ds, i) => {
-    const n = parseYmd(ds).getDate();
+    const d = parseYmd(ds), n = d.getDate();
     if (ds === today) return `<span class="tday">${n}<i></i></span>`;
-    return `<span>${i % 7 === 0 ? n : ''}</span>`;
+    return `<span>${(150 - i) % 7 === 0 ? `${d.getMonth() + 1}/${n}` : ''}</span>`;
   }).join('');
   const rows = alive.map((p) => {
     const cells = days.map((ds) => {
@@ -1195,9 +1205,9 @@ function viewPlants() {
     let pop = '';
     if (p === sel) {
       const l = logOf(p.id, selDay), idx = days.indexOf(selDay);
-      if (l?.memo && idx >= 0) pop = `<div class="pop" style="left:calc(var(--nw) + (100% - var(--nw)) * ${idx} / ${N} - ${idx > N / 2 ? 160 : -10}px)"><b>${md(selDay)} ${wdh(parseYmd(selDay).getDay())}</b><span>${esc(l.memo)}</span></div>`;
+      if (l?.memo && idx >= 0) pop = `<div class="pop" style="left:calc(var(--nw) + ${idx * CW - (idx > N - 10 ? 160 : -10)}px)"><b>${md(selDay)} ${wdh(parseYmd(selDay).getDay())}</b><span>${esc(l.memo)}</span></div>`;
     }
-    return `<div class="tl-row${p === sel ? ' sel' : ''}" style="--n:${N}"><span class="nm" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b></span>${cells}${pop}</div>`;
+    return `<div class="tl-row${p === sel ? ' sel' : ''}" style="--n:${N};--cw:${CW}px"><span class="nm" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b></span>${cells}${pop}</div>`;
   }).join('');
   let side = '<section class="side"></section>';
   if (sel) {
@@ -1219,13 +1229,11 @@ function viewPlants() {
   <div class="main">
     <section class="left">
       <div class="row"><span class="bk">PLANTS / 식물</span><span style="font-size:15px">[ ${alive.length} ]</span>
-        <span style="margin-left:auto;font-size:15px">${pad(start.getMonth() + 1)}. ${pad(start.getDate())} &#8212; ${pad(end.getMonth() + 1)}. ${pad(end.getDate())}</span>
-        <span style="display:flex;gap:8px;margin-left:6px;font-size:15px"><button data-act="prev" aria-label="이전 4주">&#8592;</button><button data-act="next" aria-label="다음 4주">&#8594;</button></span>
-        <button aria-label="식물 추가" data-act="plant-add" style="font-size:20px;padding:0 2px;margin-left:8px">+</button></div>
+        <button aria-label="식물 추가" data-act="plant-add" style="font-size:20px;padding:0 2px;margin-left:auto">+</button></div>
       ${S.plantAdd ? addForm('plant', '식물 추가', 'width:60%;margin:-4px 0 10px') : ''}
       <div class="tlg">
-        <div class="tl-hd" style="--n:${N}"><span>이름</span>${hd}</div>
-        ${rows}
+        <div class="tl-in"><div class="tl-hd" style="--n:${N};--cw:${CW}px"><span>이름</span>${hd}</div>
+        ${rows}</div>
       </div>
       <button class="lk" data-act="plant-gone">추억의 전당 [ ${gone.length} ] &#8594;</button>
     </section>
@@ -1648,7 +1656,7 @@ addEventListener('touchend', (e) => {
   const t = e.changedTouches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y, dt = Date.now() - swipe.t;
   swipe = null;
   if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || dt > 700) return;
-  if (!['cal', 'work', 'diary', 'plants', 'stats'].includes(S.view)) return;
+  if (!['cal', 'work', 'diary', 'stats'].includes(S.view)) return;
   step(dx < 0 ? 1 : -1);
   board.animate([{ transform: `translateX(${dx < 0 ? 28 : -28}px)`, opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 180, easing: 'ease-out' });
 }, { passive: true });
