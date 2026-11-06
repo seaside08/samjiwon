@@ -407,3 +407,6 @@ body.phone .tl-names .nm b{font-size:14px}
 .tl-names{flex:0 0 auto}
 .tl-names .nm b{overflow:visible;text-overflow:clip;max-width:none}
 .tl-names{min-width:var(--nw)}
+.tl-names .nm{gap:8px}
+.tl-names .nm small{font-size:12px;font-weight:500;white-space:nowrap}
+body.phone .tl-names .nm small{font-size:11px}

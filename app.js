@@ -1221,7 +1221,7 @@ function viewPlants() {
   }).join('');
   const ml = sel && logOf(sel.id, selDay);
   const pop = ml?.memo ? `<div class="pop" style="visibility:hidden"><b>${md(selDay)} ${wdh(parseYmd(selDay).getDay())}</b><span>${esc(ml.memo)}</span></div>` : '';
-  const names = alive.map((p) => `<span class="nm${p === sel ? ' sel' : ''}" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b></span>`).join('');
+  const names = alive.map((p) => `<span class="nm${p === sel ? ' sel' : ''}" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b>${p.species ? `<small>${esc(p.species)}</small>` : ''}</span>`).join('');
   let side = '<section class="side"></section>';
   if (sel) {
     const st = plantStats(sel), l = logOf(sel.id, selDay);
