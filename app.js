@@ -1310,16 +1310,7 @@ function viewStats() {
       </div>
       <button class="ul" data-act="backup" style="margin-top:auto;font-size:13px">백업 받기</button>
     </section>
-    <section class="side">
-      <span class="bk" style="margin-bottom:8px">${pad(sd.getMonth() + 1)} / ${pad(sd.getDate())} ${wdh(sd.getDay())}</span>
-      <div class="kv"><span>작업</span><span>${dur(daySess(statDay))}</span></div>
-      <div class="kv"><span>근무</span><span>${dur(dayWork(statDay))}</span></div>
-      <div class="kv"><span>할 일</span><span class="red">[ ${st.filter((t) => t.done).length} / ${st.length} ]</span></div>
-      ${rec.diary ? `<span class="lb" data-act="diary-go" data-day="${statDay}">일기</span><span data-act="diary-go" data-day="${statDay}">${esc(firstLine(rec.diary))}</span>` : ''}
-      <span class="lb">한 일</span>
-      ${sessOf(statDay).map((s) => `<span style="font-size:13px">${esc(sessLabel(s))} ${dur(sessMin(s))}</span>`).join('')}
-      ${eventsOf(statDay).filter((e) => e.kind === 'work').map((e) => `<span style="font-size:13px">${esc(e.title)} ${hm(e.start_min)}&#8211;${hm(e.end_min)}</span>`).join('')}
-    </section>
+    <section class="side"></section>
   </div>`;
 }
 
