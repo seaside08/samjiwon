@@ -1085,7 +1085,6 @@ function viewDiary() {
       <div class="strip">${strip}</div>
       <div style="display:flex;flex-direction:column;min-height:0;flex-grow:1">
         <div style="display:flex;align-items:baseline;gap:14px;min-height:0;flex-grow:1">
-          <span class="dlb">일기</span>
           <p class="diary" contenteditable="plaintext-only" data-diary="${day}" spellcheck="false">${esc(rec.diary || '')}</p>
         </div>
         <div style="border-bottom:1.5px solid var(--ink);height:24px;flex:none"></div>
