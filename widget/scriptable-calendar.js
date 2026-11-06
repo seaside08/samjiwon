@@ -89,7 +89,7 @@ function draw(size, data, tex, fam) {
 
   const text = (s, x, y, w, h, font, color = INK, align = 'left') => {
     c.setFont(font); c.setTextColor(color);
-    if (align === 'right') c.setTextAlignedRight(); else c.setTextAlignedLeft();
+    if (align === 'right') c.setTextAlignedRight(); else if (align === 'center') c.setTextAlignedCenter(); else c.setTextAlignedLeft();
     c.drawTextInRect(s, new Rect(x, y, w, h));
   };
   const line = (x, y, w, h) => { c.setFillColor(INK); c.fillRect(new Rect(x, y, w, h)); };
@@ -107,40 +107,40 @@ function draw(size, data, tex, fam) {
   text(`작업 ${taskDays}일`, W - P - 120, P - 6, 120, 13, Font.boldMonospacedSystemFont(9), INK, 'right');
   text(`근무 ${workDays}일`, W - P - 120, P + 6, 120, 13, Font.boldMonospacedSystemFont(9), INK, 'right');
 
-  // 요일
-  const top = P + 25, cw = (W - P * 2) / 7;
-  WD.forEach((d, i) => text(d, P + i * cw + 3, top, cw, 12, Font.boldMonospacedSystemFont(7.5)));
+  // 요일 (달력은 위젯 가장자리까지 꽉 차게)
+  const G = 8, top = P + 24, cw = (W - G * 2) / 7;
+  WD.forEach((d, i) => text(d, G + i * cw, top, cw, 13, Font.heavySystemFont(9.5), INK, 'center'));
 
-  const gy = top + 12, LW = 0.8;
-  const ch = (H - P + 2 - gy) / rows;
+  const gy = top + 14, LW = 0.8;
+  const ch = (H - G - 3 - gy) / rows;
   const byDay = {};
   for (const e of events) (byDay[e.day] ||= []).push(e);
 
   for (let r = 0; r < rows; r++) {
     const ry = gy + r * ch;
-    line(P, ry, W - P * 2, LW);
+    line(G, ry, W - G * 2, LW);
     for (let k = 0; k < 7; k++) {
       const d = new Date(gs.getFullYear(), gs.getMonth(), gs.getDate() + r * 7 + k);
-      const ds = ymd(d), x = P + k * cw, inM = d.getMonth() === m0;
+      const ds = ymd(d), x = G + k * cw, inM = d.getMonth() === m0;
       if (k) line(x - LW / 2, ry, LW, ch);
       // 날짜
       const num = String(d.getDate());
       if (ds === today) {
         // 오늘: 칸 너비로 꽉 찬 검은 띠
-        c.setFillColor(INK); c.fillRect(new Rect(x + (k ? LW / 2 : 0), ry, cw - (k ? LW / 2 : 0), 16.5));
-        text(num, x + 4, ry + 3, cw, 12.5, Font.boldMonospacedSystemFont(9.5), PAPER);
+        c.setFillColor(INK); c.fillRect(new Rect(x + (k ? LW / 2 : 0), ry, cw - (k ? LW / 2 : 0), 18));
+        text(num, x + 4, ry + 3, cw, 14, Font.boldMonospacedSystemFont(11), PAPER);
       } else {
-        text(num, x + 4, ry + 3, cw, 12.5, inM ? Font.boldMonospacedSystemFont(9.5) : Font.regularMonospacedSystemFont(9.5));
+        text(num, x + 4, ry + 3, cw, 14, inM ? Font.boldMonospacedSystemFont(11) : Font.regularMonospacedSystemFont(11));
       }
       // 내용
-      const lh = 9.6, maxL = Math.floor((ch - 19) / lh);
+      const lh = 11.2, maxL = Math.floor((ch - 21) / lh);
       const evs = (byDay[ds] || []).sort((a, b) => (a.kind === 'work' ? -1 : 0) - (b.kind === 'work' ? -1 : 0) || (a.start_min ?? -1) - (b.start_min ?? -1));
       const lines = evs.map((e) => ({ e }));
-      let ly = ry + 19;
-      const f = Font.boldSystemFont(8);
+      let ly = ry + 20.5;
+      const f = Font.boldSystemFont(9.3);
       for (let i = 0; i < Math.min(maxL, lines.length); i++) {
         const L = lines[i];
-        if (i === maxL - 1 && lines.length > maxL) { text(`+${lines.length - i}`, x + 4, ly, cw - 5, lh, Font.boldMonospacedSystemFont(8)); break; }
+        if (i === maxL - 1 && lines.length > maxL) { text(`+${lines.length - i}`, x + 4, ly, cw - 5, lh, Font.boldMonospacedSystemFont(9)); break; }
         if (L.e.kind === 'work') {
           text(`${workCode(L.e.start_min)} ${SHORT[L.e.place] || L.e.title}`, x + 3.5, ly, cw - 4, lh, f);
         } else if (L.e.kind === 'task') {
@@ -154,7 +154,7 @@ function draw(size, data, tex, fam) {
       }
     }
   }
-  line(P, gy + rows * ch - LW, W - P * 2, LW);
+  line(G, gy + rows * ch - LW, W - G * 2, LW);
   return c.getImage();
 }
 
