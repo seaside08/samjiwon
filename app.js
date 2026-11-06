@@ -1248,9 +1248,9 @@ function viewPlants() {
         <div class="tl-sc"><div class="tl-in"><b class="tl-now" style="left:${days.indexOf(today) * CW + CW / 2}px"></b><div class="tl-hd" style="--n:${N};--cw:${CW}px">${hd}</div>
         ${rows}</div></div>
       </div>
-      <button class="lk" data-act="plant-gone">추억의 전당 [ ${gone.length} ] &#8594;</button>
+      <button class="lk gone-l" data-act="plant-gone">추억의 전당 [ ${gone.length} ] &#8594;</button>
     </section>
-    ${side}
+    ${side.replace('</section>', `<button class="lk gone-s" data-act="plant-gone">추억의 전당 [ ${gone.length} ] &#8594;</button></section>`)}
   </div>`;
 }
 
