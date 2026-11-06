@@ -451,7 +451,8 @@ function viewMonth() {
 function viewWeek() {
   const ws = S.week, we = addDays(ws, 6), today = todayStr();
   const days = [...Array(7)].map((_, i) => addDays(ws, i));
-  const H0 = 10 * 60, PX = 40 / 60; // 10시부터, 1시간 40px
+  const HH = document.body.classList.contains('phone') ? 26 : 40; // 1시간 높이 (휴대폰은 한 화면에 들어오게)
+  const H0 = 10 * 60, PX = HH / 60; // 10시부터
   let weekWork = 0, weekSess = 0;
   const allday = days.map((d) => eventsOf(ymd(d)).filter((e) => e.start_min == null));
   const hasAll = allday.some((a) => a.length);
@@ -485,7 +486,7 @@ function viewWeek() {
     flush();
     const blks = items.map((it) => {
       const top = Math.max(0, (it.a - H0) * PX);
-      const h = it.plain ? null : Math.max(28, Math.min(560, (it.b - H0) * PX) - top);
+      const h = it.plain ? null : Math.max(26, Math.min(HH * 14, (it.b - H0) * PX) - top);
       const pos = it.n > 1 ? `left:calc(${(it.lane / it.n) * 100}% + 2px);right:auto;width:calc(${100 / it.n}% - 4px);` : '';
       return `<div class="blk ${it.cls}" style="${pos}top:${top}px;${h ? `height:${h}px` : ''}">${it.body}</div>`;
     }).join('');
@@ -496,7 +497,7 @@ function viewWeek() {
     const ds = ymd(d);
     return `<span class="dh" data-act="sel" data-day="${ds}">${WD_HJ[d.getDay()]} <span class="n ${ds === today ? 'now' : ds === S.sel ? 'pick' : ''}">${pad(d.getDate())}</span></span>`;
   });
-  const hours = [10, 12, 14, 16, 18, 20, 22].map((h, i) => `<span style="top:${4 + i * 80}px">${h}</span>`).join('');
+  const hours = [10, 12, 14, 16, 18, 20, 22].map((h, i) => `<span style="top:${4 + i * HH * 2}px">${h}</span>`).join('');
   return `${header(`이번 주 작업 ${dur(weekSess)} &#183; 근무 ${dur(weekWork)}`)}
   <div class="main">
     <section class="left">
@@ -504,7 +505,7 @@ function viewWeek() {
       <div class="wgrid">
         <span></span>${heads.join('')}
         ${hasAll ? '<span></span>' + allday.map((a, i) => `<div class="allday" data-act="sel" data-day="${ymd(days[i])}">${a.map((e) => `<span class="adl">${esc(e.title)}</span>`).join('')}</div>`).join('') : ''}
-        <div class="hours">${hours}</div>${cols.join('')}
+        <div class="hours" style="height:${HH * 14}px">${hours}</div>${cols.join('')}
       </div>
     </section>
     ${daySide()}
