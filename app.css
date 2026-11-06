@@ -402,3 +402,8 @@ body.phone .tl-names .nm b{font-size:14px}
 .tday i{display:none}
 .tl-names .tl-h{display:flex;align-items:center}
 .tl-hd{align-items:center}
+.tlg{position:relative}
+.tlg > .pop{bottom:auto;z-index:5}
+.tl-names{flex:0 0 auto}
+.tl-names .nm b{overflow:visible;text-overflow:clip;max-width:none}
+.tl-names{min-width:var(--nw)}

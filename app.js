@@ -756,7 +756,22 @@ function plantScroll() {
   const t = g.querySelector('.tday');
   if (plantX == null && t) plantX = t.offsetLeft - g.clientWidth / 2;
   g.scrollLeft = plantX ?? 0;
-  g.addEventListener('scroll', () => { plantX = g.scrollLeft; }, { passive: true });
+  placePop();
+  g.addEventListener('scroll', () => { plantX = g.scrollLeft; placePop(); }, { passive: true });
+}
+// 메모 말풍선: 고른 칸 바로 위에, 보이는 곳에 있을 때만
+function placePop() {
+  const pop = board.querySelector('.tlg > .pop'), cell = board.querySelector('.tl-row i.on'), g = board.querySelector('.tl-sc');
+  if (!pop || !cell || !g) return;
+  const box = board.querySelector('.tlg').getBoundingClientRect(), c = cell.getBoundingClientRect(), v = g.getBoundingClientRect();
+  const k = box.width / board.querySelector('.tlg').offsetWidth || 1;   // 화면 맞춤 배율
+  const cx = c.left + c.width / 2;
+  if (cx < v.left || cx > v.right) { pop.style.visibility = 'hidden'; return; }
+  pop.style.visibility = '';
+  const right = cx > v.left + v.width / 2;
+  const W = board.querySelector('.tlg').offsetWidth, x = (right ? cx - box.left + 10 : cx - box.left - 10) / k - (right ? pop.offsetWidth : 0);
+  pop.style.left = Math.max(0, Math.min(W - pop.offsetWidth, x)) + 'px';
+  pop.style.top = ((c.top - box.top) / k - pop.offsetHeight - 12) + 'px';
 }
 
 // 초록 상자를 살짝, 상자마다 다른 각도로 기울이기 (글자로 정해서 다시 그려도 같은 각도)
@@ -1204,6 +1219,8 @@ function viewPlants() {
     }).join('');
     return `<div class="tl-row" style="--n:${N};--cw:${CW}px">${cells}</div>`;
   }).join('');
+  const ml = sel && logOf(sel.id, selDay);
+  const pop = ml?.memo ? `<div class="pop" style="visibility:hidden"><b>${md(selDay)} ${wdh(parseYmd(selDay).getDay())}</b><span>${esc(ml.memo)}</span></div>` : '';
   const names = alive.map((p) => `<span class="nm${p === sel ? ' sel' : ''}" data-act="plant" data-id="${p.id}"><b>${esc(p.name)}</b></span>`).join('');
   let side = '<section class="side"></section>';
   if (sel) {
@@ -1228,7 +1245,7 @@ function viewPlants() {
         <button aria-label="식물 추가" data-act="plant-add" style="font-size:20px;padding:0 2px;margin-left:auto">+</button></div>
       ${S.plantAdd ? addForm('plant', '식물 추가', 'width:60%;margin:-4px 0 10px') : ''}
       <div class="tlg">
-        <div class="tl-names"><span class="tl-h">이름</span>${names}</div>
+        <div class="tl-names"><span class="tl-h">이름</span>${names}</div>${pop}
         <div class="tl-sc"><div class="tl-in"><b class="tl-now" style="left:${days.indexOf(today) * CW + CW / 2}px"></b><div class="tl-hd" style="--n:${N};--cw:${CW}px">${hd}</div>
         ${rows}</div></div>
       </div>
