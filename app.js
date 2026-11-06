@@ -396,8 +396,8 @@ function daySide() {
   const evs = eventsOf(day), todos = todosOf(day), done = todos.filter((t) => t.done).length;
   return `<section class="side">
     <span class="bk" style="margin-bottom:8px">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${wdh(d.getDay())}</span>
-    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? hm(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(e.title)}</span>${e.end_min != null ? ' ~' + hm(e.end_min) : ''}</span></div>`).join('')}
-    ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${hm(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))} ~${hm(minOfDay(s.end_at))}</span></div>`).join('')}
+    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(e.title)}</span>${e.end_min != null ? ' ~' + workCode(e.end_min) : ''}</span></div>`).join('')}
+    ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))} ~${workCode(minOfDay(s.end_at))}</span></div>`).join('')}
     <div class="kinds">${KINDS.map(([k, l]) => `<button data-act="ak" data-k="${k}" class="${S.addKind === k ? 'riso3' : ''}">${l}</button>`).join('')}</div>
     ${S.addKind === 'task' ? `<div class="opts">${activeProjects().map((p, i) => `<button data-act="ap" data-id="${p.id}" class="${(S.addProj ? S.addProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('') || '<span class="mu">진행 중인 프로젝트 없음</span>'}</div>` : ''}
     ${S.addKind === 'work' ? `<div class="opts">${WORKPLACES.filter((w) => !w.archived).map((w, i) => `<button data-act="aw" data-n="${w.name}" class="${(S.addWp ? S.addWp === w.name : i === 0) ? 'on' : ''}">${w.name}</button>`).join('')}</div>` : ''}
@@ -431,7 +431,7 @@ function viewMonth() {
           ? `<span class="ln">${workCode(e.start_min)} ${esc(wpOf(e)?.short || e.title)}</span>`
           : e.start_min == null
             ? `<span class="ln">${esc(e.title)}</span>`
-            : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><em class="tm">${hm(e.start_min)} </em>${esc(shortName(e.title))}</span>`).join('')}
+            : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><em class="tm">${workCode(e.start_min)} </em>${esc(shortName(e.title))}</span>`).join('')}
         ${Object.entries(sessOf(ds).reduce((a, s) => { const k = shortName(sessLabel(s)); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v], j) => `<span class="ln rz ${['riso3', 'riso', 'riso2'][(d.getDate() + j) % 3]}">${esc(k)} ${dur(v)}</span>`).join('')}
       </div>`;
     }
@@ -465,14 +465,14 @@ function viewWeek() {
       weekWork += workMin(e);
       const plain = e.end_min == null || (e.kind !== 'work' && !isWorkEv(e));
       const cls = plain ? '' : e.kind === 'work' ? 'work' : ['riso', 'riso2', 'riso3'][(k++ + i) % 3];
-      const t = `${hShort(e.start_min)}${e.end_min != null ? '&#8211;' + hShort(e.end_min) : ''}`;
+      const t = `${workCode(e.start_min)}${e.end_min != null ? '&#8211;' + workCode(e.end_min) : ''}`;
       const nm = e.kind === 'work' ? (wpOf(e)?.short || e.title) : shortName(e.title);
-      items.push({ a: e.start_min, b: plain ? e.start_min + 45 : e.end_min, plain, cls, body: plain ? `${hm(e.start_min)}<br>${esc(nm)}` : `${esc(nm)}<br>${t}` });
+      items.push({ a: e.start_min, b: plain ? e.start_min + 45 : e.end_min, plain, cls, body: plain ? `${workCode(e.start_min)}<br>${esc(nm)}` : `${esc(nm)}<br>${t}` });
     });
     sessOf(ds).forEach((s, j) => {
       weekSess += sessMin(s);
       const a = minOfDay(s.start_at), b = s.end_at ? minOfDay(s.end_at) : nowMin;
-      items.push({ a, b: Math.max(b, a + 1), cls: ['riso', 'riso2', 'riso3'][(j + i + 1) % 3], body: `${esc(shortName(sessLabel(s)))}<br>${hShort(a)}&#8211;${s.end_at ? hShort(b) : ''}` });
+      items.push({ a, b: Math.max(b, a + 1), cls: ['riso', 'riso2', 'riso3'][(j + i + 1) % 3], body: `${esc(shortName(sessLabel(s)))}<br>${workCode(a)}&#8211;${s.end_at ? workCode(b) : ''}` });
     });
     items.sort((x, y) => x.a - y.a || y.b - x.b);
     const lanesEnd = []; let cluster = [], clusterEnd = -1;
