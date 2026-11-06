@@ -20,6 +20,7 @@ function workCode(min) {
 }
 
 const pad = (n) => String(n).padStart(2, '0');
+const dur = (m) => { const h = Math.floor(m / 60), r = m % 60; return r ? `${h}H ${r}M` : `${h}H`; };
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const now = new Date();
 const today = ymd(now);
@@ -135,7 +136,13 @@ function draw(size, data, tex, fam) {
       // 내용
       const lh = 11.2, maxL = Math.floor((ch - 21) / lh);
       const evs = (byDay[ds] || []).sort((a, b) => (a.kind === 'work' ? -1 : 0) - (b.kind === 'work' ? -1 : 0) || (a.start_min ?? -1) - (b.start_min ?? -1));
-      const lines = evs.map((e) => ({ e }));
+      // 작업 기록: 프로젝트별로 묶어 시간 합계
+      const sm = {};
+      for (const x of (data.sessions || []).filter((x) => x.day === ds)) {
+        const k = shortName((data.projects || {})[x.project_id] || x.title || '작업');
+        sm[k] = (sm[k] || 0) + Math.max(0, Math.round(((x.end_at ? Date.parse(x.end_at) : Date.now()) - Date.parse(x.start_at)) / 60000));
+      }
+      const lines = [...evs.map((e) => ({ e })), ...Object.entries(sm).map(([k, v]) => ({ e: { kind: 'task', title: `${k} ${dur(v)}` } }))];
       let ly = ry + 20.5;
       const f = Font.boldSystemFont(9.3);
       for (let i = 0; i < Math.min(maxL, lines.length); i++) {
@@ -169,12 +176,13 @@ async function main() {
     const tk = await token();
     const y = now.getFullYear(), m = now.getMonth();
     const from = ymd(new Date(y, m, 1 - new Date(y, m, 1).getDay())), to = ymd(new Date(y, m + 1, 14));
-    const [events, sessions, tex] = await Promise.all([
+    const [events, sessions, projs, tex] = await Promise.all([
       get(tk, `events?select=day,start_min,title,kind,place&day=gte.${from}&day=lte.${to}`),
-      get(tk, `sessions?select=day&day=gte.${from}&day=lte.${to}`).catch(() => []),
+      get(tk, `sessions?select=day,project_id,title,start_at,end_at&day=gte.${from}&day=lte.${to}`).catch(() => []),
+      get(tk, 'projects?select=id,name').catch(() => []),
       texture(),
     ]);
-    w.backgroundImage = draw(widgetSize(fam), { events, sessions }, tex, fam);
+    w.backgroundImage = draw(widgetSize(fam), { events, sessions, projects: Object.fromEntries(projs.map((p) => [p.id, p.name])) }, tex, fam);
   } catch (e) {
     const t = w.addText(e.message);
     t.font = Font.boldSystemFont(12); t.textColor = RED;
