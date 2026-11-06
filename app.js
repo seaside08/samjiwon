@@ -1069,8 +1069,7 @@ function viewDiary() {
   const rec = S.days[day] || {};
   const strip = [
     `<span>작업 ${dur(sess)}</span>`, `<span>${work ? '근무 ' + dur(work) : '근무 없음'}</span>`,
-    ...evs.map((e) => `<span>${e.start_min != null ? hm(e.start_min) + ' ' : ''}${esc(e.title)}</span>`),
-    todos.length ? `<span class="red">할 일 [ ${done} / ${todos.length} ]</span>` : '',
+    ...evs.map((e) => `<span>${e.start_min != null ? workCode(e.start_min) + ' ' : ''}${esc(e.title)}</span>`),
     watered.length ? `<span>물 &#183; ${esc(watered.join(', '))}</span>` : '',
   ].join('');
   const recent = S.recent.filter((r) => r.day !== day).slice(0, 6);
