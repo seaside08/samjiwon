@@ -388,3 +388,7 @@ body.phone [data-act="prev"],body.phone [data-act="next"]{display:none}
 .tl-hd,.tl-row{grid-template-columns:var(--nw) repeat(var(--n),var(--cw))}
 .tl-hd>span{white-space:nowrap;overflow:visible}
 .tl-hd>span:first-child,.tl-row .nm{position:sticky;left:0;z-index:3;background:var(--paper);align-self:stretch;justify-content:center}
+.tl-in{position:relative}
+.tl-now{position:absolute;top:20px;bottom:0;width:1.5px;margin-left:-.75px;background:var(--ink);z-index:0;pointer-events:none}
+.tl-row i{z-index:1}
+.tday i{display:none}

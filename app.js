@@ -1232,7 +1232,7 @@ function viewPlants() {
         <button aria-label="식물 추가" data-act="plant-add" style="font-size:20px;padding:0 2px;margin-left:auto">+</button></div>
       ${S.plantAdd ? addForm('plant', '식물 추가', 'width:60%;margin:-4px 0 10px') : ''}
       <div class="tlg">
-        <div class="tl-in"><div class="tl-hd" style="--n:${N};--cw:${CW}px"><span>이름</span>${hd}</div>
+        <div class="tl-in"><b class="tl-now" style="left:calc(var(--nw) + ${days.indexOf(today) * CW + CW / 2}px)"></b><div class="tl-hd" style="--n:${N};--cw:${CW}px"><span>이름</span>${hd}</div>
         ${rows}</div>
       </div>
       <button class="lk" data-act="plant-gone">추억의 전당 [ ${gone.length} ] &#8594;</button>
