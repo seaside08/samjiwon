@@ -1334,6 +1334,8 @@ function handleMore(act, el, ev) {
   if (act === 'log-open') { S.sheet = { type: 'log', mode: 'log', day: todayStr(), v: logVals(), proj: el.dataset.id || null }; render(true); return true; }
   if (act === 'log-p') { S.sheet.proj = el.dataset.id; render(true); return true; }
   if (act === 'log-save') { logSave(); return true; }
+  if (act === 'period-save') { periodSave(); return true; }
+  if (act === 'period-clear') { const p = projOf(S.sheet?.pid); S.sheet = null; if (p) saveProj(p, { start_day: null, end_day: null }); else render(true); return true; }
   if (act === 'dial-reset') { dialSet(0); return true; }
   if (act === 'stop') { const r = running(); if (r) stopWork(r); return true; }
   if (act === 'discard') { const r = running(); if (r) discardWork(r); return true; }
@@ -1365,6 +1367,7 @@ function handleMore(act, el, ev) {
     const p = projOf(S.proj) || S.projects.slice().sort((a, b) => a.pos - b.pos)[0];
     if (!p) return true;
     const fld = el.dataset.f;
+    if (fld === 'period') { S.sheet = { type: 'period', pid: p.id, v: periodVals(p) }; render(true); return true; }
     if (ev.target.closest('a.lnk')) return true;   // 링크는 열기
     let target = el.classList.contains('kv') ? el.lastElementChild : el.classList.contains('pv') ? el.querySelector('.pval') : el;
     if (el.classList.contains('lb')) target = el.nextElementSibling;
@@ -1467,9 +1470,32 @@ function sheetVals(it, type) {
     noEnd: type === 'event' && it.start_min != null && it.end_min == null,
     allDay: type === 'event' && it.start_min == null, kind: 'task', proj: activeProjects()[0]?.id || null };
 }
-function wheel(key, n, step, val) {
-  const items = [...Array(n)].map((_, i) => `<div class="wi${i * step === val ? ' on' : ''}">${pad(i * step)}</div>`).join('');
-  return `<div class="wheel" data-w="${key}" data-step="${step}" data-i="${Math.round(val / step)}"><div class="wpad"></div>${items}<div class="wpad"></div></div>`;
+function wheel(key, n, step, val, base = 0, label = (x) => pad(x)) {
+  const items = [...Array(n)].map((_, i) => `<div class="wi${base + i * step === val ? ' on' : ''}">${label(base + i * step)}</div>`).join('');
+  return `<div class="wheel" data-w="${key}" data-step="${step}" data-base="${base}" data-i="${Math.round((val - base) / step)}"><div class="wpad"></div>${items}<div class="wpad"></div></div>`;
+}
+// 프로젝트 기간: 시작 년·월·일 ~ 끝 년·월·일 바퀴
+const Y0 = 2015, YN = 26;
+function periodVals(p) {
+  const t = parseYmd(todayStr()), a = p.start_day ? parseYmd(p.start_day) : t, b = p.end_day ? parseYmd(p.end_day) : a;
+  return { y1: a.getFullYear(), m1: a.getMonth() + 1, d1: a.getDate(), y2: b.getFullYear(), m2: b.getMonth() + 1, d2: b.getDate() };
+}
+function periodSheetHTML() {
+  const v = S.sheet.v, yy = (x) => String(x).slice(2);
+  const part = (k) => `<div class="wrow">${wheel('y' + k, YN, 1, v['y' + k], Y0, yy)}<span class="wc">.</span>${wheel('m' + k, 12, 1, v['m' + k], 1)}<span class="wc">.</span>${wheel('d' + k, 31, 1, v['d' + k], 1)}</div>`;
+  return `<div class="sh-bg" data-act="sh-close"></div>
+  <div class="sheet" role="dialog" aria-label="기간">
+    <div class="sh-head"><span>기간</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
+    <div class="wheels pwheels">${part(1)}<span class="wt">~</span>${part(2)}</div>
+    <div class="sh-acts"><button data-act="period-clear" style="margin-right:auto;font-size:14px">기간 지우기</button><button class="btn" data-act="period-save">저장</button></div>
+  </div>`;
+}
+function periodSave() {
+  const p = projOf(S.sheet.pid), v = S.sheet.v; if (!p) return closeSheet();
+  const mk = (y, m, d) => ymd(new Date(y, m - 1, Math.min(d, new Date(y, m, 0).getDate())));
+  let a = mk(v.y1, v.m1, v.d1), b = mk(v.y2, v.m2, v.d2);
+  if (b < a) [a, b] = [b, a];
+  S.sheet = null; saveProj(p, { start_day: a, end_day: b });
 }
 function wheelsHTML(v, { end = true } = {}) {
   return `<div class="wheels">
@@ -1513,6 +1539,7 @@ async function logSave() {
 function sheetHTML() {
   const sh = S.sheet; if (!sh) return '';
   if (sh.type === 'log') return logSheetHTML();
+  if (sh.type === 'period') return periodSheetHTML();
   const it = sheetItem(); if (!it) { S.sheet = null; return ''; }
   const t = sh.type;
   let head, title;
@@ -1566,7 +1593,7 @@ board.addEventListener('scroll', (e) => {
     const i = Math.max(0, Math.min(w.querySelectorAll('.wi').length - 1, Math.round(w.scrollTop / WH)));
     const v = S.sheet?.v;
     if (v) {
-      v[w.dataset.w] = i * +w.dataset.step;
+      v[w.dataset.w] = (+w.dataset.base || 0) + i * +w.dataset.step;
       // 시작을 바꿨는데 끝이 시작보다 앞이면 끝을 1시간 뒤로
       if ((w.dataset.w === 'sh' || w.dataset.w === 'sm') && vMin(v.eh, v.em) <= vMin(v.sh, v.sm)) {
         const b = (vMin(v.sh, v.sm) + 60) % 1440; v.eh = Math.floor(b / 60); v.em = b % 60;

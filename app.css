@@ -434,3 +434,8 @@ body.phone .main > section.left{will-change:transform}
 body.phone .gr{grid-template-columns:auto minmax(0,1fr) 44px}
 body.phone .left.gone{flex:none}
 body.phone .pdet .ptitle{margin-top:8px;margin-right:3px}
+.pwheels{gap:4px}
+.pwheels .wheel{width:34px}
+.pwheels .wc{padding:0 1px}
+body.phone .pwheels .wheel{width:30px}
+body.phone .pwheels .wi{font-size:20px}
