@@ -95,7 +95,8 @@ nav.tabs a.on{padding:3px 10px;margin-right:-10px;transform:rotate(-1.5deg)}
 
 .hours{position:relative;height:560px;font-size:11px;border-top:1.5px solid var(--ink)}
 .hours span{position:absolute}
-.col{position:relative;height:560px;border-left:1.5px solid var(--ink);border-top:1.5px solid var(--ink);cursor:pointer}
+.col{position:relative;height:560px;border-top:1.5px solid var(--ink);cursor:pointer;padding-left:1.5px;box-sizing:border-box}
+.col::after{content:"";position:absolute;left:0;top:0;bottom:0;width:0;border-left:1.5px solid var(--ink);z-index:3;pointer-events:none}   /* 세로줄은 초록 블록보다 위에 */
 .blk{position:absolute;left:4px;right:4px;box-sizing:border-box;padding:4px 5px;font-size:12px;line-height:1.1;overflow:hidden;word-break:keep-all}
 .blk.work{border:1.5px solid var(--ink);background:var(--paper)}
 .nowline{position:absolute;left:0;right:0;height:2.5px;background:var(--red)}
@@ -401,8 +402,10 @@ body.phone .pwheels .wi{font-size:20px}
 .blk.tilt{overflow:visible}
 /* 달력 칸: 위아래는 칸에서 자르고, 옆으로는 초록 네모가 살짝 넘어가도 보이게 */
 .cell{overflow:visible;clip-path:inset(0 -8px)}
-.cell .rz{margin:0 -11px;padding:1px 11px;position:relative;z-index:-1}
-body.phone .cell .rz{margin:0 -6px;padding:1px 6px}
+.cell .rz{margin:0 -7px;padding:1px 7px;position:relative;z-index:-1}
+body.phone .cell .rz{margin:0 -3px;padding:1px 3px}
+.cell+.cell .rz{margin-left:-8.5px;padding-left:8.5px}
+body.phone .cell+.cell .rz{margin-left:-4.5px;padding-left:4.5px}
 /* 칸 세로줄은 초록 네모보다 위에 */
 .cell{position:relative}
 .cell+.cell{border-left:0}

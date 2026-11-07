@@ -750,8 +750,8 @@ function tilt() {
     let h = 2166136261; for (const ch of el.textContent.trim() + (cal ? el.closest('[data-day]')?.dataset.day || el.style.top : '')) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
     const u = (h % 10000) / 10000;
     let mag = 0.4 + 1.4 * (u < 0.5 ? u * 2 : (u - 0.5) * 2);
-    // 달력 칸 안의 네모는 모서리가 3px 이상 삐져나오지 않을 만큼만
-    if (cal) mag = Math.min(mag, Math.asin(Math.min(1, (el.matches(".blk") ? 3 : 5) / Math.max(el.offsetWidth, el.offsetHeight, 1))) * 180 / Math.PI);
+    // 길쭉한 주간 블록은 모서리가 6px 넘게 튀지 않을 만큼만
+    if (cal && el.matches('.blk')) mag = Math.min(mag, Math.asin(Math.min(1, 6 / Math.max(el.offsetHeight, 1))) * 180 / Math.PI);
     const deg = +(u < 0.5 ? -mag : mag).toFixed(2);
     // 초록 바탕만 기울이고, 안의 글씨는 수직·수평 그대로
     el.classList.add('tilt');
