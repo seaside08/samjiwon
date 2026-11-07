@@ -423,3 +423,8 @@ body.phone .dh .wd1{font-size:14px}
 .dh.today{background:var(--ink);color:var(--paper)}
 body.phone .dh{padding-top:9px}
 body.phone .wgrid{grid-template-columns:15px repeat(7,minmax(0,1fr))}
+/* 기울인 초록 상자: 바탕만 돌리고 글씨는 똑바로 */
+.tilt{isolation:isolate;background:none!important}
+.tilt::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;transform:rotate(var(--r,0deg));background:#5fd97c url(tex.jpg) 0 0/240px 240px}
+.tilt.riso2::before{background-position:-90px -60px}
+.tilt.riso3::before{background-position:-160px -20px}

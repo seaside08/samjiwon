@@ -783,7 +783,10 @@ function tilt() {
   board.querySelectorAll('.sched, .ptitle, .ctl .sw a.riso3, .kinds button.riso3, .sh-tg button.riso3').forEach((el) => {
     let h = 7; for (const ch of el.textContent.trim()) h = (h * 31 + ch.charCodeAt(0)) % 997;
     const deg = ((h % 9) - 4) * 0.45 || 0.9;          // -1.8° ~ 1.8°
-    el.style.transform = `rotate(${deg}deg)`;
+    // 초록 바탕만 기울이고, 안의 글씨는 수직·수평 그대로
+    el.classList.add('tilt');
+    el.style.setProperty('--r', `${deg}deg`);
+    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
   });
 }
 
