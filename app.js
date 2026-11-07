@@ -144,6 +144,7 @@ function demoApi() {
       { id: id(), project_id: 'p1', title: '피보테 배경 외주', day: d(0), start_at: new Date(t.getFullYear(), t.getMonth(), t.getDate(), 13).toISOString(), end_at: new Date(t.getFullYear(), t.getMonth(), t.getDate(), 15, 10).toISOString() },
       { id: id(), project_id: 'p2', title: '오리엉덩이 zine', day: d(-1), start_at: new Date(t.getFullYear(), t.getMonth(), t.getDate() - 1, 11).toISOString(), end_at: new Date(t.getFullYear(), t.getMonth(), t.getDate() - 1, 14).toISOString() },
       { id: id(), project_id: 'p1', title: '피보테 배경 외주', day: d(0), start_at: new Date(Date.now() - 4930000).toISOString(), end_at: null },
+      { id: id(), project_id: 'p1', title: '피보테 배경 외주', day: d(1), start_at: new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1, 16, 30).toISOString(), end_at: new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1, 18).toISOString() },
     ],
     plants: [],
     plant_logs: [],
@@ -468,7 +469,7 @@ function viewWeek() {
       const cls = plain ? '' : e.kind === 'work' ? 'work' : ['riso', 'riso2', 'riso3'][(k++ + i) % 3];
       const t = `${workCode(e.start_min)}${e.end_min != null ? '&#8211;' + workCode(e.end_min) : ''}`;
       const nm = e.kind === 'work' ? (wpOf(e)?.short || e.title) : shortName(e.title);
-      items.push({ a: e.start_min, b: plain ? e.start_min + 45 : e.end_min, plain, cls, body: plain ? `${workCode(e.start_min)}<br>${esc(nm)}` : `${esc(nm)}<br>${t}` });
+      items.push({ a: e.start_min, b: plain ? e.start_min + 45 : e.end_min, plain, cls, work: e.kind === 'work', body: plain ? `${workCode(e.start_min)}<br>${esc(nm)}` : `${esc(nm)}<br>${t}` });
     });
     sessOf(ds).forEach((s, j) => {
       weekSess += sessMin(s);
@@ -476,9 +477,12 @@ function viewWeek() {
       items.push({ a, b: Math.max(b, a + 1), cls: ['riso', 'riso2', 'riso3'][(j + i + 1) % 3], body: `${esc(shortName(sessLabel(s)))}<br>${workCode(a)}&#8211;${s.end_at ? workCode(b) : ''}` });
     });
     items.sort((x, y) => x.a - y.a || y.b - x.b);
+    // 근무는 칸 전체에 깔고, 그 위에 겹치는 작업·일정은 올려 놓는다 (칸을 쪼개지 않음)
+    const works = items.filter((x) => x.work);
+    items.forEach((x) => { if (!x.work) x.over = works.some((w) => x.a < w.b && x.b > w.a); });
     const lanesEnd = []; let cluster = [], clusterEnd = -1;
     const flush = () => { const n = Math.max(1, ...cluster.map((x) => x.lane + 1)); cluster.forEach((x) => (x.n = n)); cluster = []; };
-    for (const it of items) {
+    for (const it of items.filter((x) => !x.work)) {
       if (it.a >= clusterEnd) { flush(); lanesEnd.length = 0; }
       let l = lanesEnd.findIndex((end) => end <= it.a); if (l < 0) l = lanesEnd.length;
       lanesEnd[l] = it.b; it.lane = l; cluster.push(it); clusterEnd = Math.max(clusterEnd, it.b);
@@ -487,8 +491,8 @@ function viewWeek() {
     const blks = items.map((it) => {
       const top = Math.max(0, (it.a - H0) * PX);
       const h = it.plain ? null : Math.max(26, Math.min(HH * 14, (it.b - H0) * PX) - top);
-      const pos = it.n > 1 ? `left:calc(${(it.lane / it.n) * 100}% + 2px);right:auto;width:calc(${100 / it.n}% - 4px);` : '';
-      return `<div class="blk ${it.cls}" style="${pos}top:${top}px;${h ? `height:${h}px` : ''}">${it.body}</div>`;
+      const pos = it.work ? '' : it.n > 1 ? `left:calc(${(it.lane / it.n) * 100}% + 2px);right:auto;width:calc(${100 / it.n}% - 4px);` : '';
+      return `<div class="blk ${it.cls}${it.over ? ' over' : ''}" style="${pos}top:${top}px;${h ? `height:${h}px` : ''}">${it.body}</div>`;
     }).join('');
     const line = ds === today && nowMin >= H0 ? `<div class="nowline" style="top:${(nowMin - H0) * PX}px"></div><div class="nowsq" style="top:${(nowMin - H0) * PX - 3}px"></div>` : '';
     return `<div class="col" data-act="sel" data-day="${ds}">${blks}${line}</div>`;
