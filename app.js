@@ -55,7 +55,7 @@ const S = {
   proj: null, projArchive: false,
   addKind: 'task', addProj: null, addWp: null,
   diaryDay: todayStr(),
-  plantEnd: todayStr(), plant: null, plantDay: todayStr(), plantGone: false, plantAdd: false,
+  plantEnd: todayStr(), plant: null, plantDay: todayStr(), plantGone: false, plantAdd: false, projOpen: false,
   statDay: todayStr(),
   user: null, loaded: [null, null],
 };
@@ -1082,15 +1082,16 @@ function viewProjects() {
       ${row('프로그램', 'programs', sel.programs && esc(sel.programs))}
       ${row('링크', 'link', link)}
       <div class="pv note-row" data-act="pf" data-f="note"><span class="pk">노트</span><p class="note pval">${sel.note ? esc(sel.note) : none}</p></div>
+      ${PHONE ? '<button class="lk" data-act="proj-back">&#8592; 돌아가기</button>' : ''}
     </section>` : '<section class="pdet"></section>';
   return `${header(`진행 중 ${active.length}`)}
   <div class="main">
-    <section class="plist">
+    ${PHONE && S.projOpen ? detail : `<section class="plist">
       <div class="row"><span class="bk">PROJECTS</span><span style="font-size:15px">[ ${list.length} ]</span>
         <button aria-label="프로젝트 추가" data-act="proj-add" style="margin-left:auto;font-size:20px;padding:0 2px">+</button></div>
       <div class="scroll">${rows}</div>
     </section>
-    ${detail}
+    ${PHONE ? '' : detail}`}
   </div>`;
 }
 
@@ -1336,13 +1337,14 @@ function handleMore(act, el, ev) {
   if (act === 'discard') { const r = running(); if (r) discardWork(r); return true; }
   if (act === 'edit-sess') { openSheet('sess', el.dataset.id); return true; }
   // 프로젝트
-  if (act === 'proj') { S.proj = el.dataset.id; render(); return true; }
+  if (act === 'proj') { S.proj = el.dataset.id; S.projOpen = true; render(); if (PHONE) scrollTo(0, 0); return true; }
+  if (act === 'proj-back') { S.projOpen = false; render(); return true; }
   if (act === 'proj-archive') { S.projArchive = !S.projArchive; S.proj = null; render(); return true; }
   if (act === 'proj-add') {
     (async () => {
       const row = { name: '새 프로젝트', stages: [], stage: 0, status: 'active', pos: Date.now() };
       try {
-        const p = await api.insert('projects', row); S.projects.push(p); S.proj = p.id; render();
+        const p = await api.insert('projects', row); S.projects.push(p); S.proj = p.id; S.projOpen = true; render();
         board.querySelector('.side [data-f="name"]')?.click();
       } catch (er) { fail(er); }
     })();
