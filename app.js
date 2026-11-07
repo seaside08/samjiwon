@@ -452,7 +452,7 @@ function viewWeek() {
       lanesEnd[l] = it.b; it.lane = l; cluster.push(it); clusterEnd = Math.max(clusterEnd, it.b);
     }
     flush();
-    const blks = items.map((it) => {
+    const blks = [...items].sort((x, y) => (y.work ? 1 : 0) - (x.work ? 1 : 0)).map((it) => {   // 근무 네모를 먼저 깔고 그 위에
       const top = Math.max(0, (it.a - H0) * PX);
       const h = it.plain ? null : Math.max(26, Math.min(HH * 14, (it.b - H0) * PX) - top);
       const pos = it.work ? '' : it.n > 1 ? `left:calc(${(it.lane / it.n) * 100}% + 2px);right:auto;width:calc(${100 / it.n}% - 4px);` : '';

@@ -367,7 +367,7 @@ body.phone .tl-names .nm small{font-size:11px}
 .gone-s{display:none}
 body.phone .gone-l{display:none}
 body.phone .gone-s{display:inline-block;align-self:flex-start;margin-top:22px}
-.blk.over{z-index:2}
+.blk.over{z-index:auto}
 .blk.over:not([style*='left:calc']){left:5.4px;right:5.1px}
 body.phone .blk.over:not([style*='left:calc']){left:3.4px;right:3.1px}
 /* 주 달력 머리: 요일은 월 달력처럼 크고 굵게, 오늘은 칸 전체 검은 상자 */
@@ -413,3 +413,9 @@ body.phone .cell+.cell .rz{margin-left:-4.5px;padding-left:4.5px}
 .cell+.cell::after{content:"";position:absolute;left:0;top:0;bottom:0;width:0;border-left:1.5px solid var(--ink);z-index:2;pointer-events:none}
 .cell+.cell{padding-left:8.5px}
 body.phone .cell+.cell{padding-left:4.5px}
+/* 주간 달력 층: 네모 바탕 < 빨간 지금 줄 < 글씨 < 검은 줄 < 빨간 네모 */
+.col{isolation:isolate}
+.blk.tilt{isolation:auto}
+.blk .bi{position:relative;z-index:2}
+.nowline{z-index:1}
+.nowsq{z-index:4}
