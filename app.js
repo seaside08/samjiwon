@@ -42,7 +42,6 @@ const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); r
 const todayStr = () => ymd(new Date());
 const mondayOf = (d) => addDays(d, -((d.getDay() + 6) % 7));
 const hm = (m) => { if (m > 1440) m -= 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
-const hShort = (m) => (m % 60 ? hm(m) : String(Math.floor(m / 60)));
 const dur = (m) => { const h = Math.floor(m / 60), r = m % 60; return r ? `${h}H ${r}M` : `${h}H`; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -52,11 +51,10 @@ const S = {
   sel: todayStr(), month: null, week: null,
   todos: [], events: [], days: {},
   projects: [], sessions: [], plants: [], plogs: [], recent: [],
-  proj: null, projArchive: false,
+  proj: null,
   addKind: 'task', addProj: null, addWp: null,
   diaryDay: todayStr(),
   plantEnd: todayStr(), plant: null, plantDay: todayStr(), plantGone: false, plantAdd: false, projOpen: false,
-  statDay: todayStr(),
   user: null, loaded: [null, null],
 };
 const PLANT_SEED = [
@@ -133,7 +131,7 @@ function demoApi() {
       { id: id(), day: d(5), start_min: 1020, end_min: 1350, title: '언더워터', kind: 'work', place: '언더워터' },
       { id: id(), day: d(16), start_min: null, end_min: null, title: '아트페어', kind: 'event' },
     ],
-    days: [{ day: d(0), vow: '오늘은 한 장만 제대로.', diary: '오전에 피보테 배경 채색을 시작했다. 색을 두 번 갈아엎었는데 세 번째가 마음에 든다.' },
+    days: [{ day: d(0), diary: '오전에 피보테 배경 채색을 시작했다. 색을 두 번 갈아엎었는데 세 번째가 마음에 든다.' },
       { day: d(-1), diary: '언더워터 마감하고 늦게 귀가. 손이 피곤함.' }, { day: d(-2), diary: '선화 끝. 피보테 1차 전달.' }],
     projects: [
       { id: 'p1', name: '피보테 배경 외주', stages: ['선화', '채색', '납품'], stage: 1, start_day: d(-15), end_day: d(16), pay: 400000, programs: '클립스튜디오, 포토샵', link: 'https://youtu.be/', note: '단편에 들어갈 배경 두 장.', status: 'active', pos: 1 , category: '외주', people: '스튜디오 피보테 (담당 김OO)', output: '배경 일러스트 2장 · 3840×2160 · 디지털'},
@@ -172,9 +170,9 @@ function wantedRange() {
   const ge = addDays(gs, 41);
   const ws = S.week, we = addDays(S.week, 6);
   const t = new Date(); const tm = mondayOf(t); const te = addDays(tm, 6);
-  const sel = parseYmd(S.sel), dd = parseYmd(S.diaryDay), sd = parseYmd(S.statDay);
+  const sel = parseYmd(S.sel), dd = parseYmd(S.diaryDay);
   const dm = new Date(dd.getFullYear(), dd.getMonth(), 1), dme = new Date(dd.getFullYear(), dd.getMonth() + 1, 0);
-  const all = [gs, ge, ws, we, tm, te, sel, dm, dme, sd];
+  const all = [gs, ge, ws, we, tm, te, sel, dm, dme];
   return [ymd(new Date(Math.min(...all))), ymd(new Date(Math.max(...all)))];
 }
 let loading = null;
@@ -237,7 +235,6 @@ const isWorkEv = (e) => e.kind === 'task';
 const projOf = (id) => S.projects.find((p) => p.id === id);
 const sessLabel = (s) => projOf(s.project_id)?.name || s.title || '작업';
 const minOfDay = (iso) => { const d = new Date(iso); return d.getHours() * 60 + d.getMinutes(); };
-const projMin = (p) => S.sessions.filter((s) => s.project_id === p.id).reduce((a, s) => a + sessMin(s), 0);
 const dayWork = (day) => eventsOf(day).reduce((a, e) => a + workMin(e), 0);
 const daySess = (day) => sessOf(day).reduce((a, s) => a + sessMin(s), 0);
 const elapsed = (s) => { const sec = Math.max(0, Math.floor((Date.now() - Date.parse(s.start_at)) / 1000)); return `${pad(Math.floor(sec / 3600))}:${pad(Math.floor(sec / 60) % 60)}:${pad(sec % 60)}`; };
@@ -286,30 +283,6 @@ function buildEvent(raw, day, kind) {
 const activeProjects = () => S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
 const KINDS = [['task', '작업'], ['event', '약속'], ['work', '근무']];
 
-function parseEvent(raw, day) {
-  let s = raw.trim(), start = null, end = null, m;
-  if ((m = s.match(new RegExp('^' + RANGE + '(?=\\s|$)')))) {
-    start = toMin(m[1], m[2]); end = m[3] ? toMin(m[3], m[4]) : null; s = s.slice(m[0].length).trim();
-  } else if ((m = s.match(new RegExp('(?:^|\\s)' + RANGE + '$'))) && (m[2] || m[3])) {
-    start = toMin(m[1], m[2]); end = m[3] ? toMin(m[3], m[4]) : null; s = s.slice(0, s.length - m[0].length).trim();
-  }
-  if (start == null) end = null;
-  if (end != null && end <= start) end += 24 * 60;
-  let kind = 'event', place = null;
-  const wp = WORKPLACES.find((w) => w.keys.some((k) => s === k || s.startsWith(k + ' ')));
-  if (wp) {
-    kind = 'work'; place = wp.name;
-    const key = wp.keys.find((k) => s === k || s.startsWith(k + ' '));
-    s = wp.name + s.slice(key.length);
-    if (start == null) {
-      const sh = wp.shifts[parseYmd(day).getDay()] || Object.values(wp.shifts)[0];
-      [start, end] = sh;
-    }
-  }
-  if (!s) return null;
-  return { title: s, start_min: start, end_min: end, kind, place };
-}
-const eventInput = (e) => (e.start_min != null ? hm(e.start_min) + (e.end_min != null ? '-' + hm(e.end_min) : '') + ' ' : '') + e.title;
 
 // ───────── 그리기
 const board = document.getElementById('board');
@@ -345,8 +318,6 @@ function viewToday() {
   const mon = mondayOf(new Date());
   let weekSess = 0;
   for (let i = 0; i < 7; i++) weekSess += daySess(ymd(addDays(mon, i)));
-  const vow = S.days[day]?.vow || '';
-  const d = new Date();
   const sess = daySess(day), r = running();
   const items = [
     ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="edit-event" data-id="${e.id}"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n">${esc(e.title)}</span><span class="x">${e.end_min != null ? '~' + workCode(e.end_min) : ''}</span></div>` })),
@@ -426,7 +397,7 @@ function viewMonth() {
     grid += '<div class="wk">';
     for (let c = 0; c < 7; c++) {
       const d = addDays(gs, r * 7 + c), ds = ymd(d), inMonth = d.getMonth() === mo;
-      const evs = eventsOf(ds), todos = todosOf(ds), done = todos.filter((t) => t.done).length;
+      const evs = eventsOf(ds);
       const cls = ds === today ? 'now' : (ds === S.sel ? 'pick' : '') + (inMonth ? '' : ' dim');
       grid += `<div class="cell" data-act="sel" data-day="${ds}"><b class="${cls}">${d.getDate()}</b>
         ${evs.map((e, i) => e.kind === 'work'
@@ -733,7 +704,6 @@ function render(force) {
   // 편집 중이면 다시 그리지 않음
   const a = document.activeElement;
   if (!force && a && board.contains(a) && (a.tagName === 'INPUT' || a.isContentEditable) && (a.value || a.textContent)) { pendingRender = true; return; }
-  if (dialDrag) { pendingRender = true; return; }
   pendingRender = false;
   let html;
   if (S.view === 'today') html = viewToday();
@@ -837,7 +807,6 @@ function step(k) {
     S.month = new Date(S.month.getFullYear(), S.month.getMonth() + k, 1);
     const t = new Date();
     S.sel = S.month.getMonth() === t.getMonth() && S.month.getFullYear() === t.getFullYear() ? todayStr() : ymd(S.month);
-    S.statDay = S.sel;
   } else {
     S.week = addDays(S.week, 7 * k);
     const t = todayStr();
@@ -898,8 +867,6 @@ board.addEventListener('click', async (e) => {
     await new Promise((r) => setTimeout(r, Math.max(0, 500 - (Date.now() - t0))));
     S.syncing = false;
     board.querySelector('#syncing')?.setAttribute('hidden', '');
-  } else if (act === 'logout') {
-    await sb.auth.signOut();
   }
 });
 
@@ -916,11 +883,7 @@ function inlineEdit(span, value, save, area = false) {
   input.addEventListener('keydown', (e) => { if (e.key === 'Escape') { done = true; render(); } });
 }
 
-// 다짐
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.sheet) closeSheet(); });
-board.addEventListener('keydown', (e) => {
-  if (e.target.dataset?.vow && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); e.target.blur(); }
-});
 board.addEventListener('input', (e) => {
   const day = e.target.dataset?.diary; if (!day) return;
   clearTimeout(diaryTimer);
@@ -929,112 +892,12 @@ board.addEventListener('input', (e) => {
 board.addEventListener('focusout', async (e) => {
   if (e.target.dataset?.diary) { clearTimeout(diaryTimer); saveDiary(e.target.dataset.diary, e.target.innerText.trim()); }
   if (e.target.classList?.contains('pmemo')) { const v = e.target.value.trim(); const pl = S.plants.find((p) => p.id === S.plant) || S.plants.filter((p) => !p.gone).sort((a, b) => a.pos - b.pos)[0]; if (pl && (logOf(pl.id, S.plantDay)?.memo || '') !== v) handleAddMore('pmemo', v); }
-  const day = e.target.dataset?.vow;
-  if (day) {
-    const v = e.target.textContent.trim();
-    if ((S.days[day]?.vow || '') !== v) {
-      S.days[day] = { ...(S.days[day] || { day }), vow: v };
-      try { await api.saveDay(day, { vow: v }); } catch (er) { fail(er); }
-    }
-  }
   setTimeout(() => { if (pendingRender && !board.contains(document.activeElement)) render(); }, 0);
 });
 
-// ───────── 다이얼로 작업 시간 기록
-// 한 바퀴 = 60분, 5분 단위, 여러 바퀴 돌리면 시간이 쌓임 (최대 12시간)
-S.dialMin = 0; S.dialRaw = 0;
-const TEXU = 'tex.jpg';
-function dialArc(min) {
-  const m = min % 60, full = min > 0 && m === 0, a = (m / 60) * Math.PI * 2;
-  if (full) return 'M100 100 m-86 0 a86 86 0 1 0 172 0 a86 86 0 1 0 -172 0';
-  if (!min) return '';
-  const x = 100 + 86 * Math.sin(a), y = 100 - 86 * Math.cos(a);
-  return `M100 100 L100 14 A86 86 0 ${m > 30 ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)} Z`;
-}
-function dialKnob(min) {
-  const a = ((min % 60) / 60) * Math.PI * 2;
-  return [100 + 86 * Math.sin(a), 100 - 86 * Math.cos(a)];
-}
-const dialLabel = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
-function dialHTML(size, projId = '') {
-  const [kx, ky] = dialKnob(S.dialMin);
-  const ticks = [...Array(12)].map((_, i) => { const a = (i / 12) * Math.PI * 2, r1 = i % 3 ? 78 : 72; return `<line x1="${100 + r1 * Math.sin(a)}" y1="${100 - r1 * Math.cos(a)}" x2="${100 + 86 * Math.sin(a)}" y2="${100 - 86 * Math.cos(a)}" stroke="#141414" stroke-width="${i % 3 ? 2 : 3}"/>`; }).join('');
-  return `<div class="dialbox" data-proj="${projId}">
-    <div class="dial" style="width:${size}px;height:${size}px">
-      <svg viewBox="0 0 200 200" width="${size}" height="${size}" aria-label="작업 시간 다이얼">
-        <defs><pattern id="dtx" patternUnits="userSpaceOnUse" width="160" height="160"><image href="${TEXU}" width="160" height="160"/></pattern></defs>
-        <circle cx="100" cy="100" r="86" fill="#fff"/>
-        <path id="dial-arc" d="${dialArc(S.dialMin)}" fill="url(#dtx)"/>
-        ${ticks}
-        <circle cx="100" cy="100" r="86" fill="none" stroke="#141414" stroke-width="3"/>
-        <rect id="dial-knob" x="${kx - 7}" y="${ky - 7}" width="14" height="14" fill="#141414"/>
-      </svg>
-      <span class="dial-t" id="dial-t">${dialLabel(S.dialMin)}</span>
-    </div>
-    <div class="dial-acts"><button class="btn" data-act="dial-save">기록</button><button class="ul" data-act="dial-reset">지우기</button><button class="ul" data-act="start" data-id="${projId}" data-dialstart="1">타이머</button></div>
-  </div>`;
-}
-function dialSet(min) {
-  S.dialMin = Math.max(0, Math.min(720, min));
-  const arc = document.getElementById('dial-arc'), knob = document.getElementById('dial-knob'), t = document.getElementById('dial-t');
-  if (arc) arc.setAttribute('d', dialArc(S.dialMin));
-  if (knob) { const [x, y] = dialKnob(S.dialMin); knob.setAttribute('x', x - 7); knob.setAttribute('y', y - 7); }
-  if (t) t.textContent = dialLabel(S.dialMin);
-}
-let dialDrag = null;
-const dialAngle = (svg, e) => { const r = svg.getBoundingClientRect(); const x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2); return ((Math.atan2(x, -y) * 180) / Math.PI + 360) % 360; };
-board.addEventListener('pointerdown', (e) => {
-  const svg = e.target.closest('.dial svg'); if (!svg) return;
-  e.preventDefault(); svg.setPointerCapture(e.pointerId);
-  dialDrag = { svg, prev: dialAngle(svg, e) };
-  S.dialRaw = S.dialMin;
-});
-board.addEventListener('pointermove', (e) => {
-  if (!dialDrag) return;
-  const a = dialAngle(dialDrag.svg, e); let d = a - dialDrag.prev; if (d > 180) d -= 360; if (d < -180) d += 360;
-  dialDrag.prev = a; S.dialRaw = Math.max(0, Math.min(720, S.dialRaw + (d / 360) * 60));
-  dialSet(Math.round(S.dialRaw / 5) * 5);
-});
-const dialEnd = () => { if (!dialDrag) return; dialDrag = null; if (pendingRender) render(); };
-board.addEventListener('pointerup', dialEnd); board.addEventListener('pointercancel', dialEnd);
 
-async function dialSave(projId) {
-  const p = projOf(projId || S.dialProj) || activeProjects()[0];
-  if (!p) return false;
-  const m = S.dialMin; if (!m) { toast('다이얼을 돌려 시간을 정해 주세요'); return false; }
-  const end = new Date(), start = new Date(end - m * 60000);   // 지금 끝난 것으로, 시작한 날에 기록
-  const row = { project_id: p.id, title: p.name, day: ymd(start), start_at: start.toISOString(), end_at: end.toISOString() };
-  const tmp = { id: 'tmp' + Date.now(), ...row };
-  S.sessions.push(tmp); S.dialMin = 0; render();
-  toast(`${p.name} ${dur(m)} 기록했어요`);
-  try { Object.assign(tmp, await api.insert('sessions', row)); } catch (e) { fail(e); S.sessions = S.sessions.filter((x) => x !== tmp); render(); }
-  return true;
-}
-
-// ───────── 타이머
-async function startWork(p) {
-  const r = running(); if (r) await stopWork(r);
-  const row = { project_id: p?.id || null, title: p?.name || '작업', day: todayStr(), start_at: new Date().toISOString() };
-  const tmp = { id: 'tmp' + Date.now(), ...row, end_at: null };
-  S.sessions.push(tmp); render();
-  try { Object.assign(tmp, await api.insert('sessions', row)); } catch (e) { fail(e); S.sessions = S.sessions.filter((x) => x !== tmp); }
-  render();
-}
-async function stopWork(s) {
-  s.end_at = new Date().toISOString(); render();
-  try { await api.update('sessions', s.id, { end_at: s.end_at }); } catch (e) { fail(e); }
-}
-async function discardWork(s) {
-  S.sessions = S.sessions.filter((x) => x !== s); render();
-  try { await api.remove('sessions', s.id); } catch (e) { fail(e); }
-}
 
 // ───────── 프로젝트
-const STATUS = { done: '완료', archived: '보관', stopped: '중단' };
-function stageChain(p) {
-  const st = p.stages || [], cur = p.status === 'done' ? st.length : p.stage || 0;
-  return st.map((x, i) => `<span data-act="stage" data-id="${p.id}" data-i="${i}" class="${i < cur ? 'dn' : i === cur ? 'cur' : 'mu'}">${esc(x)}</span>`).join('<span>&#8594;</span>');
-}
 const ymdDot = (ds) => ds.replace(/-/g, '.');
 // 같은 해 안에 끝나면 끝 날짜는 월.일만: 2026.10.23 – 12.23
 const periodLabel = (p) => {
@@ -1043,37 +906,23 @@ const periodLabel = (p) => {
   const end = p.end_day ? (same ? ymdDot(p.end_day.slice(5)) : ymdDot(p.end_day)) : '';
   return `${p.start_day ? ymdDot(p.start_day) : ''} &#8211; ${end}`;
 };
-function parsePeriod(v) {
-  const m = [...v.matchAll(/(?:(\d{4})[./-])?(\d{1,2})[./](\d{1,2})/g)];
-  const y0 = new Date().getFullYear();
-  const mk = (x, fallbackY) => x ? ymd(new Date(x[1] ? +x[1] : fallbackY, +x[2] - 1, +x[3])) : null;
-  const a = mk(m[0], y0); let b = mk(m[1], a ? parseYmd(a).getFullYear() : y0);
-  if (a && b && b < a && !m[1][1]) b = ymd(new Date(parseYmd(b).getFullYear() + 1, +m[1][2] - 1, +m[1][3]));
-  return { start_day: a, end_day: b };
-}
 function projField(p, f) {
-  if (f === 'period') return p.start_day || p.end_day ? `${p.start_day ? md(p.start_day) : ''}-${p.end_day ? md(p.end_day) : ''}` : '';
-  if (f === 'stages') return (p.stages || []).join(' > ');
   if (f === 'pay') return p.pay ? String(p.pay) : '';
   return p[f] || '';
 }
 function parseProjField(f, v) {
-  if (f === 'period') return parsePeriod(v);
-  if (f === 'stages') return { stages: v.split(/\s*(?:>|→|,)\s*/).map((x) => x.trim()).filter(Boolean) };
   if (f === 'pay') { const n = parseInt(v.replace(/[^\d]/g, ''), 10); return { pay: Number.isFinite(n) ? n : null }; }
   if (f === 'name') return v ? { name: v } : null;
   return { [f]: v || null };
 }
 async function saveProj(p, patch) {
   Object.assign(p, patch);
-  if (p.stages && p.stage > p.stages.length) p.stage = p.stages.length;
   render();
   try { await api.update('projects', p.id, patch); } catch (e) { fail(e); }
 }
 
 function viewProjects() {
   const active = S.projects.filter((p) => p.status === 'active');
-  const archived = S.projects.filter((p) => p.status !== 'active');
   const list = S.projects.slice().sort((a, b) => a.pos - b.pos);
   const sel = list.find((p) => p.id === S.proj) || list[0];
   const rows = list.map((p, i) => `<div class="pl${p === sel ? ' on' : ''}${i === list.length - 1 ? ' last' : ''}" data-act="proj" data-id="${p.id}">
@@ -1109,7 +958,6 @@ function viewDiary() {
   const day = S.diaryDay, d = parseYmd(day), mo = d.getMonth();
   const prefix = `${d.getFullYear()}-${pad(mo + 1)}-`;
   const count = Object.values(S.days).filter((r) => r.day.startsWith(prefix) && r.diary && r.diary.trim()).length;
-  const todos = todosOf(day), done = todos.filter((t) => t.done).length;
   const work = dayWork(day), sess = daySess(day);
   const evs = eventsOf(day).filter((e) => e.kind !== 'work');
   const watered = S.plogs.filter((l) => l.day === day && l.watered).map((l) => S.plants.find((p) => p.id === l.plant_id)?.name).filter(Boolean);
@@ -1280,7 +1128,6 @@ function viewStats() {
   let td = 0, tn = 0, appt = 0;
   for (const ds of days) { const t = todosOf(ds); tn += t.length; td += t.filter((x) => x.done).length; appt += eventsOf(ds).filter((e) => e.kind === 'event').length; }
   const max = Math.max(240, ...per.map((x) => x.s + x.w)), px = 140 / max;
-  const statDay = days.includes(S.statDay) ? S.statDay : days[0];
   const bars = per.map((x, i) => `<div class="dy"><i class="riso" style="height:${x.s * px}px"></i><i class="jb" style="height:${x.w * px}px"></i><span>${([0, 4, 9, 14, 19, 24, 29].includes(i) || i === last - 1 && last === 31) ? i + 1 : ''}</span></div>`).join('');
   // 시간대 (8~24시)
   const hrs = Array(16).fill(0);
@@ -1294,7 +1141,6 @@ function viewStats() {
   const byP = {};
   for (const s of monthSess) { const k = sessLabel(s); byP[k] = (byP[k] || 0) + sessMin(s); }
   const pl = Object.entries(byP).sort((a, b) => b[1] - a[1]).slice(0, 6), pmax = Math.max(1, ...pl.map((x) => x[1]));
-  const sd = parseYmd(statDay), rec = S.days[statDay] || {}, st = todosOf(statDay);
   return `${header(`${mo + 1}월 작업 ${dur(tS)} &#183; 근무 ${dur(tW)}`)}
   <div class="main">
     <section class="left" style="gap:14px">
@@ -1335,40 +1181,24 @@ function viewStats() {
 function handleMore(act, el, ev) {
   if (act === 'imp-ok') { el.disabled = true; el.textContent = '넣는 중…'; runImport(); return true; }
   if (act === 'imp-no') { S.imp = null; location.hash = '#work'; return true; }
-  if (act === 'start') { if (S.sheet?.type === 'log') S.sheet = null; startWork(projOf(el.dataset.id || S.dialProj) || activeProjects()[0]); return true; }
-  if (act === 'dial-p') { S.dialProj = el.dataset.id; render(true); return true; }
-  if (act === 'dial-save') { dialSave(el.closest('.dialbox')?.dataset.proj).then((ok) => { if (ok && S.sheet?.type === 'log') closeSheet(); }); return true; }
   if (act === 'log-open') { S.sheet = { type: 'log', mode: 'log', day: todayStr(), v: logVals(), proj: el.dataset.id || null }; render(true); return true; }
   if (act === 'log-p') { S.sheet.proj = el.dataset.id; render(true); return true; }
   if (act === 'log-save') { logSave(); return true; }
   if (act === 'period-save') { periodSave(); return true; }
   if (act === 'period-clear') { const p = projOf(S.sheet?.pid); S.sheet = null; if (p) saveProj(p, { start_day: null, end_day: null }); else render(true); return true; }
-  if (act === 'dial-reset') { dialSet(0); return true; }
-  if (act === 'stop') { const r = running(); if (r) stopWork(r); return true; }
-  if (act === 'discard') { const r = running(); if (r) discardWork(r); return true; }
   if (act === 'edit-sess') { openSheet('sess', el.dataset.id); return true; }
   // 프로젝트
   if (act === 'proj') { S.proj = el.dataset.id; S.projOpen = true; render(); if (PHONE) scrollTo(0, 0); return true; }
   if (act === 'proj-back') { S.projOpen = false; render(); return true; }
-  if (act === 'proj-archive') { S.projArchive = !S.projArchive; S.proj = null; render(); return true; }
   if (act === 'proj-add') {
     (async () => {
-      const row = { name: '새 프로젝트', stages: [], stage: 0, status: 'active', pos: Date.now() };
+      const row = { name: '새 프로젝트', status: 'active', pos: Date.now() };
       try {
         const p = await api.insert('projects', row); S.projects.push(p); S.proj = p.id; S.projOpen = true; render();
-        board.querySelector('.side [data-f="name"]')?.click();
+        board.querySelector('.pdet [data-f="name"]')?.click();
       } catch (er) { fail(er); }
     })();
     return true;
-  }
-  if (act === 'stage') {
-    ev.stopPropagation();
-    const p = projOf(el.dataset.id), i = +el.dataset.i; if (!p || p.status !== 'active') return true;
-    S.proj = p.id; saveProj(p, { stage: p.stage === i ? i + 1 : i }); return true;
-  }
-  if (act === 'pstate') {
-    const p = projOf(S.proj) || S.projects.slice().sort((a, b) => a.pos - b.pos)[0]; if (!p) return true;
-    S.proj = p.id; saveProj(p, { status: p.status === 'active' ? 'done' : 'active' }); return true;
   }
   if (act === 'pf') {
     const p = projOf(S.proj) || S.projects.slice().sort((a, b) => a.pos - b.pos)[0];
@@ -1381,18 +1211,6 @@ function handleMore(act, el, ev) {
     if (el.classList.contains('pv') && target.tagName === 'P') { const sp = document.createElement('span'); target.replaceWith(sp); target = sp; }
     inlineEdit(target, projField(p, fld), (v) => { const patch = parseProjField(fld, v); patch ? saveProj(p, patch) : render(); }, fld === 'note');
     return true;
-  }
-  if (act === 'pstatus') {
-    const p = projOf(S.proj) || viewList()[0]; if (!p) return true;
-    const s = el.dataset.s; saveProj(p, s === 'done' ? { status: s, stage: (p.stages || []).length } : { status: s });
-    if (s === 'done' || s === 'archived' || s === 'stopped') { const r = running(); if (r && r.project_id === p.id) stopWork(r); }
-    S.proj = null; return true;
-  }
-  if (act === 'pdel') {
-    const p = projOf(S.proj) || viewList()[0]; if (!p) return true;
-    if (el.dataset.sure !== '1') { el.dataset.sure = '1'; el.textContent = '정말 삭제'; el.classList.add('red'); return true; }
-    S.projects = S.projects.filter((x) => x !== p); S.proj = null; render();
-    api.remove('projects', p.id).catch(fail); return true;
   }
   // 기록
   if (act === 'diary-go') { S.diaryDay = el.dataset.day; location.hash = '#diary'; render(); ensureLoaded(); return true; }
@@ -1432,10 +1250,8 @@ function handleMore(act, el, ev) {
   }
   // 통계
   if (act === 'backup') { backup(el); return true; }
-  if (act === 'stat-day') { S.statDay = el.dataset.day; render(); return true; }
   return false;
 }
-const viewList = () => S.projects.filter((x) => (S.projArchive ? x.status !== 'active' : x.status === 'active')).sort((a, b) => a.pos - b.pos);
 
 async function handleAddMore(k, v) {
   if (k === 'plant') {
@@ -1762,7 +1578,7 @@ setInterval(() => {
   const c = document.getElementById('clock'); if (c) c.textContent = clockLabel(d);
   const dt = document.getElementById('date'); if (dt) dt.innerHTML = dateLabel(d);
   const el = document.getElementById('elapsed'), r = running(); if (el && r) el.textContent = elapsed(r);
-  if (ymd(d) !== lastDay) { lastDay = ymd(d); S.sel = S.diaryDay = S.plantDay = S.plantEnd = S.statDay = lastDay; render(); load(); }
+  if (ymd(d) !== lastDay) { lastDay = ymd(d); S.sel = S.diaryDay = S.plantDay = S.plantEnd = lastDay; render(); load(); }
 }, 1000);
 
 function route() {
