@@ -418,3 +418,6 @@ body.phone .cell+.cell{padding-left:4.5px}
 .blk .bi{position:relative;z-index:2}
 .nowline{z-index:3}
 .nowsq{z-index:4}
+.ym{display:flex;align-items:baseline;gap:6px}
+.ym>span{font-size:22px;letter-spacing:-.01em}
+.ym button{font-size:15px;padding:0 4px}

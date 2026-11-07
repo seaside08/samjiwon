@@ -529,8 +529,7 @@ function viewWork() {
   <div class="main">
     <section class="left">
       <div class="row"><span class="bk">WORK / ${S.wpArchive ? '보관함' : '근무'}</span><span style="font-size:15px">[ ${all.length} ]</span>
-        <span style="margin-left:auto;font-size:22px;letter-spacing:-.01em">${m.getFullYear()}. ${pad(mo + 1)}</span>
-        <span class="arr" style="display:flex;gap:8px;margin-left:10px;font-size:15px"><button data-act="prev" aria-label="이전 달">&#8592;</button><button data-act="next" aria-label="다음 달">&#8594;</button></span></div>
+        <span class="ym" style="margin-left:auto"><button data-act="prev" aria-label="이전 달">&#8592;</button><span>${m.getFullYear()}. ${pad(mo + 1)}</span><button data-act="next" aria-label="다음 달">&#8594;</button></span></div>
       <div class="mr hd2"><span>근무지 &#183; 기본 근무</span><span class="r">시간</span><span class="r">세전</span><span class="r">지급</span></div>
       ${rows}
       <div class="mr" style="border-top:3px solid #141414;border-bottom:1.5px solid #141414;cursor:default">
@@ -1150,9 +1149,7 @@ function viewStats() {
     <section class="left" style="gap:14px">
       <div style="display:flex;align-items:center;gap:10px">
         <span class="bk">STATS / 통계</span>
-        <span style="margin-left:18px;font-size:22px;letter-spacing:-.01em">${y}. ${pad(mo + 1)}</span>
-        <button data-act="prev" aria-label="이전 달" style="font-size:15px;padding:0 2px">&#8592;</button>
-        <button data-act="next" aria-label="다음 달" style="font-size:15px;padding:0 2px">&#8594;</button>
+        <span class="ym" style="margin-left:12px"><button data-act="prev" aria-label="이전 달">&#8592;</button><span>${y}. ${pad(mo + 1)}</span><button data-act="next" aria-label="다음 달">&#8594;</button></span>
       </div>
       <div class="big">
         <div><b>${Math.round(tS / 60)}H</b><span>작업 ${dur(tS)}</span></div>
