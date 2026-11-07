@@ -1200,11 +1200,12 @@ function viewPlants() {
     return `${header_}
     <div class="main">
       <section class="left gone">
-        <div class="row"><span class="bk">추억의 전당</span><span style="font-size:15px">[ ${gone.length} ]</span><button data-act="plant-gone" style="margin-left:auto;font-size:15px">&#8592; 돌아가기</button></div>
+        <div class="row"><span class="bk">추억의 전당</span><span style="font-size:15px">[ ${gone.length} ]</span></div>
         ${gone.map((p, i) => `<div class="gr${i === gone.length - 1 ? ' last' : ''}" data-act="plant" data-id="${p.id}"><b class="${p === sel ? 'pick' : ''}" style="padding:0 4px;margin-left:-4px">${esc(p.name)}</b><span>${esc(p.species || '')}</span><span>${p.gone_day ? md(p.gone_day) : ''}</span></div>`).join('')}
+        <button class="lk gone-l" data-act="plant-gone">&#8592; 돌아가기</button>
       </section>
       <section class="side">${sel ? `<span class="bk" style="margin-bottom:8px">${esc(sel.name)}</span><span style="font-size:13px">${esc(sel.species || '')}</span>
-        <button class="ul" style="align-self:flex-start;margin-top:16px;font-size:13px" data-act="plant-back">다시 함께 살기</button>` : ''}</section>
+        <button class="ul" style="align-self:flex-start;margin-top:16px;font-size:13px" data-act="plant-back">다시 함께 살기</button>` : ''}<button class="lk gone-s" data-act="plant-gone">&#8592; 돌아가기</button></section>
     </div>`;
   }
   // 150일 전부터 4주 뒤까지 한 줄로 길게 — 옆으로 밀어서 본다
