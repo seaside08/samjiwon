@@ -686,7 +686,7 @@ async function backup(btn) {
     f.file('할일.csv', toCSV(todos.sort(byDay), [['day', '날짜'], ['text', '할 일'], ['tag', '태그'], ['done', '완료', (r) => (r.done ? 'O' : '')], ['done_at', '완료 시각', (r) => isoLocal(r.done_at)]]));
     f.file('일정.csv', toCSV(events.sort(byDay), [['day', '날짜'], ['kind', '종류', (r) => KO[r.kind] || r.kind], ['title', '제목'], ['start_min', '시작', (r) => (r.start_min == null ? '' : hm(r.start_min))], ['end_min', '끝', (r) => (r.end_min == null ? '' : hm(r.end_min))], ['place', '근무지'], ['project_id', '프로젝트', (r) => pname(r.project_id)]]));
     f.file('작업기록.csv', toCSV(sessions.sort(byDay), [['day', '날짜'], ['project_id', '프로젝트', (r) => pname(r.project_id) || r.title], ['start_at', '시작', (r) => isoLocal(r.start_at)], ['end_at', '끝', (r) => isoLocal(r.end_at)], ['min', '분', (r) => (r.end_at ? sessMin(r) : '')]]));
-    f.file('프로젝트.csv', toCSV(projects, [['name', '이름'], ['status', '상태', (r) => ST[r.status] || r.status], ['category', '분류'], ['people', '함께한 사람'], ['output', '결과물'], ['stages', '단계'], ['start_day', '시작'], ['end_day', '끝'], ['pay', '보수'], ['programs', '프로그램'], ['link', '링크'], ['note', '작가 노트'], ['min', '작업 분', (r) => sessions.filter((x) => x.project_id === r.id).reduce((a, x) => a + (x.end_at ? sessMin(x) : 0), 0)]]));
+    f.file('프로젝트.csv', toCSV(projects, [['name', '이름'], ['status', '상태', (r) => ST[r.status] || r.status], ['category', '분류'], ['people', '함께한 사람'], ['output', '참여 파트'], ['stages', '단계'], ['start_day', '시작'], ['end_day', '끝'], ['pay', '보수'], ['programs', '프로그램'], ['link', '링크'], ['note', '작가 노트'], ['min', '작업 분', (r) => sessions.filter((x) => x.project_id === r.id).reduce((a, x) => a + (x.end_at ? sessMin(x) : 0), 0)]]));
     f.file('식물.csv', toCSV(plants, [['species', '종류'], ['name', '이름'], ['interval_days', '물 주기(일)'], ['gone', '추억의 전당', (r) => (r.gone ? 'O' : '')], ['gone_day', '보낸 날']]));
     f.file('식물기록.csv', toCSV(plogs.sort(byDay), [['day', '날짜'], ['plant_id', '식물', (r) => plname(r.plant_id)], ['watered', '물', (r) => (r.watered ? 'O' : '')], ['memo', '메모']]));
     f.file('일기.md', `# 삼중일기 · 일기\n\n${diary}`);
@@ -1087,7 +1087,7 @@ function viewProjects() {
       ${row('작업기간', 'period', (sel.start_day || sel.end_day) && periodLabel(sel))}
       ${row('보수', 'pay', sel.pay && won(sel.pay))}
       ${row('함께한 사람', 'people', sel.people && esc(sel.people))}
-      ${row('결과물', 'output', sel.output && esc(sel.output))}
+      ${row('참여 파트', 'output', sel.output && esc(sel.output))}
       ${row('프로그램', 'programs', sel.programs && esc(sel.programs))}
       ${row('링크', 'link', link)}
       <div class="pv note-row" data-act="pf" data-f="note"><span class="pk">노트</span><p class="note pval">${sel.note ? esc(sel.note) : none}</p></div>
