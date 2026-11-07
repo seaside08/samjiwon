@@ -315,11 +315,7 @@ function viewToday() {
   const day = todayStr();
   const todos = todosOf(day), done = todos.filter((t) => t.done).length;
   const evs = eventsOf(day);
-  const work = evs.reduce((a, e) => a + workMin(e), 0);
-  const mon = mondayOf(new Date());
-  let weekSess = 0;
-  for (let i = 0; i < 7; i++) weekSess += daySess(ymd(addDays(mon, i)));
-  const sess = daySess(day), r = running();
+  const r = running();
   const items = [
     ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="edit-event" data-id="${e.id}"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n">${esc(shortName(e.title))}</span><span class="x">${e.end_min != null ? '~' + workCode(e.end_min) : ''}</span></div>` })),
     ...sessOf(day).map((s) => ({ k: minOfDay(s.start_at), h: `<div class="e"${s.end_at ? ` data-act="edit-sess" data-id="${s.id}"` : ''}><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">${esc(sessLabel(s))}</span><span class="x">${s.end_at ? '~' + workCode(minOfDay(s.end_at)) : 'REC'}</span></div>` })),
@@ -336,7 +332,6 @@ function viewToday() {
     ${addForm('todo', '할 일 추가', 'margin-top:12px')}
     ${now}
     ${items.length ? `<div class="sched riso">${items.map((x) => x.h.replace(' data-act="go-day"', '')).join('')}</div>` : ''}
-    <div class="ph-sum">작업 ${dur(sess)} &#183; 근무 ${dur(work)} &#183; 이번 주 작업 ${dur(weekSess)}</div>
   </section>`;
   return `${header('')}
   <div class="main" style="gap:36px">
@@ -353,7 +348,6 @@ function viewToday() {
         ${items.map((x) => x.h).join('')}
       </div>
       <div style="flex:1 1 0"></div>
-      <div class="mini">작업 ${dur(sess)}<br>근무 ${dur(work)}<br>이번 주 작업 ${dur(weekSess)}</div>
     </section>
   </div>`;
 }

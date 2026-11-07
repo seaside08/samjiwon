@@ -54,7 +54,7 @@ nav.tabs a.on{padding:3px 10px;margin-right:-10px;transform:rotate(-1.5deg)}
 .sched{padding:21px 18px 23px;display:flex;flex-direction:column;gap:3px}
 .sched .h{display:flex;justify-content:space-between;font-size:13px;letter-spacing:.04em}
 .sched .e{display:flex;gap:12px;align-items:baseline}
-.sched .e .t{width:52px;flex:none}
+.sched .e .t{width:36px;flex:none}
 .sched .e .n{flex-grow:1}
 .sched .e .x{font-size:13px}
 
