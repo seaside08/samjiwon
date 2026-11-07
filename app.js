@@ -1144,7 +1144,7 @@ function viewStats() {
   const byP = {};
   for (const s of monthSess) { const k = sessFull(s); byP[k] = (byP[k] || 0) + sessMin(s); }
   const pl = Object.entries(byP).sort((a, b) => b[1] - a[1]).slice(0, 6), pmax = Math.max(1, ...pl.map((x) => x[1]));
-  return `${header(`${mo + 1}월 작업 ${dur(tS)} &#183; 근무 ${dur(tW)}`)}
+  return `${header('')}
   <div class="main">
     <section class="left" style="gap:14px">
       <div style="display:flex;align-items:center;gap:10px">
