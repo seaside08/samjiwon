@@ -1066,15 +1066,15 @@ function viewPlants() {
         <button class="ul" style="align-self:flex-start;margin-top:16px;font-size:13px" data-act="plant-back">다시 함께 살기</button>` : ''}<button class="lk gone-s" data-act="plant-gone">&#8592; 돌아가기</button></section>
     </div>`;
   }
-  // 150일 전부터 4주 뒤까지 한 줄로 길게 — 옆으로 밀어서 본다
-  const start = addDays(parseYmd(today), -150), N = 150 + 28 + 1, CW = 20;
+  // 60일 전부터 4주 뒤까지 한 줄로 길게 — 옆으로 밀어서 본다
+  const PAST = 60, start = addDays(parseYmd(today), -PAST), N = PAST + 28 + 1, CW = 20;
   const days = [...Array(N)].map((_, i) => ymd(addDays(start, i)));
   const sel = alive.find((p) => p.id === S.plant) || alive[0];
   const selDay = days.includes(S.plantDay) || S.plantDay === today ? S.plantDay : today;
   const hd = days.map((ds, i) => {
     const d = parseYmd(ds), n = d.getDate();
     if (ds === today) return `<span class="tday">${n}<i></i></span>`;
-    return `<span>${(150 - i) % 7 === 0 ? `${d.getMonth() + 1}/${n}` : ''}</span>`;
+    return `<span>${(PAST - i) % 7 === 0 ? `${d.getMonth() + 1}/${n}` : ''}</span>`;
   }).join('');
   const rows = alive.map((p) => {
     const cells = days.map((ds) => {
