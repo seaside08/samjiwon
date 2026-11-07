@@ -1521,7 +1521,7 @@ addEventListener('touchstart', (e) => {
   if (!PHONE || S.sheet || e.touches.length !== 1) { swipe = null; return; }
   const t = e.touches[0], el = e.target;
   if (t.clientX < 24 || t.clientX > innerWidth - 24) { swipe = null; return; }   // 화면 가장자리는 브라우저 뒤로가기 몫
-  if (el.closest('input,textarea,.wheel,.dial') || (el.closest('[contenteditable]') && el.closest('[contenteditable]') === document.activeElement)) { swipe = null; return; }   // 글 쓰는 중엔 막기
+  if (el.closest('input,textarea,.wheel') || (el.closest('[contenteditable]') && el.closest('[contenteditable]') === document.activeElement)) { swipe = null; return; }   // 글 쓰는 중엔 막기
   swipe = { x: t.clientX, y: t.clientY, t: Date.now() };
 }, { passive: true });
 // 손가락을 따라 달력(왼쪽 칸)만 움직이고, 다 넘어가면 다음 내용으로 바꿔 끼운다
