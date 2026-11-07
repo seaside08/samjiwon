@@ -401,5 +401,11 @@ body.phone .pwheels .wi{font-size:20px}
 .blk.tilt{overflow:visible}
 /* 달력 칸: 위아래는 칸에서 자르고, 옆으로는 초록 네모가 살짝 넘어가도 보이게 */
 .cell{overflow:visible;clip-path:inset(0 -8px)}
-.cell .rz{margin:0 -11px;padding:1px 11px;position:relative;z-index:1}
+.cell .rz{margin:0 -11px;padding:1px 11px;position:relative;z-index:-1}
 body.phone .cell .rz{margin:0 -6px;padding:1px 6px}
+/* 칸 세로줄은 초록 네모보다 위에 */
+.cell{position:relative}
+.cell+.cell{border-left:0}
+.cell+.cell::after{content:"";position:absolute;left:0;top:0;bottom:0;width:0;border-left:1.5px solid var(--ink);z-index:2;pointer-events:none}
+.cell+.cell{padding-left:8.5px}
+body.phone .cell+.cell{padding-left:4.5px}
