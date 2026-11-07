@@ -781,8 +781,10 @@ function placePop() {
 // 초록 상자를 살짝, 상자마다 다른 각도로 기울이기 (글자로 정해서 다시 그려도 같은 각도)
 function tilt() {
   board.querySelectorAll('.sched, .ptitle, .ctl .sw a.riso3, .kinds button.riso3, .sh-tg button.riso3').forEach((el) => {
-    let h = 7; for (const ch of el.textContent.trim()) h = (h * 31 + ch.charCodeAt(0)) % 997;
-    const deg = ((h % 9) - 4) * 0.45 || 0.9;          // -1.8° ~ 1.8°
+    // 글자마다 정해지는 임의의 기울기: -1.8° ~ 1.8° 사이, 거의 수평(±0.4° 안쪽)은 피함
+    let h = 2166136261; for (const ch of el.textContent.trim()) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+    const u = (h % 10000) / 10000, mag = 0.4 + 1.4 * (u < 0.5 ? u * 2 : (u - 0.5) * 2);
+    const deg = +(u < 0.5 ? -mag : mag).toFixed(2);
     // 초록 바탕만 기울이고, 안의 글씨는 수직·수평 그대로
     el.classList.add('tilt');
     el.style.setProperty('--r', `${deg}deg`);
