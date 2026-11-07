@@ -371,10 +371,7 @@ function daySide() {
     <span class="bk" style="margin-bottom:8px">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${wdh(d.getDay())}</span>
     ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(e.title)}</span>${e.end_min != null ? ' ~' + workCode(e.end_min) : ''}</span></div>`).join('')}
     ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))} ~${workCode(minOfDay(s.end_at))}</span></div>`).join('')}
-    <div class="kinds">${KINDS.map(([k, l]) => `<button data-act="ak" data-k="${k}" class="${S.addKind === k ? 'riso3' : ''}">${l}</button>`).join('')}</div>
-    ${S.addKind === 'task' ? `<div class="opts">${activeProjects().map((p, i) => `<button data-act="ap" data-id="${p.id}" class="${(S.addProj ? S.addProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('') || '<span class="mu">진행 중인 프로젝트 없음</span>'}</div>` : ''}
-    ${S.addKind === 'work' ? `<div class="opts">${WORKPLACES.filter((w) => !w.archived).map((w, i) => `<button data-act="aw" data-n="${w.name}" class="${(S.addWp ? S.addWp === w.name : i === 0) ? 'on' : ''}">${w.name}</button>`).join('')}</div>` : ''}
-    ${addForm('event', '일정 추가', 'margin-top:2px')}
+    <button class="addev" data-act="add-open">+ 일정 추가</button>
     <span class="lbl red">할 일 [ ${done} / ${todos.length} ]</span>
     <div class="todos">${todos.map(todoRow).join('')}</div>
   </section>`;
@@ -789,6 +786,10 @@ board.addEventListener('submit', (e) => {
   const k = f.dataset.add;
   if (k === 'pmemo') { input.blur(); return; }
   input.value = '';
+  if (k === 'event' && S.sheet?.type === 'add') {   // 팝업: 제대로 만들어질 때만 닫기
+    if (!buildEvent(v, S.sel, S.addKind)) { input.value = v; if (v || S.addKind !== 'event') addEvent(S.sel, v); return; }
+    S.sheet = null;
+  }
   if (k === 'event' && !v && S.addKind !== 'event') { addEvent(S.sel, ''); return; }
   if (!v) return;
   if (k === 'plant') { handleAddMore(k, v); return; }
@@ -832,11 +833,13 @@ board.addEventListener('click', async (e) => {
   } else if (act === 'sh-close') {
     closeSheet();
   } else if (act === 'ak') {
-    S.addKind = el.dataset.k; render(); board.querySelector('form[data-add="event"] input')?.focus();
+    S.addKind = el.dataset.k; render(true); board.querySelector('form[data-add="event"] input')?.focus();
   } else if (act === 'ap') {
-    S.addProj = el.dataset.id; render(); board.querySelector('form[data-add="event"] input')?.focus();
+    S.addProj = el.dataset.id; render(true); board.querySelector('form[data-add="event"] input')?.focus();
   } else if (act === 'aw') {
-    S.addWp = el.dataset.n; render(); board.querySelector('form[data-add="event"] input')?.focus();
+    S.addWp = el.dataset.n; render(true); board.querySelector('form[data-add="event"] input')?.focus();
+  } else if (act === 'add-open') {
+    S.sheet = { type: 'add' }; render(true); board.querySelector('.sheet form[data-add="event"] input')?.focus();
   } else if (act === 'sel') {
     S.sel = el.dataset.day; render();
   } else if (act === 'go-day') {
@@ -1367,10 +1370,22 @@ async function logSave() {
   toast(`${p.name} ${hm(a)}부터 ${dur(b - a)} 기록했어요`);
   try { Object.assign(tmp, await api.insert('sessions', row)); } catch (e) { fail(e); S.sessions = S.sessions.filter((x) => x !== tmp); render(); }
 }
+function addSheetHTML() {
+  const d = parseYmd(S.sel);
+  return `<div class="sh-bg" data-act="sh-close"></div>
+  <div class="sheet" role="dialog" aria-label="일정 추가">
+    <div class="sh-head"><span>일정 추가 &#183; ${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${wdh(d.getDay())}</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
+    <div class="kinds">${KINDS.map(([k, l]) => `<button data-act="ak" data-k="${k}" class="${S.addKind === k ? 'riso3' : ''}">${l}</button>`).join('')}</div>
+    ${S.addKind === 'task' ? `<div class="opts">${activeProjects().map((p, i) => `<button data-act="ap" data-id="${p.id}" class="${(S.addProj ? S.addProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('') || '<span class="mu">진행 중인 프로젝트 없음</span>'}</div>` : ''}
+    ${S.addKind === 'work' ? `<div class="opts">${WORKPLACES.filter((w) => !w.archived).map((w, i) => `<button data-act="aw" data-n="${w.name}" class="${(S.addWp ? S.addWp === w.name : i === 0) ? 'on' : ''}">${w.name}</button>`).join('')}</div>` : ''}
+    ${addForm('event', '일정 추가', 'margin-top:2px')}
+  </div>`;
+}
 function sheetHTML() {
   const sh = S.sheet; if (!sh) return '';
   if (sh.type === 'log') return logSheetHTML();
   if (sh.type === 'period') return periodSheetHTML();
+  if (sh.type === 'add') return addSheetHTML();
   const it = sheetItem(); if (!it) { S.sheet = null; return ''; }
   const t = sh.type;
   let head, title;

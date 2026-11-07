@@ -81,7 +81,7 @@ nav.tabs a.on{padding:3px 10px;margin-right:-10px;transform:rotate(-1.5deg)}
 
 /* 오른쪽 날짜 목록 */
 .ev{display:flex;gap:8px;cursor:text}
-.ev .t{width:44px;flex:none}
+.ev .t{width:34px;flex:none}
 .ev .n{min-width:0;word-break:keep-all}
 .lbl{margin-top:10px;font-size:13px}
 
@@ -217,7 +217,7 @@ body.phone .side .todo{font-size:16px;gap:12px}
 body.phone .side .ck{width:18px;height:18px;border-width:2.5px}
 body.phone .side .todos{gap:10px}
 body.phone .ev{font-size:16px}
-body.phone .ev .t{width:50px}
+body.phone .ev .t{width:40px}
 /* 달력 */
 body.phone .ctl{flex-wrap:wrap}
 body.phone .ctl .ttl{font-size:22px}
@@ -390,3 +390,5 @@ body.phone .pdet .ptitle{margin-top:8px;margin-right:3px}
 .pwheels .wc{padding:0 1px}
 body.phone .pwheels .wheel{width:30px}
 body.phone .pwheels .wi{font-size:20px}
+.addev{align-self:flex-start;margin-top:10px;font-size:14px}
+.sheet .kinds{margin-top:2px}
