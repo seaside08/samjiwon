@@ -399,3 +399,7 @@ body.phone .pwheels .wi{font-size:20px}
 .ln.tilt{overflow:visible}
 .blk .bi{height:100%;overflow:hidden}
 .blk.tilt{overflow:visible}
+/* 달력 칸: 위아래는 칸에서 자르고, 옆으로는 초록 네모가 살짝 넘어가도 보이게 */
+.cell{overflow:visible;clip-path:inset(0 -8px)}
+.cell .rz{margin:0 -11px;padding:1px 11px;position:relative;z-index:1}
+body.phone .cell .rz{margin:0 -6px;padding:1px 6px}
