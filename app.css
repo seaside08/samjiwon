@@ -394,3 +394,8 @@ body.phone .pwheels .wi{font-size:20px}
 .addev{align-self:flex-start;margin-top:10px;font-size:14px}
 .sheet .kinds{margin-top:2px}
 .ev .et{margin-left:1em}
+/* 달력 안 초록 네모 기울이기: 바탕이 잘리지 않게 바깥은 열고 글자는 안쪽에서 자름 */
+.ln .lt{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ln.tilt{overflow:visible}
+.blk .bi{height:100%;overflow:hidden}
+.blk.tilt{overflow:visible}

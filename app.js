@@ -396,8 +396,8 @@ function viewMonth() {
           ? `<span class="ln">${workCode(e.start_min)} ${esc(wpOf(e)?.short || e.title)}</span>`
           : e.start_min == null
             ? `<span class="ln">${esc(e.title)}</span>`
-            : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><em class="tm">${workCode(e.start_min)} </em>${esc(shortName(e.title))}</span>`).join('')}
-        ${Object.entries(sessOf(ds).reduce((a, s) => { const k = shortName(sessLabel(s)); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v], j) => `<span class="ln rz ${['riso3', 'riso', 'riso2'][(d.getDate() + j) % 3]}">${esc(k)} ${dur(v)}</span>`).join('')}
+            : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><span class="lt"><em class="tm">${workCode(e.start_min)} </em>${esc(shortName(e.title))}</span></span>`).join('')}
+        ${Object.entries(sessOf(ds).reduce((a, s) => { const k = shortName(sessLabel(s)); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v], j) => `<span class="ln rz ${['riso3', 'riso', 'riso2'][(d.getDate() + j) % 3]}"><span class="lt">${esc(k)} ${dur(v)}</span></span>`).join('')}
       </div>`;
     }
     grid += '</div>';
@@ -456,7 +456,7 @@ function viewWeek() {
       const top = Math.max(0, (it.a - H0) * PX);
       const h = it.plain ? null : Math.max(26, Math.min(HH * 14, (it.b - H0) * PX) - top);
       const pos = it.work ? '' : it.n > 1 ? `left:calc(${(it.lane / it.n) * 100}% + 2px);right:auto;width:calc(${100 / it.n}% - 4px);` : '';
-      return `<div class="blk ${it.cls}${it.over ? ' over' : ''}" style="${pos}top:${top}px;${h ? `height:${h}px` : ''}">${it.body}</div>`;
+      return `<div class="blk ${it.cls}${it.over ? ' over' : ''}" style="${pos}top:${top}px;${h ? `height:${h}px` : ''}"><div class="bi">${it.body}</div></div>`;
     }).join('');
     const line = ds === today && nowMin >= H0 ? `<div class="nowline" style="top:${(nowMin - H0) * PX}px"></div><div class="nowsq" style="top:${(nowMin - H0) * PX - 3}px"></div>` : '';
     return `<div class="col" data-act="sel" data-day="${ds}">${blks}${line}</div>`;
@@ -743,10 +743,15 @@ function placePop() {
 
 // 초록 상자를 살짝, 상자마다 다른 각도로 기울이기 (글자로 정해서 다시 그려도 같은 각도)
 function tilt() {
-  board.querySelectorAll('.sched, .ptitle, .ctl .sw a.riso3, .kinds button.riso3, .sh-tg button.riso3').forEach((el) => {
+  const CAL = '.cell .ln.rz, .blk.riso, .blk.riso2, .blk.riso3';
+  board.querySelectorAll(`.sched, .ptitle, .ctl .sw a.riso3, .kinds button.riso3, .sh-tg button.riso3, ${CAL}`).forEach((el) => {
     // 글자마다 정해지는 임의의 기울기: -1.8° ~ 1.8° 사이, 거의 수평(±0.4° 안쪽)은 피함
-    let h = 2166136261; for (const ch of el.textContent.trim()) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
-    const u = (h % 10000) / 10000, mag = 0.4 + 1.4 * (u < 0.5 ? u * 2 : (u - 0.5) * 2);
+    const cal = el.matches(CAL);
+    let h = 2166136261; for (const ch of el.textContent.trim() + (cal ? el.closest('[data-day]')?.dataset.day || el.style.top : '')) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+    const u = (h % 10000) / 10000;
+    let mag = 0.4 + 1.4 * (u < 0.5 ? u * 2 : (u - 0.5) * 2);
+    // 달력 칸 안의 네모는 모서리가 3px 이상 삐져나오지 않을 만큼만
+    if (cal) mag = Math.min(mag, Math.asin(Math.min(1, 3 / Math.max(el.offsetWidth, el.offsetHeight, 1))) * 180 / Math.PI);
     const deg = +(u < 0.5 ? -mag : mag).toFixed(2);
     // 초록 바탕만 기울이고, 안의 글씨는 수직·수평 그대로
     el.classList.add('tilt');
