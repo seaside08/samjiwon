@@ -433,3 +433,4 @@ body.phone .main > section.left{will-change:transform}
 .gr b{justify-self:start}
 body.phone .gr{grid-template-columns:auto minmax(0,1fr) 44px}
 body.phone .left.gone{flex:none}
+body.phone .pdet .ptitle{margin-top:8px;margin-right:3px}
