@@ -413,9 +413,9 @@ body.phone .cell+.cell .rz{margin-left:-4.5px;padding-left:4.5px}
 .cell+.cell::after{content:"";position:absolute;left:0;top:0;bottom:0;width:0;border-left:1.5px solid var(--ink);z-index:2;pointer-events:none}
 .cell+.cell{padding-left:8.5px}
 body.phone .cell+.cell{padding-left:4.5px}
-/* 주간 달력 층: 네모 바탕 < 빨간 지금 줄 < 글씨 < 검은 줄 < 빨간 네모 */
+/* 주간 달력 층: 네모 바탕 < 글씨 < 빨간 지금 줄 < 검은 줄 < 빨간 네모 */
 .col{isolation:isolate}
 .blk.tilt{isolation:auto}
 .blk .bi{position:relative;z-index:2}
-.nowline{z-index:1}
+.nowline{z-index:3}
 .nowsq{z-index:4}
