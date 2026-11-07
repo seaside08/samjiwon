@@ -414,4 +414,5 @@ body.phone .tl-names .nm small{font-size:11px}
 body.phone .gone-l{display:none}
 body.phone .gone-s{display:inline-block;align-self:flex-start;margin-top:22px}
 .blk.over{z-index:2}
-.blk.over:not([style*='left:calc']){left:8px;right:8px}
+.blk.over:not([style*='left:calc']){left:5.4px;right:5.1px}
+body.phone .blk.over:not([style*='left:calc']){left:3.4px;right:3.1px}
