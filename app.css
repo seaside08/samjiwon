@@ -428,3 +428,5 @@ body.phone .wgrid{grid-template-columns:15px repeat(7,minmax(0,1fr))}
 .tilt::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;transform:rotate(var(--r,0deg));background:#5fd97c url(tex.jpg) 0 0/240px 240px}
 .tilt.riso2::before{background-position:-90px -60px}
 .tilt.riso3::before{background-position:-160px -20px}
+html:has(body.phone),body.phone{overflow-x:hidden}
+body.phone .main > section.left{will-change:transform}
