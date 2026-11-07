@@ -421,3 +421,4 @@ body.phone .blk.over:not([style*='left:calc']){left:3.4px;right:3.1px}
 body.phone .dh .wd1{font-size:14px}
 .dh{align-self:stretch;padding-top:4px;margin-bottom:0}
 .dh.today{background:var(--ink);color:var(--paper)}
+body.phone .dh{padding-top:9px}
