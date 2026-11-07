@@ -233,7 +233,8 @@ const running = () => S.sessions.find((s) => !s.end_at);
 // 작업 일정 (kind: task)
 const isWorkEv = (e) => e.kind === 'task';
 const projOf = (id) => S.projects.find((p) => p.id === id);
-const sessLabel = (s) => shortName(projOf(s.project_id)?.name || s.title || '작업');   // 줄임말 적용
+const sessFull = (s) => projOf(s.project_id)?.name || s.title || '작업';
+const sessLabel = (s) => shortName(sessFull(s));   // 줄임말 적용
 const minOfDay = (iso) => { const d = new Date(iso); return d.getHours() * 60 + d.getMinutes(); };
 const dayWork = (day) => eventsOf(day).reduce((a, e) => a + workMin(e), 0);
 const daySess = (day) => sessOf(day).reduce((a, s) => a + sessMin(s), 0);
@@ -326,7 +327,7 @@ function viewToday() {
   const active = S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
   // 지금 하는 작업: 돌고 있는 기록 → 가장 최근 기록 → 진행 중 첫 프로젝트
   const lastS = S.sessions.slice().sort((a, b) => (a.start_at < b.start_at ? 1 : -1))[0];
-  const cur = (r && sessLabel(r)) || (lastS && projOf(lastS.project_id)?.status === 'active' && sessLabel(lastS)) || shortName(active[0]?.name);
+  const cur = (r && sessFull(r)) || (lastS && projOf(lastS.project_id)?.status === 'active' && sessFull(lastS)) || active[0]?.name;   // 여기는 풀네임
   const now = `<button class="bk nowbtn" data-act="log-open" aria-label="작업시간 기록하기">NOW WORKING${cur ? ` &#8212; ${esc(cur)}` : ''}</button>`;
   if (PHONE) return `${header('')}
   <section class="ph">
@@ -370,7 +371,7 @@ function daySide() {
   return `<section class="side">
     <span class="bk" style="margin-bottom:8px">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${wdh(d.getDay())}</span>
     ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(shortName(e.title))}</span>${e.end_min != null ? ' ~' + workCode(e.end_min) : ''}</span></div>`).join('')}
-    ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))} ~${workCode(minOfDay(s.end_at))}</span></div>`).join('')}
+    ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">${esc(sessLabel(s))} ~${workCode(minOfDay(s.end_at))}</span></div>`).join('')}
     <button class="addev" data-act="add-open">+ 일정 추가</button>
     <span class="lbl red">할 일 [ ${done} / ${todos.length} ]</span>
     <div class="todos">${todos.map(todoRow).join('')}</div>
@@ -1142,7 +1143,7 @@ function viewStats() {
   const hmax = Math.max(60, ...hrs);
   // 프로젝트별
   const byP = {};
-  for (const s of monthSess) { const k = sessLabel(s); byP[k] = (byP[k] || 0) + sessMin(s); }
+  for (const s of monthSess) { const k = sessFull(s); byP[k] = (byP[k] || 0) + sessMin(s); }
   const pl = Object.entries(byP).sort((a, b) => b[1] - a[1]).slice(0, 6), pmax = Math.max(1, ...pl.map((x) => x[1]));
   return `${header(`${mo + 1}월 작업 ${dur(tS)} &#183; 근무 ${dur(tW)}`)}
   <div class="main">
@@ -1171,7 +1172,7 @@ function viewStats() {
         </div>
         <div style="flex:1 1 0;display:flex;flex-direction:column;gap:7px;min-width:0">
           <span style="font-size:12px">프로젝트별</span>
-          ${pl.map(([k, v], i) => `<div class="pb"><span class="ln">${esc(k)}</span><i class="${['riso', 'riso2', 'riso3'][i % 3]}" style="width:${(v / pmax) * 100}%"></i><span style="text-align:right">${Math.round(v / 60) || '&lt;1'}H</span></div>`).join('')}
+          <div class="pbs">${pl.map(([k, v], i) => `<div class="pb"><span class="ln">${esc(k)}</span><i class="${['riso', 'riso2', 'riso3'][i % 3]}" style="width:${(v / pmax) * 100}%"></i><span style="text-align:right">${Math.round(v / 60) || '&lt;1'}H</span></div>`).join('')}</div>
         </div>
       </div>
       <button class="ul" data-act="backup" style="margin-top:auto;font-size:13px">백업 받기</button>
