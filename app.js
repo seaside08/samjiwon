@@ -354,9 +354,10 @@ function viewToday() {
 
 function calCtl(title, prevLabel, nextLabel) {
   return `<div class="ctl"><span class="ttl">${title}</span>
-    <span class="sw"><span class="arr"><button data-act="prev" aria-label="${prevLabel}">&#8592;</button><button data-act="next" aria-label="${nextLabel}">&#8594;</button></span>
+    <span class="sw"><button data-act="prev" aria-label="${prevLabel}">&#8592;</button>
     <a href="#cal" data-act="mode" data-mode="month" class="${S.calMode === 'month' ? 'riso3' : ''}">월</a>
-    <a href="#cal" data-act="mode" data-mode="week" class="${S.calMode === 'week' ? 'riso3' : ''}">주</a></span></div>`;
+    <a href="#cal" data-act="mode" data-mode="week" class="${S.calMode === 'week' ? 'riso3' : ''}">주</a>
+    <button data-act="next" aria-label="${nextLabel}">&#8594;</button></span></div>`;
 }
 
 function daySide() {

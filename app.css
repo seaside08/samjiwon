@@ -64,8 +64,7 @@ nav.tabs a.on{padding:3px 10px;margin-right:-10px;transform:rotate(-1.5deg)}
 .ctl{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}
 .ctl .ttl{font-size:26px;letter-spacing:-.01em}
 .ctl .sw{margin-left:auto;display:flex;gap:4px;font-size:15px;align-items:baseline}
-.ctl .arr{display:flex;gap:8px;margin-right:12px}
-.ctl .arr button{font-size:17px;padding:0 2px}
+.ctl .sw button{font-size:17px;padding:0 6px}
 .ctl .sw a{color:var(--ink);text-decoration:none;padding:2px 8px}
 
 /* 월간 */
