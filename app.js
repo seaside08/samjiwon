@@ -499,7 +499,7 @@ function viewWeek() {
   });
   const heads = days.map((d) => {
     const ds = ymd(d);
-    return `<span class="dh" data-act="sel" data-day="${ds}">${WD_HJ[d.getDay()]} <span class="n ${ds === today ? 'now' : ds === S.sel ? 'pick' : ''}">${pad(d.getDate())}</span></span>`;
+    return `<span class="dh${ds === today ? ' today' : ''}" data-act="sel" data-day="${ds}"><b class="wd1">${WD_HJ[d.getDay()]}</b> <span class="n ${ds !== today && ds === S.sel ? 'pick' : ''}">${pad(d.getDate())}</span></span>`;
   });
   const hours = [10, 12, 14, 16, 18, 20, 22].map((h, i) => `<span style="top:${4 + i * HH * 2}px">${h}</span>`).join('');
   return `${header(`이번 주 작업 ${dur(weekSess)} &#183; 근무 ${dur(weekWork)}`)}

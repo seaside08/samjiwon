@@ -416,3 +416,8 @@ body.phone .gone-s{display:inline-block;align-self:flex-start;margin-top:22px}
 .blk.over{z-index:2}
 .blk.over:not([style*='left:calc']){left:5.4px;right:5.1px}
 body.phone .blk.over:not([style*='left:calc']){left:3.4px;right:3.1px}
+/* 주 달력 머리: 요일은 월 달력처럼 크고 굵게, 오늘은 칸 전체 검은 상자 */
+.dh .wd1{font-size:18px;font-weight:900;font-family:'Noto Sans KR','Noto Sans CJK KR','Apple SD Gothic Neo',sans-serif;line-height:1}
+body.phone .dh .wd1{font-size:14px}
+.dh{align-self:stretch;padding-top:4px;margin-bottom:0}
+.dh.today{background:var(--ink);color:var(--paper)}
