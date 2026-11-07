@@ -364,8 +364,8 @@ function daySide() {
   const evs = eventsOf(day), todos = todosOf(day), done = todos.filter((t) => t.done).length;
   return `<section class="side">
     <span class="bk" style="margin-bottom:8px">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${wdh(d.getDay())}</span>
-    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(shortName(e.title))}</span>${e.end_min != null ? ' ~' + workCode(e.end_min) : ''}</span></div>`).join('')}
-    ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">${esc(sessLabel(s))} ~${workCode(minOfDay(s.end_at))}</span></div>`).join('')}
+    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(shortName(e.title))}</span>${e.end_min != null ? `<span class="et">-${workCode(e.end_min)}</span>` : ''}</span></div>`).join('')}
+    ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">${esc(sessLabel(s))}<span class="et">-${workCode(minOfDay(s.end_at))}</span></span></div>`).join('')}
     <button class="addev" data-act="add-open">+ 일정 추가</button>
     <span class="lbl red">할 일 [ ${done} / ${todos.length} ]</span>
     <div class="todos">${todos.map(todoRow).join('')}</div>
