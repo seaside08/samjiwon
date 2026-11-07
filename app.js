@@ -1035,7 +1035,13 @@ function stageChain(p) {
   return st.map((x, i) => `<span data-act="stage" data-id="${p.id}" data-i="${i}" class="${i < cur ? 'dn' : i === cur ? 'cur' : 'mu'}">${esc(x)}</span>`).join('<span>&#8594;</span>');
 }
 const ymdDot = (ds) => ds.replace(/-/g, '.');
-const periodLabel = (p) => (p.start_day || p.end_day ? `${p.start_day ? ymdDot(p.start_day) : ''} &#8211; ${p.end_day ? ymdDot(p.end_day) : ''}` : '<span class="mu">&#8212;</span>');
+// 같은 해 안에 끝나면 끝 날짜는 월.일만: 2026.10.23 – 12.23
+const periodLabel = (p) => {
+  if (!p.start_day && !p.end_day) return '<span class="mu">&#8212;</span>';
+  const same = p.start_day && p.end_day && p.start_day.slice(0, 4) === p.end_day.slice(0, 4);
+  const end = p.end_day ? (same ? ymdDot(p.end_day.slice(5)) : ymdDot(p.end_day)) : '';
+  return `${p.start_day ? ymdDot(p.start_day) : ''} &#8211; ${end}`;
+};
 function parsePeriod(v) {
   const m = [...v.matchAll(/(?:(\d{4})[./-])?(\d{1,2})[./](\d{1,2})/g)];
   const y0 = new Date().getFullYear();
