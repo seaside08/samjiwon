@@ -422,3 +422,4 @@ body.phone .dh .wd1{font-size:14px}
 .dh{align-self:stretch;padding-top:4px;margin-bottom:0}
 .dh.today{background:var(--ink);color:var(--paper)}
 body.phone .dh{padding-top:9px}
+body.phone .wgrid{grid-template-columns:15px repeat(7,minmax(0,1fr))}
