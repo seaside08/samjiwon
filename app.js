@@ -197,6 +197,7 @@ async function load() {
       for (const pl of S.plants.filter((x) => x.species === '금전수' && x.interval_days == null && !x.gone)) {
         pl.interval_days = -10; api.update('plants', pl.id, { interval_days: -10 }).catch(fail);
       }
+      syncProjStatus();
       S.loaded = [from, to];
       waterTodo();
       render();
@@ -1496,12 +1497,20 @@ function periodSheetHTML() {
     <div class="sh-acts"><button data-act="period-clear" style="margin-right:auto;font-size:14px">기간 지우기</button><button class="btn" data-act="period-save">저장</button></div>
   </div>`;
 }
+// 프로젝트 상태는 작업기간으로: 끝 날짜가 지나면 끝남, 아직이면 진행 중 (끝 날짜가 없으면 그대로)
+const statusByPeriod = (p) => (p.end_day ? (p.end_day >= todayStr() ? 'active' : 'done') : p.status);
+function syncProjStatus() {
+  for (const p of S.projects) {
+    const st = statusByPeriod(p);
+    if (st !== p.status) { p.status = st; api.update('projects', p.id, { status: st }).catch(fail); }
+  }
+}
 function periodSave() {
   const p = projOf(S.sheet.pid), v = S.sheet.v; if (!p) return closeSheet();
   const mk = (y, m, d) => ymd(new Date(y, m - 1, Math.min(d, new Date(y, m, 0).getDate())));
   let a = mk(v.y1, v.m1, v.d1), b = mk(v.y2, v.m2, v.d2);
   if (b < a) [a, b] = [b, a];
-  S.sheet = null; saveProj(p, { start_day: a, end_day: b });
+  S.sheet = null; saveProj(p, { start_day: a, end_day: b, status: b >= todayStr() ? 'active' : 'done' });
 }
 function wheelsHTML(v, { end = true } = {}) {
   return `<div class="wheels">
