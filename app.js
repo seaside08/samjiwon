@@ -517,12 +517,10 @@ function viewWork() {
   // 보관함이 아니면: 다니는 곳 + 이 달에 기록이 있는 보관 근무지
   const all = every.filter((r) => (S.wpArchive ? r.w.archived : !r.w.archived || r.s.mins > 0));
   const nArch = WORKPLACES.filter((w) => w.archived).length;
-  const sel = (all.find((r) => r.w.name === S.wp) || all[0] || every[0]).w;
-  const cur = every.find((r) => r.w === sel).s;
   const shown = all.reduce((a, r) => ({ mins: a.mins + r.s.mins, total: a.total + r.s.total }), { mins: 0, total: 0 });
   const isNow = m.getFullYear() === new Date().getFullYear() && mo === new Date().getMonth();
-  const rows = all.map(({ w, s }) => `<div class="mr" data-act="wp" data-wp="${w.name}">
-      <div style="display:flex;flex-direction:column"><span class="nm">${w === sel ? `<span class="riso-hl" style="padding:0 3px">${w.name}</span>` : w.name}</span>
+  const rows = all.map(({ w, s }) => `<div class="mr" style="cursor:default">
+      <div style="display:flex;flex-direction:column"><span class="nm">${w.name}</span>
       <span class="sub">${w.archived ? '그만둔 곳 &#183; ' : ''}${routineLabel(w)} &#183; ${won(w.rate)}${w.juhu ? ' &#183; 주휴' : ''}</span></div>
       <span class="r">${dur(s.mins)}</span><span class="r">${won(s.total)}</span><span class="r">${paydayLabel(w)}</span></div>`).join('');
   return `${header(`${mo + 1}월 ${isNow ? `지금까지 ${won(sum.sofar)} &#183; ` : ''}예상 ${won(sum.total)}`)}
@@ -536,17 +534,7 @@ function viewWork() {
         <span class="nm">${mo + 1}월 합계</span><span class="r">${dur(shown.mins)}</span><span class="r">${won(shown.total)}</span><span class="r"></span></div>
       <button class="lk" data-act="wp-archive">${S.wpArchive ? '&#8592; 다니는 곳' : `보관함 [ ${nArch} ] &#8594;`}</button>
     </section>
-    <section class="side">
-      <span class="bk" style="margin-bottom:8px">${sel.name}</span>
-      <div class="kv"><span>시급</span><span>${won(sel.rate)}</span></div>
-      <div class="kv"><span>근무</span><span>${cur.count}회 &#183; ${dur(cur.mins)}</span></div>
-      <div class="kv"><span>기본급</span><span>${won(cur.base)}</span></div>
-      ${sel.juhu ? `<div class="kv"><span>주휴수당</span><span>${won(cur.juhu)}</span></div><div class="kv" style="font-size:13px"><span>주휴일</span><span>${sel.holiday}</span></div>` : ''}
-      <span style="margin-top:14px;font-size:13px">${mo + 1}월 세전</span>
-      <span style="font-size:34px;letter-spacing:-.01em">${won(cur.total)}</span>
-      ${sel.payday === null ? '' : `<span style="font-size:13px">매월 ${paydayLabel(sel)} 지급</span>`}
-      ${sel.archived ? '' : `<button class="btn" style="margin-top:18px" data-act="fill" data-wp="${sel.name}">${mo + 1}월 기본 근무 채우기</button>`}
-    </section>
+    <section class="side"></section>
   </div>`;
 }
 
@@ -853,9 +841,7 @@ board.addEventListener('click', async (e) => {
   } else if (act === 'prev' || act === 'next') {
     step(act === 'prev' ? -1 : 1);
   } else if (act === 'wp-archive') {
-    S.wpArchive = !S.wpArchive; S.wp = null; render();
-  } else if (act === 'wp') {
-    S.wp = el.dataset.wp; render();
+    S.wpArchive = !S.wpArchive; render();
   } else if (act === 'fill') {
     fillRoutine(WORKPLACES.find((w) => w.name === el.dataset.wp));
   } else if (handleMore(act, el, e)) {
