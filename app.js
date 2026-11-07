@@ -1084,7 +1084,7 @@ function viewProjects() {
       <div class="pv note-row" data-act="pf" data-f="note"><span class="pk">노트</span><p class="note pval">${sel.note ? esc(sel.note) : none}</p></div>
       ${PHONE ? '<button class="lk" data-act="proj-back">&#8592; 돌아가기</button>' : ''}
     </section>` : '<section class="pdet"></section>';
-  return `${header(`진행 중 ${active.length}`)}
+  return `${header(PHONE && S.projOpen ? '' : `진행 중 ${active.length}`)}
   <div class="main">
     ${PHONE && S.projOpen ? detail : `<section class="plist">
       <div class="row"><span class="bk">PROJECTS</span><span style="font-size:15px">[ ${list.length} ]</span>
