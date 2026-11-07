@@ -10,7 +10,7 @@ const K = 'samjung_refresh';
 const INK = new Color('#141414'), PAPER = new Color('#fbfbf8'), RED = new Color('#e0352b'), GREEN = new Color('#5fd97c');
 const SHORT = { 언더워터: '워터', 라운지돌돌: '돌돌', 다락: '다락', 연우재: '연우재' };
 const PROJ_SHORT = { 'toss 안정감 프로젝트': '피보테' };
-const shortName = (t) => PROJ_SHORT[String(t || '').trim()] || t;
+const shortName = (t) => PROJ_SHORT[String(t || '').trim()] || PROJ_SHORT[String(t || '').trim().toLowerCase()] || t;
 // 출근 시각 줄여 쓰기: 15:00→15, 16:30→163, 8:00→08, 9:20→920
 function workCode(min) {
   if (min == null) return '';

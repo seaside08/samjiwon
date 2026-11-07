@@ -233,7 +233,7 @@ const running = () => S.sessions.find((s) => !s.end_at);
 // 작업 일정 (kind: task)
 const isWorkEv = (e) => e.kind === 'task';
 const projOf = (id) => S.projects.find((p) => p.id === id);
-const sessLabel = (s) => projOf(s.project_id)?.name || s.title || '작업';
+const sessLabel = (s) => shortName(projOf(s.project_id)?.name || s.title || '작업');   // 줄임말 적용
 const minOfDay = (iso) => { const d = new Date(iso); return d.getHours() * 60 + d.getMinutes(); };
 const dayWork = (day) => eventsOf(day).reduce((a, e) => a + workMin(e), 0);
 const daySess = (day) => sessOf(day).reduce((a, s) => a + sessMin(s), 0);
@@ -320,13 +320,13 @@ function viewToday() {
   for (let i = 0; i < 7; i++) weekSess += daySess(ymd(addDays(mon, i)));
   const sess = daySess(day), r = running();
   const items = [
-    ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="edit-event" data-id="${e.id}"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n">${esc(e.title)}</span><span class="x">${e.end_min != null ? '~' + workCode(e.end_min) : ''}</span></div>` })),
+    ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="edit-event" data-id="${e.id}"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n">${esc(shortName(e.title))}</span><span class="x">${e.end_min != null ? '~' + workCode(e.end_min) : ''}</span></div>` })),
     ...sessOf(day).map((s) => ({ k: minOfDay(s.start_at), h: `<div class="e"${s.end_at ? ` data-act="edit-sess" data-id="${s.id}"` : ''}><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))}</span><span class="x">${s.end_at ? '~' + workCode(minOfDay(s.end_at)) : 'REC'}</span></div>` })),
   ].sort((a, b) => a.k - b.k);
   const active = S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
   // 지금 하는 작업: 돌고 있는 기록 → 가장 최근 기록 → 진행 중 첫 프로젝트
   const lastS = S.sessions.slice().sort((a, b) => (a.start_at < b.start_at ? 1 : -1))[0];
-  const cur = (r && sessLabel(r)) || (lastS && projOf(lastS.project_id)?.status === 'active' && sessLabel(lastS)) || active[0]?.name;
+  const cur = (r && sessLabel(r)) || (lastS && projOf(lastS.project_id)?.status === 'active' && sessLabel(lastS)) || shortName(active[0]?.name);
   const now = `<button class="bk nowbtn" data-act="log-open" aria-label="작업시간 기록하기">NOW WORKING${cur ? ` &#8212; ${esc(cur)}` : ''}</button>`;
   if (PHONE) return `${header('')}
   <section class="ph">
@@ -369,7 +369,7 @@ function daySide() {
   const evs = eventsOf(day), todos = todosOf(day), done = todos.filter((t) => t.done).length;
   return `<section class="side">
     <span class="bk" style="margin-bottom:8px">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${wdh(d.getDay())}</span>
-    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(e.title)}</span>${e.end_min != null ? ' ~' + workCode(e.end_min) : ''}</span></div>`).join('')}
+    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(shortName(e.title))}</span>${e.end_min != null ? ' ~' + workCode(e.end_min) : ''}</span></div>`).join('')}
     ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">작업 &#183; ${esc(sessLabel(s))} ~${workCode(minOfDay(s.end_at))}</span></div>`).join('')}
     <button class="addev" data-act="add-open">+ 일정 추가</button>
     <span class="lbl red">할 일 [ ${done} / ${todos.length} ]</span>
@@ -967,7 +967,7 @@ function viewDiary() {
   const rec = S.days[day] || {};
   const strip = [
     `<span>작업 ${dur(sess)}</span>`, `<span>${work ? '근무 ' + dur(work) : '근무 없음'}</span>`,
-    ...evs.map((e) => `<span>${e.start_min != null ? workCode(e.start_min) + ' ' : ''}${esc(e.title)}</span>`),
+    ...evs.map((e) => `<span>${e.start_min != null ? workCode(e.start_min) + ' ' : ''}${esc(shortName(e.title))}</span>`),
     watered.length ? `<span>물 &#183; ${esc(watered.join(', '))}</span>` : '',
   ].join('');
   const recent = S.recent.filter((r) => r.day !== day).slice(0, 6);
