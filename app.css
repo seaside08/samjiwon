@@ -430,3 +430,6 @@ body.phone .wgrid{grid-template-columns:15px repeat(7,minmax(0,1fr))}
 .tilt.riso3::before{background-position:-160px -20px}
 html:has(body.phone),body.phone{overflow-x:hidden}
 body.phone .main > section.left{will-change:transform}
+.gr b{justify-self:start}
+body.phone .gr{grid-template-columns:auto minmax(0,1fr) 44px}
+body.phone .left.gone{flex:none}
