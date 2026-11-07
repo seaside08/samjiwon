@@ -1034,7 +1034,8 @@ function stageChain(p) {
   const st = p.stages || [], cur = p.status === 'done' ? st.length : p.stage || 0;
   return st.map((x, i) => `<span data-act="stage" data-id="${p.id}" data-i="${i}" class="${i < cur ? 'dn' : i === cur ? 'cur' : 'mu'}">${esc(x)}</span>`).join('<span>&#8594;</span>');
 }
-const periodLabel = (p) => (p.start_day || p.end_day ? `${p.start_day ? md(p.start_day) : ''}&#8211;${p.end_day ? md(p.end_day) : ''}` : '<span class="mu">&#8212;</span>');
+const ymdDot = (ds) => ds.replace(/-/g, '.');
+const periodLabel = (p) => (p.start_day || p.end_day ? `${p.start_day ? ymdDot(p.start_day) : ''} &#8211; ${p.end_day ? ymdDot(p.end_day) : ''}` : '<span class="mu">&#8212;</span>');
 function parsePeriod(v) {
   const m = [...v.matchAll(/(?:(\d{4})[./-])?(\d{1,2})[./](\d{1,2})/g)];
   const y0 = new Date().getFullYear();
@@ -1077,7 +1078,7 @@ function viewProjects() {
       <span class="ptitle riso" data-act="pf" data-f="name">${esc(sel.name)}</span>
       <div class="pv" data-act="pstate"><span class="pk">상태</span><span class="pval">${sel.status === 'active' ? '진행 중' : '끝남'}</span></div>
       ${row('분류', 'category', sel.category && esc(sel.category))}
-      ${row('기간', 'period', (sel.start_day || sel.end_day) && periodLabel(sel))}
+      ${row('작업기간', 'period', (sel.start_day || sel.end_day) && periodLabel(sel))}
       ${row('보수', 'pay', sel.pay && won(sel.pay))}
       ${row('함께한 사람', 'people', sel.people && esc(sel.people))}
       ${row('결과물', 'output', sel.output && esc(sel.output))}
@@ -1484,8 +1485,8 @@ function periodSheetHTML() {
   const v = S.sheet.v, yy = (x) => String(x).slice(2);
   const part = (k) => `<div class="wrow">${wheel('y' + k, YN, 1, v['y' + k], Y0, yy)}<span class="wc">.</span>${wheel('m' + k, 12, 1, v['m' + k], 1)}<span class="wc">.</span>${wheel('d' + k, 31, 1, v['d' + k], 1)}</div>`;
   return `<div class="sh-bg" data-act="sh-close"></div>
-  <div class="sheet" role="dialog" aria-label="기간">
-    <div class="sh-head"><span>기간</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
+  <div class="sheet" role="dialog" aria-label="작업기간">
+    <div class="sh-head"><span>작업기간</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
     <div class="wheels pwheels">${part(1)}<span class="wt">~</span>${part(2)}</div>
     <div class="sh-acts"><button data-act="period-clear" style="margin-right:auto;font-size:14px">기간 지우기</button><button class="btn" data-act="period-save">저장</button></div>
   </div>`;
