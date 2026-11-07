@@ -63,8 +63,8 @@ nav.tabs a.on{padding:3px 10px;margin-right:-10px;transform:rotate(-1.5deg)}
 /* 달력 공통 */
 .ctl{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}
 .ctl .ttl{font-size:26px;letter-spacing:-.01em}
-.ctl .sw{margin-left:auto;display:flex;gap:4px;font-size:15px;align-items:baseline}
-.ctl .sw button{font-size:17px;padding:0 6px}
+.ctl .sw{margin-left:auto;display:flex;gap:4px;font-size:15px;align-items:center}
+.ctl .sw button{font-size:14px;padding:0 6px;line-height:1;display:flex;align-items:center}
 .ctl .sw a{color:var(--ink);text-decoration:none;padding:2px 8px}
 
 /* 월간 */
