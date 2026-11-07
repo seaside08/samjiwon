@@ -532,27 +532,33 @@ function viewWork() {
       ${rows}
       <div class="mr" style="border-top:3px solid #141414;border-bottom:1.5px solid #141414;cursor:default">
         <span class="nm">${mo + 1}월 합계</span><span class="r">${dur(shown.mins)}</span><span class="r">${won(shown.total)}</span><span class="r"></span></div>
-      <button class="lk" data-act="wp-archive">${S.wpArchive ? '&#8592; 다니는 곳' : `보관함 [ ${nArch} ] &#8594;`}</button>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <button class="lk" data-act="wp-archive">${S.wpArchive ? '&#8592; 다니는 곳' : `보관함 [ ${nArch} ] &#8594;`}</button>
+        ${S.wpArchive ? '' : '<button class="btn" style="margin-top:10px" data-act="fill">기본 근무 채우기</button>'}
+      </div>
     </section>
     <section class="side"></section>
   </div>`;
 }
 
-async function fillRoutine(w) {
+// 다니는 근무지 모두의 기본 근무를 이 달 달력에 한 번에 (오늘 이후, 이미 있는 날은 건너뜀)
+async function fillRoutine() {
   const m = S.month, y = m.getFullYear(), mo = m.getMonth(), last = new Date(y, mo + 1, 0).getDate();
   const today = todayStr(); let n = 0;
   const rows = [];
-  for (let i = 1; i <= last; i++) {
-    const d = new Date(y, mo, i), ds = ymd(d), sh = w.shifts[d.getDay()];
-    if (!sh || ds < today) continue;
-    if (eventsOf(ds).some((e) => e.kind === 'work' && e.place === w.name)) continue;
-    rows.push({ day: ds, start_min: sh[0], end_min: sh[1], title: w.name, kind: 'work', place: w.name });
+  for (const w of WORKPLACES.filter((x) => !x.archived)) {
+    for (let i = 1; i <= last; i++) {
+      const d = new Date(y, mo, i), ds = ymd(d), sh = w.shifts[d.getDay()];
+      if (!sh || ds < today) continue;
+      if (eventsOf(ds).some((e) => e.kind === 'work' && e.place === w.name)) continue;
+      rows.push({ day: ds, start_min: sh[0], end_min: sh[1], title: w.name, kind: 'work', place: w.name });
+    }
   }
   for (const r of rows) {
     try { S.events.push(await api.insert('events', r)); n++; } catch (e) { fail(e); break; }
   }
   render();
-  toast(n ? `${w.name} ${n}회를 달력에 넣었어요` : `${mo + 1}월에 더 넣을 ${w.name} 근무가 없어요`);
+  toast(n ? `기본 근무 ${n}회를 달력에 넣었어요` : `${mo + 1}월에 더 넣을 기본 근무가 없어요`);
 }
 
 // ───────── 근무표 가져오기 (#import=… 링크)
@@ -843,7 +849,7 @@ board.addEventListener('click', async (e) => {
   } else if (act === 'wp-archive') {
     S.wpArchive = !S.wpArchive; render();
   } else if (act === 'fill') {
-    fillRoutine(WORKPLACES.find((w) => w.name === el.dataset.wp));
+    fillRoutine();
   } else if (handleMore(act, el, e)) {
     // 처리됨
   } else if (act === 'sync') {
