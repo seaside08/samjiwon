@@ -48,7 +48,7 @@ async function token() {
 }
 
 async function todos(tk, again) {
-  const r = new Request(`${SB_URL}/rest/v1/todos?select=text,tag,done&day=eq.${today}&order=pos.asc`);
+  const r = new Request(`${SB_URL}/rest/v1/todos?select=text,tag,done&day=eq.${today}&order=done.asc,pos.asc`);
   r.headers = { apikey: SB_KEY, Authorization: `Bearer ${tk}` };
   const j = await r.loadJSON();
   if (Array.isArray(j)) return j;
