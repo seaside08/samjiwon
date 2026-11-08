@@ -530,7 +530,7 @@ function viewWork() {
   return `${header(`${mo + 1}월 ${isNow ? `지금까지 ${won(sum.sofar)} &#183; ` : ''}예상 ${won(sum.total)}`)}
   <div class="main">
     <section class="left">
-      <div class="row"><span class="bk">WORK / ${S.wpArchive ? '보관함' : '근무'}</span><span style="font-size:15px">[ ${all.length} ]</span>
+      <div class="row pin"><span class="bk">WORK / ${S.wpArchive ? '보관함' : '근무'}</span><span style="font-size:15px">[ ${all.length} ]</span>
         <span class="ym" style="margin-left:auto"><button data-act="prev" aria-label="이전 달">&#8592;</button><span>${m.getFullYear()}. ${pad(mo + 1)}</span><button data-act="next" aria-label="다음 달">&#8594;</button></span></div>
       <div class="mr hd2"><span>근무지 &#183; 기본 근무</span><span class="r">시간</span><span class="r">세전</span><span class="r">지급</span></div>
       ${rows}
@@ -979,7 +979,7 @@ function viewDiary() {
   return `${header(`${mo + 1}월 일기 ${count}편`)}
   <div class="main">
     <section class="left" style="gap:14px">
-      <div style="display:flex;align-items:center;gap:10px">
+      <div class="pin" style="display:flex;align-items:center;gap:10px">
         <span class="bk">DIARY / 일기</span>
         <span style="margin-left:18px;font-size:22px;letter-spacing:-.01em">${pad(mo + 1)}. ${pad(d.getDate())} ${wdh(d.getDay())}</span>
         ${day !== todayStr() ? '<button class="ul" data-act="diary-today" style="margin-left:8px;font-size:13px">오늘</button>' : ''}
@@ -1152,7 +1152,7 @@ function viewStats() {
   return `${header('')}
   <div class="main">
     <section class="left" style="gap:14px">
-      <div style="display:flex;align-items:center;gap:10px">
+      <div class="pin" style="display:flex;align-items:center;gap:10px">
         <span class="bk">STATS / 통계</span>
         <span class="ym" style="margin-left:12px"><button data-act="prev" aria-label="이전 달">&#8592;</button><span>${y}. ${pad(mo + 1)}</span><button data-act="next" aria-label="다음 달">&#8594;</button></span>
       </div>
@@ -1602,7 +1602,7 @@ addEventListener('touchstart', (e) => {
 const pagerEls = () => {
   const ph = board.querySelector('section.ph'); if (ph) return [ph];
   const l = board.querySelector('.main > section.left'); if (!l) return [];
-  return [...l.children].filter((c) => !c.matches('.ctl, .wd'));
+  return [...l.children].filter((c) => !c.matches('.ctl, .wd, .pin, .hd2'));
 };
 addEventListener('touchmove', (e) => {
   if (!swipe || !['today', 'cal', 'work', 'diary', 'stats'].includes(S.view)) return;
