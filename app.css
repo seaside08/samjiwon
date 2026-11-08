@@ -421,3 +421,6 @@ body.phone .cell+.cell{padding-left:4.5px}
 .ym{display:flex;align-items:baseline;gap:6px}
 .ym>span{font-size:22px;letter-spacing:-.01em}
 .ym button{font-size:15px;padding:0 4px}
+/* 할 일 끌어서 순서 바꾸기 */
+.todos .todo{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.todos .todo.drag{opacity:.45}

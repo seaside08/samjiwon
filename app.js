@@ -370,6 +370,7 @@ function daySide() {
     <button class="addev" data-act="add-open">+ 일정 추가</button>
     <span class="lbl red">할 일 [ ${done} / ${todos.length} ]</span>
     <div class="todos">${todos.map(todoRow).join('')}</div>
+    <button class="addev" data-act="addtodo-open">+ 할 일 추가</button>
   </section>`;
 }
 
@@ -686,7 +687,7 @@ function viewLogin(msg = '') {
 
 function render(force) {
   if (!S.user) return;
-  if (S.sheet && !force) { pendingRender = true; return; }
+  if ((S.sheet || tDrag?.on) && !force) { pendingRender = true; return; }
   // 편집 중이면 다시 그리지 않음
   const a = document.activeElement;
   if (!force && a && board.contains(a) && (a.tagName === 'INPUT' || a.isContentEditable) && (a.value || a.textContent)) { pendingRender = true; return; }
@@ -784,6 +785,7 @@ board.addEventListener('submit', (e) => {
     if (!buildEvent(v, S.sel, S.addKind)) { input.value = v; if (v || S.addKind !== 'event') addEvent(S.sel, v); return; }
     S.sheet = null;
   }
+  if (k === 'todo-sel' && S.sheet?.type === 'addTodo') { if (!v) return; S.sheet = null; }
   if (k === 'event' && !v && S.addKind !== 'event') { addEvent(S.sel, ''); return; }
   if (!v) return;
   if (k === 'plant') { handleAddMore(k, v); return; }
@@ -811,6 +813,7 @@ function step(k) {
 }
 
 board.addEventListener('click', async (e) => {
+  if (Date.now() - tdJust < 400) return;
   const el = e.target.closest('[data-act]'); if (!el) return;
   const act = el.dataset.act;
   if (act === 'toggle') {
@@ -832,6 +835,8 @@ board.addEventListener('click', async (e) => {
     S.addProj = el.dataset.id; render(true); board.querySelector('form[data-add="event"] input')?.focus();
   } else if (act === 'aw') {
     S.addWp = el.dataset.n; render(true); board.querySelector('form[data-add="event"] input')?.focus();
+  } else if (act === 'addtodo-open') {
+    S.sheet = { type: 'addTodo' }; render(true); board.querySelector('.sheet form[data-add="todo-sel"] input')?.focus();
   } else if (act === 'add-open') {
     S.sheet = { type: 'add' }; render(true); board.querySelector('.sheet form[data-add="event"] input')?.focus();
   } else if (act === 'sel') {
@@ -1371,11 +1376,20 @@ function addSheetHTML() {
     ${addForm('event', '일정 추가', 'margin-top:2px')}
   </div>`;
 }
+function addTodoSheetHTML() {
+  const d = parseYmd(S.sel);
+  return `<div class="sh-bg" data-act="sh-close"></div>
+  <div class="sheet" role="dialog" aria-label="할 일 추가">
+    <div class="sh-head"><span>할 일 추가 &#183; ${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${wdh(d.getDay())}</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
+    ${addForm('todo-sel', '할 일 추가', 'margin-top:2px')}
+  </div>`;
+}
 function sheetHTML() {
   const sh = S.sheet; if (!sh) return '';
   if (sh.type === 'log') return logSheetHTML();
   if (sh.type === 'period') return periodSheetHTML();
   if (sh.type === 'add') return addSheetHTML();
+  if (sh.type === 'addTodo') return addTodoSheetHTML();
   const it = sheetItem(); if (!it) { S.sheet = null; return ''; }
   const t = sh.type;
   let head, title;
@@ -1519,6 +1533,52 @@ async function newVersion() {
 document.addEventListener('visibilitychange', async () => {
   if (!document.hidden && !S.sheet && (await newVersion())) location.reload();
 });
+
+// ───────── 할 일 끌어서 순서 바꾸기 (마우스는 바로, 휴대폰은 꾹 누른 뒤)
+var tDrag = null, tdJust = 0;   // var: render()가 먼저 불려도 괜찮게
+function tdBegin(e, x, y, touch) {
+  const row = e.target.closest('.todos .todo');
+  if (!row || e.target.closest('.ck') || S.sheet || row.dataset.id.startsWith('tmp')) return;
+  tDrag = { row, list: row.parentElement, x, y, on: false };
+  if (touch) tDrag.timer = setTimeout(tdOn, 320);
+}
+function tdOn() {
+  if (!tDrag) return;
+  tDrag.on = true; swipe = null; tDrag.row.classList.add('drag');
+  navigator.vibrate?.(8);
+}
+function tdMove(x, y) {
+  if (!tDrag) return false;
+  if (!tDrag.on) {
+    if (Math.hypot(x - tDrag.x, y - tDrag.y) < 6) return false;
+    if (tDrag.timer) { clearTimeout(tDrag.timer); tDrag = null; return false; }   // 꾹 누르기 전에 움직이면 그냥 스크롤
+    tdOn();
+  }
+  const { row, list } = tDrag;
+  const rows = [...list.children].filter((r) => r !== row);
+  const after = rows.find((r) => { const b = r.getBoundingClientRect(); return y < b.top + b.height / 2; });
+  if (after) { if (row.nextElementSibling !== after) list.insertBefore(row, after); } else if (list.lastElementChild !== row) list.appendChild(row);
+  return true;
+}
+function tdEnd() {
+  if (!tDrag) return;
+  const d = tDrag; tDrag = null; clearTimeout(d.timer);
+  if (!d.on) return;
+  d.row.classList.remove('drag');
+  tdJust = Date.now();   // 놓을 때 생기는 클릭은 무시
+  [...d.list.children].forEach((r, i) => {
+    const t = S.todos.find((x) => x.id === r.dataset.id); if (!t || t.pos === i + 1) return;
+    t.pos = i + 1; api.update('todos', t.id, { pos: t.pos }).catch(fail);
+  });
+  render();
+}
+board.addEventListener('mousedown', (e) => { if (e.button === 0) tdBegin(e, e.clientX, e.clientY, false); });
+addEventListener('mousemove', (e) => { if (tdMove(e.clientX, e.clientY)) e.preventDefault(); });
+addEventListener('mouseup', tdEnd);
+board.addEventListener('touchstart', (e) => { if (e.touches.length === 1) tdBegin(e, e.touches[0].clientX, e.touches[0].clientY, true); }, { passive: true });
+addEventListener('touchmove', (e) => { if (tDrag && tdMove(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault(); }, { passive: false });
+addEventListener('touchend', tdEnd);
+addEventListener('touchcancel', tdEnd);
 
 // ───────── 휴대폰: 옆으로 쓸어서 탭 넘기기
 let swipe = null;
