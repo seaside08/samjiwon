@@ -131,6 +131,7 @@ function demoApi() {
       { id: id(), day: d(5), start_min: 1020, end_min: 1350, title: '언더워터', kind: 'work', place: '언더워터' },
       { id: id(), day: d(16), start_min: null, end_min: null, title: '아트페어', kind: 'event' },
       { id: id(), day: d(1), start_min: null, end_min: null, title: '정원 애니메틱', kind: 'task' },
+      { id: id(), day: d(1), start_min: null, end_min: null, title: '원화 클린업', kind: 'task', pos: 1 },
     ],
     days: [{ day: d(0), diary: '오전에 피보테 배경 채색을 시작했다. 색을 두 번 갈아엎었는데 세 번째가 마음에 든다.' },
       { day: d(-1), diary: '언더워터 마감하고 늦게 귀가. 손이 피곤함.' }, { day: d(-2), diary: '선화 끝. 피보테 1차 전달.' }],
@@ -225,7 +226,7 @@ function toast(msg) {
 
 // ───────── 데이터 도우미
 const todosOf = (day) => S.todos.filter((t) => t.day === day).sort((a, b) => a.pos - b.pos);
-const eventsOf = (day) => S.events.filter((e) => e.day === day).sort((a, b) => (a.start_min ?? -1) - (b.start_min ?? -1));
+const eventsOf = (day) => S.events.filter((e) => e.day === day).sort((a, b) => (a.start_min ?? -1) - (b.start_min ?? -1) || (a.pos ?? 0) - (b.pos ?? 0));
 const workMin = (e) => (e.kind === 'work' && e.start_min != null && e.end_min != null ? Math.max(0, e.end_min - e.start_min) : 0);
 const wpOf = (e) => WORKPLACES.find((w) => w.name === e.place);
 const sessMin = (s) => Math.max(0, Math.round(((s.end_at ? Date.parse(s.end_at) : Date.now()) - Date.parse(s.start_at)) / 60000));
@@ -369,7 +370,9 @@ function daySide() {
   const evs = eventsOf(day), todos = todosOf(day), done = todos.filter((t) => t.done).length;
   return `<section class="side">
     <span class="bk" style="margin-bottom:8px">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${wdh(d.getDay())}</span>
-    ${evs.map((e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(shortName(e.title))}</span>${e.end_min != null ? `<span class="et">~${workCode(e.end_min)}</span>` : ''}</span></div>`).join('')}
+    ${(() => { const row = (e) => `<div class="ev" data-id="${e.id}" data-act="edit-event"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n"><span class="${e.kind === 'task' ? 'rzs riso' : ''}">${esc(shortName(e.title))}</span>${e.end_min != null ? `<span class="et">~${workCode(e.end_min)}</span>` : ''}</span></div>`;
+      const free = evs.filter((e) => e.start_min == null);   // 시간 없는 일정끼리는 끌어서 순서 바꾸기
+      return (free.length ? `<div class="evf">${free.map(row).join('')}</div>` : '') + evs.filter((e) => e.start_min != null).map(row).join(''); })()}
     ${sessOf(day).filter((s) => s.end_at).map((s) => `<div class="ev" data-id="${s.id}" data-act="edit-sess"><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">${esc(sessLabel(s))}<span class="et">~${workCode(minOfDay(s.end_at))}</span></span></div>`).join('')}
     <button class="addev" data-act="add-open">+ 일정 추가</button>
     <span class="lbl red">할 일 [ ${done} / ${todos.length} ]</span>
@@ -1544,7 +1547,7 @@ document.addEventListener('visibilitychange', async () => {
 // ───────── 할 일 끌어서 순서 바꾸기 (마우스는 바로, 휴대폰은 꾹 누른 뒤)
 var tDrag = null, tdJust = 0;   // var: render()가 먼저 불려도 괜찮게
 function tdBegin(e, x, y, touch) {
-  const row = e.target.closest('.todos .todo');
+  const row = e.target.closest('.todos .todo, .evf .ev');
   if (!row || e.target.closest('.ck') || S.sheet || row.dataset.id.startsWith('tmp')) return;
   tDrag = { row, list: row.parentElement, x, y, on: false };
   if (touch) tDrag.timer = setTimeout(tdOn, 320);
@@ -1573,9 +1576,10 @@ function tdEnd() {
   if (!d.on) return;
   d.row.classList.remove('drag');
   tdJust = Date.now();   // 놓을 때 생기는 클릭은 무시
+  const tb = d.row.classList.contains('ev') ? 'events' : 'todos';
   [...d.list.children].forEach((r, i) => {
-    const t = S.todos.find((x) => x.id === r.dataset.id); if (!t || t.pos === i + 1) return;
-    t.pos = i + 1; api.update('todos', t.id, { pos: t.pos }).catch(fail);
+    const t = S[tb].find((x) => x.id === r.dataset.id); if (!t || t.pos === i + 1) return;
+    t.pos = i + 1; api.update(tb, t.id, { pos: t.pos }).catch(fail);
   });
   render();
 }
