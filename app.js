@@ -21,7 +21,7 @@ const SOON = {
   plants: 'PLANTS / 식물', stats: 'STATS / 통계',
 };
 // 좁은 칸에서 쓰는 줄임말
-const PROJ_SHORT = { 'toss 안정감 프로젝트': '피보테' };
+const PROJ_SHORT = { 'toss 안정감 프로젝트': '피보테', '정원 다큐멘터리': '정원', '정원다큐멘터리': '정원' };
 const shortName = (t) => PROJ_SHORT[String(t || '').trim()] || PROJ_SHORT[String(t || '').trim().toLowerCase()] || t;
 // 출근 시각 줄여 쓰기: 15:00→15, 16:30→163, 8:00→08, 9:20→920
 function workCode(min) {
