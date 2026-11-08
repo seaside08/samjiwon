@@ -92,26 +92,39 @@ function textW(str, size) {
   }
   return w * size;
 }
-// 완료한 일: 글자를 그림으로 그리고 그 위에 X와 같은 굵기의 빨간 줄
-function doneText(str, size, maxW) {
-  let s = str;
-  if (textW(s, size) > maxW) {
-    while (s.length > 1 && textW(s + '…', size) > maxW) s = s.slice(0, -1);
-    s += '…';
+// 칸 너비에 맞춰 줄 나누기 (띄어쓰기에서 먼저 끊고, 안 되면 글자 단위)
+function wrap(str, size, maxW) {
+  const lines = []; let cur = '';
+  for (const word of str.split(/(\s+)/)) {
+    if (textW(cur + word, size) <= maxW) { cur += word; continue; }
+    if (cur.trim()) { lines.push(cur.trimEnd()); cur = word.trimStart(); }
+    while (textW(cur, size) > maxW) {   // 한 낱말이 칸보다 길면 글자 단위로
+      let k = cur.length; while (k > 1 && textW(cur.slice(0, k), size) > maxW) k--;
+      lines.push(cur.slice(0, k)); cur = cur.slice(k);
+    }
   }
-  const w = Math.ceil(textW(s, size)) + 2, h = Math.ceil(size * 1.3);
+  if (cur.trim()) lines.push(cur.trimEnd());
+  return lines.length ? lines : [''];
+}
+// 완료한 일: 글자를 그림으로 그리고 줄마다 X와 같은 굵기의 빨간 줄
+function doneText(str, size, maxW) {
+  const lines = wrap(str, size, maxW), lh = Math.ceil(size * 1.3);
+  const w = Math.ceil(Math.max(...lines.map((l) => textW(l, size)))) + 2, h = lh * lines.length;
   const c = new DrawContext();
   c.size = new Size(w, h); c.opaque = false; c.respectScreenScale = true;
   c.setFont(Font.boldSystemFont(size)); c.setTextColor(INK);
-  c.drawTextInRect(s, new Rect(0, (h - size * 1.2) / 2, w + size * 2, size * 1.2));
   const lw = 4.4 * size / 32;                      // 체크 칸 X 획과 같은 굵기
-  c.setFillColor(RED); c.fillRect(new Rect(0, h / 2 - lw / 2 + size * 0.04, w, lw));
+  lines.forEach((l, i) => {
+    const y = i * lh;
+    c.drawTextInRect(l, new Rect(0, y + (lh - size * 1.2) / 2, w + size * 2, size * 1.2));
+    c.setFillColor(RED); c.fillRect(new Rect(0, y + lh / 2 - lw / 2 + size * 0.04, Math.ceil(textW(l, size)) + 2, lw));
+  });
   return { img: c.getImage(), w, h };
 }
 
 function item(stack, t, size, maxW) {
   const row = stack.addStack();
-  row.centerAlignContent();
+  row.topAlignContent();                           // 여러 줄이면 체크 칸은 첫 줄에
   const ic = row.addImage(BOX[t.done ? 1 : 0]);
   ic.imageSize = new Size(size, size);
   row.addSpacer(9);
@@ -124,8 +137,7 @@ function item(stack, t, size, maxW) {
   const tx = row.addText(t.text);
   tx.font = Font.boldSystemFont(size);
   tx.textColor = INK;
-  tx.lineLimit = 1;
-  tx.minimumScaleFactor = 0.8;
+  tx.lineLimit = 0;                                // 길면 아래 줄로
 }
 
 function header(stack, list, fam) {
