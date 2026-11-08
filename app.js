@@ -130,6 +130,7 @@ function demoApi() {
       { id: id(), day: d(4), start_min: 660, end_min: 840, title: '다락', kind: 'work', place: '다락' },
       { id: id(), day: d(5), start_min: 1020, end_min: 1350, title: '언더워터', kind: 'work', place: '언더워터' },
       { id: id(), day: d(16), start_min: null, end_min: null, title: '아트페어', kind: 'event' },
+      { id: id(), day: d(1), start_min: null, end_min: null, title: '정원 애니메틱', kind: 'task' },
     ],
     days: [{ day: d(0), diary: '오전에 피보테 배경 채색을 시작했다. 색을 두 번 갈아엎었는데 세 번째가 마음에 든다.' },
       { day: d(-1), diary: '언더워터 마감하고 늦게 귀가. 손이 피곤함.' }, { day: d(-2), diary: '선화 끝. 피보테 1차 전달.' }],
@@ -399,9 +400,7 @@ function viewMonth() {
       grid += `<div class="cell" data-act="sel" data-day="${ds}"><b class="${cls}">${d.getDate()}</b>
         ${evs.map((e, i) => e.kind === 'work'
           ? `<span class="ln">${workCode(e.start_min)} ${esc(wpOf(e)?.short || e.title)}</span>`
-          : e.start_min == null
-            ? `<span class="ln">${esc(e.title)}</span>`
-            : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><span class="lt"><em class="tm">${workCode(e.start_min)} </em>${esc(shortName(e.title))}</span></span>`).join('')}
+          : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><span class="lt">${e.start_min == null ? '' : `<em class="tm">${workCode(e.start_min)} </em>`}${esc(shortName(e.title))}</span></span>`).join('')}
         ${Object.entries(sessOf(ds).reduce((a, s) => { const k = shortName(sessLabel(s)); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v], j) => `<span class="ln rz ${['riso3', 'riso', 'riso2'][(d.getDate() + j) % 3]}"><span class="lt">${esc(k)} ${dur(v)}</span></span>`).join('')}
       </div>`;
     }
@@ -477,7 +476,7 @@ function viewWeek() {
       ${calCtl(`${pad(ws.getMonth() + 1)}. ${pad(ws.getDate())} &#8212; ${pad(we.getMonth() + 1)}. ${pad(we.getDate())}`, '이전 주', '다음 주')}
       <div class="wgrid">
         <span></span>${heads.join('')}
-        ${hasAll ? '<span></span>' + allday.map((a, i) => `<div class="allday" data-act="sel" data-day="${ymd(days[i])}">${a.map((e) => `<span class="adl">${esc(e.title)}</span>`).join('')}</div>`).join('') : ''}
+        ${hasAll ? '<span></span>' + allday.map((a, i) => `<div class="allday" data-act="sel" data-day="${ymd(days[i])}">${a.map((e) => `<span class="adl${isWorkEv(e) ? ' rzs riso' : ''}">${esc(shortName(e.title))}</span>`).join('')}</div>`).join('') : ''}
         <div class="hours" style="height:${HH * 14}px">${hours}</div>${cols.join('')}
       </div>
     </section>
