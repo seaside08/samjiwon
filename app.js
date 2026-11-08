@@ -47,7 +47,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 
 // ───────── 상태
 const S = {
-  view: 'today', calMode: 'month',
+  view: 'today', todoDay: null, calMode: 'month',
   sel: todayStr(), month: null, week: null,
   todos: [], events: [], days: {},
   projects: [], sessions: [], plants: [], plogs: [], recent: [],
@@ -172,7 +172,7 @@ function wantedRange() {
   const t = new Date(); const tm = mondayOf(t); const te = addDays(tm, 6);
   const sel = parseYmd(S.sel), dd = parseYmd(S.diaryDay);
   const dm = new Date(dd.getFullYear(), dd.getMonth(), 1), dme = new Date(dd.getFullYear(), dd.getMonth() + 1, 0);
-  const all = [gs, ge, ws, we, tm, te, sel, dm, dme];
+  const all = [gs, ge, ws, we, tm, te, sel, dm, dme, parseYmd(S.todoDay || todayStr())];
   return [ymd(new Date(Math.min(...all))), ymd(new Date(Math.max(...all)))];
 }
 let loading = null;
@@ -312,7 +312,10 @@ const addForm = (kind, label, style = '') =>
   `<form class="add" data-add="${kind}" style="${style}"><span class="plus" aria-hidden="true">+</span><input aria-label="${label}" autocomplete="off" enterkeyhint="done"></form>`;
 
 function viewToday() {
-  const day = todayStr();
+  const today = todayStr(), day = S.todoDay || today;
+  const d0 = parseYmd(day);
+  const ttl = day === today ? 'TODAY / 오늘 할 일' : `${pad(d0.getMonth() + 1)} / ${pad(d0.getDate())} ${wdh(d0.getDay())} &#183; 할 일`;
+  const lbl = `<span class="bk"${day === today ? '' : ' data-act="todo-today" role="button" aria-label="오늘로 돌아가기"'}>${ttl}</span>`;
   const todos = todosOf(day), done = todos.filter((t) => t.done).length;
   const evs = eventsOf(day);
   const r = running();
@@ -327,7 +330,7 @@ function viewToday() {
   const now = `<button class="bk nowbtn" data-act="log-open" aria-label="작업시간 기록하기">NOW WORKING${cur ? ` &#8212; ${esc(cur)}` : ''}</button>`;
   if (PHONE) return `${header('')}
   <section class="ph">
-    <div class="row"><span class="bk">TODAY / 오늘 할 일</span><span class="red" style="font-size:16px">[ ${done} / ${todos.length} ]</span></div>
+    <div class="row">${lbl}<span class="red" style="font-size:16px">[ ${done} / ${todos.length} ]</span></div>
     <div class="todos">${todos.map(todoRow).join('')}</div>
     ${addForm('todo', '할 일 추가', 'margin-top:12px')}
     ${now}
@@ -336,7 +339,7 @@ function viewToday() {
   return `${header('')}
   <div class="main" style="gap:36px">
     <section class="left">
-      <div class="row"><span class="bk">TODAY / 오늘 할 일</span><span class="red" style="font-size:15px">[ ${done} / ${todos.length} ]</span></div>
+      <div class="row">${lbl}<span class="red" style="font-size:15px">[ ${done} / ${todos.length} ]</span></div>
       <div class="todos">${todos.map(todoRow).join('')}</div>
       ${addForm('todo', '할 일 추가', 'margin-top:14px;width:75%')}
     </section>
@@ -789,14 +792,17 @@ board.addEventListener('submit', (e) => {
   if (k === 'event' && !v && S.addKind !== 'event') { addEvent(S.sel, ''); return; }
   if (!v) return;
   if (k === 'plant') { handleAddMore(k, v); return; }
-  if (k === 'todo') addTodo(todayStr(), v);
+  if (k === 'todo') addTodo(S.todoDay || todayStr(), v);
   else if (k === 'todo-sel') addTodo(S.sel, v);
   else if (k === 'event') addEvent(S.sel, v);
 });
 
 // 이전 / 다음 (달력·근무·일기·식물·통계)
 function step(k) {
-  if (S.view === 'diary') {
+  if (S.view === 'today') {
+    const nd = ymd(addDays(parseYmd(S.todoDay || todayStr()), k));
+    S.todoDay = nd === todayStr() ? null : nd;
+  } else if (S.view === 'diary') {
     S.diaryDay = ymd(addDays(parseYmd(S.diaryDay), k));
   } else if (S.view === 'plants') {
     S.plantEnd = ymd(addDays(parseYmd(S.plantEnd), (PHONE ? 14 : 28) * k));
@@ -835,6 +841,8 @@ board.addEventListener('click', async (e) => {
     S.addProj = el.dataset.id; render(true); board.querySelector('form[data-add="event"] input')?.focus();
   } else if (act === 'aw') {
     S.addWp = el.dataset.n; render(true); board.querySelector('form[data-add="event"] input')?.focus();
+  } else if (act === 'todo-today') {
+    S.todoDay = null; render();
   } else if (act === 'addtodo-open') {
     S.sheet = { type: 'addTodo' }; render(true); board.querySelector('.sheet form[data-add="todo-sel"] input')?.focus();
   } else if (act === 'add-open') {
@@ -1590,9 +1598,9 @@ addEventListener('touchstart', (e) => {
   swipe = { x: t.clientX, y: t.clientY, t: Date.now() };
 }, { passive: true });
 // 손가락을 따라 달력(왼쪽 칸)만 움직이고, 다 넘어가면 다음 내용으로 바꿔 끼운다
-const pagerEl = () => board.querySelector('.main > section.left');
+const pagerEl = () => board.querySelector('.main > section.left, section.ph');
 addEventListener('touchmove', (e) => {
-  if (!swipe || !['cal', 'work', 'diary', 'stats'].includes(S.view)) return;
+  if (!swipe || !['today', 'cal', 'work', 'diary', 'stats'].includes(S.view)) return;
   const t = e.touches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
   if (!swipe.drag) {
     if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { swipe = null; return; }   // 세로 스크롤
@@ -1656,6 +1664,7 @@ function route() {
     } catch (e) { toast('가져올 내용을 읽지 못했어요'); }
   }
   S.view = TABS.some(([t]) => t === k) ? k : 'today';
+  if (S.view === 'today') S.todoDay = null;   // 할 일 탭에 다시 들어오면 오늘부터
   if (S.view === 'cal') {
     const d = parseYmd(S.sel);
     S.month = new Date(d.getFullYear(), d.getMonth(), 1); S.week = mondayOf(d);
