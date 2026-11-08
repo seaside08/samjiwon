@@ -1598,38 +1598,41 @@ addEventListener('touchstart', (e) => {
   swipe = { x: t.clientX, y: t.clientY, t: Date.now() };
 }, { passive: true });
 // 손가락을 따라 달력(왼쪽 칸)만 움직이고, 다 넘어가면 다음 내용으로 바꿔 끼운다
-const pagerEl = () => board.querySelector('.main > section.left, section.ph');
+// 연·월, 화살표, 요일 줄은 제자리에 두고 나머지만 움직인다
+const pagerEls = () => {
+  const ph = board.querySelector('section.ph'); if (ph) return [ph];
+  const l = board.querySelector('.main > section.left'); if (!l) return [];
+  return [...l.children].filter((c) => !c.matches('.ctl, .wd'));
+};
 addEventListener('touchmove', (e) => {
   if (!swipe || !['today', 'cal', 'work', 'diary', 'stats'].includes(S.view)) return;
   const t = e.touches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
   if (!swipe.drag) {
     if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { swipe = null; return; }   // 세로 스크롤
     if (Math.abs(dx) < 10) return;
-    swipe.drag = true; swipe.el = pagerEl(); if (!swipe.el) { swipe = null; return; }
-    swipe.el.getAnimations().forEach((a) => a.cancel());
+    swipe.drag = true; swipe.els = pagerEls(); if (!swipe.els.length) { swipe = null; return; }
+    swipe.els.forEach((x) => x.getAnimations().forEach((a) => a.cancel()));
   }
   e.preventDefault();
-  swipe.el.style.transform = `translateX(${dx}px)`;
+  swipe.els.forEach((x) => { x.style.transform = `translateX(${dx}px)`; });
   swipe.lx = t.clientX; swipe.lt = Date.now(); swipe.vx = (t.clientX - (swipe.px ?? swipe.x)) / Math.max(1, Date.now() - (swipe.pt ?? swipe.t));
   swipe.px = t.clientX; swipe.pt = Date.now();
 }, { passive: false });
 addEventListener('touchend', (e) => {
   if (!swipe) return;
   const sw = swipe; swipe = null;
-  if (!sw.drag || !sw.el) return;
-  const dx = e.changedTouches[0].clientX - sw.x, W = innerWidth, el = sw.el;
+  if (!sw.drag || !sw.els) return;
+  const dx = e.changedTouches[0].clientX - sw.x, W = innerWidth, els = sw.els;
   const go = Math.abs(dx) > W * 0.22 || (Math.abs(dx) > 40 && Math.abs(sw.vx || 0) > 0.45);
   if (!go) {   // 제자리로
-    el.animate([{ transform: `translateX(${dx}px)` }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' });
-    el.style.transform = '';
+    els.forEach((x) => { x.animate([{ transform: `translateX(${dx}px)` }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); x.style.transform = ''; });
     return;
   }
   const k = dx < 0 ? 1 : -1;
-  const out = el.animate([{ transform: `translateX(${dx}px)` }, { transform: `translateX(${-k * W}px)` }], { duration: 170, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
-  out.onfinish = () => {
+  const outs = els.map((x) => x.animate([{ transform: `translateX(${dx}px)` }, { transform: `translateX(${-k * W}px)` }], { duration: 170, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' }));
+  outs[0].onfinish = () => {
     step(k);   // 여기서 아래 상세 칸도 함께 바뀜
-    const nw = pagerEl(); if (!nw) return;
-    nw.animate([{ transform: `translateX(${k * W}px)` }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    pagerEls().forEach((x) => x.animate([{ transform: `translateX(${k * W}px)` }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' }));
   };
 }, { passive: true });
 
