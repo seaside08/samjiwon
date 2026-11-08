@@ -392,7 +392,7 @@ body.phone .pdet .ptitle{margin-top:8px;margin-right:3px}
 .pwheels .wc{padding:0 1px}
 body.phone .pwheels .wheel{width:30px}
 body.phone .pwheels .wi{font-size:20px}
-.addev{align-self:flex-start;margin-top:10px;font-size:14px}
+.addev{align-self:flex-end;margin-top:10px;font-size:14px;background:var(--paper);border:2.5px solid var(--ink);padding:3px 9px;line-height:1.1}
 .sheet .kinds{margin-top:2px}
 .ev .et{margin-left:1em}
 /* 달력 안 초록 네모 기울이기: 바탕이 잘리지 않게 바깥은 열고 글자는 안쪽에서 자름 */
