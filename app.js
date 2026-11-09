@@ -266,8 +266,14 @@ function splitTime(raw) {
   return { rest: s, start_min: start, end_min: end };
 }
 // 달력에서 고른 종류(작업·약속·근무)대로 일정 만들기
-function buildEvent(raw, day, kind) {
+function buildEvent(raw, day, kind, tv) {
   const t = splitTime(raw);
+  // 팝업 바퀴로 고른 시간 (이름에 시간을 적었으면 그걸 씀)
+  if (tv && t.start_min == null && (kind === 'work' || !tv.allDay)) {
+    t.start_min = tv.sh * 60 + tv.sm;
+    t.end_min = kind !== 'work' && tv.noEnd ? null : tv.eh * 60 + tv.em;
+    if (t.end_min != null && t.end_min <= t.start_min) t.end_min += 24 * 60;
+  }
   if (kind === 'task') {
     const p = projOf(S.addProj) || activeProjects()[0];
     const title = t.rest || p?.name; if (!title) return null;
@@ -769,8 +775,8 @@ async function addTodo(day, raw) {
   try { Object.assign(tmp, await api.insert('todos', { day, ...p, pos })); } catch (e) { fail(e); S.todos = S.todos.filter((t) => t !== tmp); }
   render();
 }
-async function addEvent(day, raw) {
-  const p = buildEvent(raw, day, S.addKind);
+async function addEvent(day, raw, tv) {
+  const p = buildEvent(raw, day, S.addKind, tv);
   if (!p) { toast(S.addKind === 'work' ? '근무는 시작과 끝 시간을 함께 적어 주세요 (예: 12-18)' : '제목을 적어 주세요'); return; }
   const tmp = { id: 'tmp' + Date.now(), day, ...p };
   S.events.push(tmp); render();
@@ -787,8 +793,9 @@ board.addEventListener('submit', (e) => {
   if (k === 'pmemo') { input.blur(); return; }
   input.value = '';
   if (k === 'event' && S.sheet?.type === 'add') {   // 팝업: 제대로 만들어질 때만 닫기
-    if (!buildEvent(v, S.sel, S.addKind)) { input.value = v; if (v || S.addKind !== 'event') addEvent(S.sel, v); return; }
-    S.sheet = null;
+    const tv = S.sheet.v;
+    if (!buildEvent(v, S.sel, S.addKind, tv)) { input.value = v; toast(S.addKind === 'event' ? '이름을 적어 주세요' : '시간을 확인해 주세요'); return; }
+    S.sheet = null; addEvent(S.sel, v, tv); return;
   }
   if (k === 'todo-sel' && S.sheet?.type === 'addTodo') { if (!v) return; S.sheet = null; }
   if (k === 'event' && !v && S.addKind !== 'event') { addEvent(S.sel, ''); return; }
@@ -838,17 +845,22 @@ board.addEventListener('click', async (e) => {
   } else if (act === 'sh-close') {
     closeSheet();
   } else if (act === 'ak') {
-    S.addKind = el.dataset.k; render(true); board.querySelector('form[data-add="event"] input')?.focus();
+    S.addKind = el.dataset.k;
+    if (S.sheet?.type === 'add') { if (S.addKind === 'work') shiftVals(S.sheet.v); addRedraw(); }
   } else if (act === 'ap') {
-    S.addProj = el.dataset.id; render(true); board.querySelector('form[data-add="event"] input')?.focus();
+    S.addProj = el.dataset.id; addRedraw();
   } else if (act === 'aw') {
-    S.addWp = el.dataset.n; render(true); board.querySelector('form[data-add="event"] input')?.focus();
+    S.addWp = el.dataset.n; if (S.sheet?.v) shiftVals(S.sheet.v); addRedraw();
   } else if (act === 'todo-today') {
     S.todoDay = null; render();
   } else if (act === 'addtodo-open') {
     S.sheet = { type: 'addTodo' }; render(true); board.querySelector('.sheet form[data-add="todo-sel"] input')?.focus();
   } else if (act === 'add-open') {
-    S.sheet = { type: 'add' }; render(true); board.querySelector('.sheet form[data-add="event"] input')?.focus();
+    S.sheet = { type: 'add' }; S.sheet.v = addVals(); render(true); board.querySelector('.sheet form[data-add="event"] input')?.focus();
+  } else if (act === 'add-tg') {
+    const k = el.dataset.k; S.sheet.v[k] = !S.sheet.v[k]; if (k === 'allDay') S.addAllDay = S.sheet.v.allDay; addRedraw();
+  } else if (act === 'add-go') {
+    board.querySelector('.sheet form[data-add="event"]')?.requestSubmit();
   } else if (act === 'sel') {
     S.sel = el.dataset.day; render();
   } else if (act === 'go-day') {
@@ -1384,7 +1396,33 @@ function addSheetHTML() {
     ${S.addKind === 'task' ? `<div class="opts">${activeProjects().map((p, i) => `<button data-act="ap" data-id="${p.id}" class="${(S.addProj ? S.addProj === p.id : i === 0) ? 'on' : ''}">${esc(p.name)}</button>`).join('') || '<span class="mu">진행 중인 프로젝트 없음</span>'}</div>` : ''}
     ${S.addKind === 'work' ? `<div class="opts">${WORKPLACES.filter((w) => !w.archived).map((w, i) => `<button data-act="aw" data-n="${w.name}" class="${(S.addWp ? S.addWp === w.name : i === 0) ? 'on' : ''}">${w.name}</button>`).join('')}</div>` : ''}
     ${addForm('event', '일정 추가', 'margin-top:2px')}
+    ${addTimeHTML()}
+    <div class="sh-acts"><button class="btn" data-act="add-go">추가</button></div>
   </div>`;
+}
+// 일정 추가 팝업의 시간 바퀴 (이름에 시간을 적으면 그게 먼저)
+function addTimeHTML() {
+  const v = S.sheet.v, work = S.addKind === 'work';
+  if (work) return wheelsHTML({ ...v, noEnd: false });
+  return `${v.allDay ? '' : wheelsHTML(v)}
+    <div class="sh-tg"><button class="${v.allDay ? 'riso3' : ''}" data-act="add-tg" data-k="allDay">하루 종일</button>${v.allDay ? '' : `<button class="${v.noEnd ? 'riso3' : ''}" data-act="add-tg" data-k="noEnd">끝 시간 없음</button>`}</div>`;
+}
+function addVals() {
+  const n = new Date(), a = Math.min(23, n.getHours() + 1);
+  const v = { sh: a, sm: 0, eh: (a + 1) % 24, em: 0, allDay: S.addAllDay ?? false, noEnd: false };
+  if (S.addKind === 'work') shiftVals(v);
+  return v;
+}
+function shiftVals(v) {
+  const w = WORKPLACES.find((x) => x.name === S.addWp) || WORKPLACES.filter((x) => !x.archived)[0] || WORKPLACES[0];
+  const [a, b] = w.shifts[parseYmd(S.sel).getDay()] || Object.values(w.shifts)[0];
+  Object.assign(v, { sh: Math.floor(a / 60), sm: a % 60, eh: Math.floor(b / 60) % 24, em: b % 60 });
+}
+// 팝업을 다시 그려도 적던 이름은 그대로
+function addRedraw() {
+  const inp = board.querySelector('.sheet form[data-add="event"] input'), txt = inp?.value || '';
+  render(true);
+  const ni = board.querySelector('.sheet form[data-add="event"] input'); if (ni) { ni.value = txt; ni.focus(); }
 }
 function addTodoSheetHTML() {
   const d = parseYmd(S.sel);
