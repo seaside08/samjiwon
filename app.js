@@ -1313,10 +1313,15 @@ function sheetVals(it, type) {
     noEnd: type === 'event' && it.start_min != null && it.end_min == null,
     allDay: type === 'event' && it.start_min == null, kind: 'task', proj: activeProjects()[0]?.id || null };
 }
+// 시·분 바퀴는 빙글빙글 (00 위에 55, 00시 위에 23시) — 같은 칸을 세 번 이어 붙이고 가운데 묶음에 머물게
+const LOOP_W = ['sh', 'sm', 'eh', 'em', 'dm'];
 function wheel(key, n, step, val, base = 0, label = (x) => pad(x)) {
-  const items = [...Array(n)].map((_, i) => `<div class="wi${base + i * step === val ? ' on' : ''}">${label(base + i * step)}</div>`).join('');
-  return `<div class="wheel" data-w="${key}" data-step="${step}" data-base="${base}" data-i="${Math.round((val - base) / step)}"><div class="wpad"></div>${items}<div class="wpad"></div></div>`;
+  const loop = LOOP_W.includes(key), reps = loop ? 3 : 1, idx = Math.round((val - base) / step);
+  const items = [...Array(n * reps)].map((_, j) => { const i = j % n; return `<div class="wi${(loop ? j === idx + n : i === idx) ? ' on' : ''}">${label(base + i * step)}</div>`; }).join('');
+  return `<div class="wheel" data-w="${key}" data-n="${n}"${loop ? ' data-loop' : ''} data-step="${step}" data-base="${base}" data-i="${loop ? idx + n : idx}"><div class="wpad"></div>${items}<div class="wpad"></div></div>`;
 }
+// 바퀴를 값 칸으로 (빙글 바퀴는 가운데 묶음)
+const wheelTop = (w, k) => (k + (w.hasAttribute('data-loop') ? +w.dataset.n : 0)) * WH;
 // 프로젝트 기간: 시작 년·월·일 ~ 끝 년·월·일 바퀴
 const Y0 = 2015, YN = 26;
 function periodVals(p) {
@@ -1488,15 +1493,17 @@ board.addEventListener('scroll', (e) => {
   const w = e.target; if (!w.classList || !w.classList.contains('wheel')) return;
   clearTimeout(wheelTimers.get(w));
   wheelTimers.set(w, setTimeout(() => {
-    const i = Math.max(0, Math.min(w.querySelectorAll('.wi').length - 1, Math.round(w.scrollTop / WH)));
+    let i = Math.max(0, Math.min(w.querySelectorAll('.wi').length - 1, Math.round(w.scrollTop / WH)));
+    const n = +w.dataset.n, k = i % n;
+    if (w.hasAttribute('data-loop') && (i < n || i >= 2 * n) && !wDrag) { i = k + n; w.scrollTop = i * WH; }   // 끝 묶음에 닿으면 몰래 가운데로
     const v = S.sheet?.v;
     if (v) {
-      v[w.dataset.w] = (+w.dataset.base || 0) + i * +w.dataset.step;
+      v[w.dataset.w] = (+w.dataset.base || 0) + k * +w.dataset.step;
       // 시작을 바꿨는데 끝이 시작보다 앞이면 끝을 1시간 뒤로
       if ((w.dataset.w === 'sh' || w.dataset.w === 'sm') && vMin(v.eh, v.em) <= vMin(v.sh, v.sm)) {
         const b = (vMin(v.sh, v.sm) + 60) % 1440; v.eh = Math.floor(b / 60); v.em = b % 60;
         for (const [k, val, st] of [['eh', v.eh, 1], ['em', v.em, 5]]) {
-          const x = board.querySelector(`.wheel[data-w="${k}"]`); if (x) x.scrollTo({ top: (val / st) * WH, behavior: 'smooth' });
+          const x = board.querySelector(`.wheel[data-w="${k}"]`); if (x) x.scrollTo({ top: wheelTop(x, val / st), behavior: 'smooth' });
         }
       }
     }
