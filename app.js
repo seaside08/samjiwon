@@ -131,6 +131,7 @@ function demoApi() {
       { id: id(), day: d(5), start_min: 1020, end_min: 1350, title: '언더워터', kind: 'work', place: '언더워터' },
       { id: id(), day: d(16), start_min: null, end_min: null, title: '아트페어', kind: 'event' },
       { id: id(), day: d(1), start_min: null, end_min: null, title: '정원 애니메틱', kind: 'task' },
+      { id: id(), day: d(1), start_min: 1080, end_min: 1200, title: '정원 배경', kind: 'task' },
       { id: id(), day: d(1), start_min: null, end_min: null, title: '원화 클린업', kind: 'task', pos: 1 },
     ],
     days: [{ day: d(0), diary: '오전에 피보테 배경 채색을 시작했다. 색을 두 번 갈아엎었는데 세 번째가 마음에 든다.' },
@@ -239,7 +240,20 @@ const sessFull = (s) => projOf(s.project_id)?.name || s.title || '작업';
 const sessLabel = (s) => shortName(sessFull(s));   // 줄임말 적용
 const minOfDay = (iso) => { const d = new Date(iso); return d.getHours() * 60 + d.getMinutes(); };
 const dayWork = (day) => eventsOf(day).reduce((a, e) => a + workMin(e), 0);
-const daySess = (day) => sessOf(day).reduce((a, s) => a + sessMin(s), 0);
+// 작업 시간 = 작업 기록 + 초록 작업 일정 (둘이 겹치는 시간은 한 번만)
+function workPieces(day) {
+  const real = sessOf(day).map((s) => { const a = minOfDay(s.start_at); return { a, b: a + sessMin(s), k: sessFull(s) }; });
+  const out = [...real];
+  for (const e of eventsOf(day)) {
+    if (e.kind !== 'task' || e.start_min == null || e.end_min == null || e.end_min <= e.start_min) continue;
+    let parts = [[e.start_min, e.end_min]];
+    for (const r of real) parts = parts.flatMap(([a, b]) => (r.b <= a || r.a >= b ? [[a, b]] : [[a, r.a], [r.b, b]].filter(([x, y]) => y > x)));
+    const k = projOf(e.project_id)?.name || e.title || '작업';
+    parts.forEach(([a, b]) => out.push({ a, b, k }));
+  }
+  return out;
+}
+const daySess = (day) => workPieces(day).reduce((a, p) => a + p.b - p.a, 0);
 const elapsed = (s) => { const sec = Math.max(0, Math.floor((Date.now() - Date.parse(s.start_at)) / 1000)); return `${pad(Math.floor(sec / 3600))}:${pad(Math.floor(sec / 60) % 60)}:${pad(sec % 60)}`; };
 const md = (ds) => { const d = parseYmd(ds); return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`; };
 const firstLine = (t) => { const s = String(t || '').trim().split('\n')[0]; const m = s.match(/^.*?[.!?。](?=\s|$)/); return (m ? m[0] : s).slice(0, 44); };
@@ -448,8 +462,8 @@ function viewWeek() {
       const nm = e.kind === 'work' ? (wpOf(e)?.short || e.title) : shortName(e.title);
       items.push({ a: e.start_min, b: plain ? e.start_min + 45 : e.end_min, plain, cls, work: e.kind === 'work', body: plain ? `${workCode(e.start_min)}<br>${esc(nm)}` : `${esc(nm)}<br>${t}` });
     });
+    weekSess += daySess(ds);
     sessOf(ds).forEach((s, j) => {
-      weekSess += sessMin(s);
       const a = minOfDay(s.start_at), b = s.end_at ? minOfDay(s.end_at) : nowMin;
       items.push({ a, b: Math.max(b, a + 1), cls: ['riso', 'riso2', 'riso3'][(j + i + 1) % 3], body: `${esc(shortName(sessLabel(s)))}<br>${workCode(a)}&#8211;${s.end_at ? workCode(b) : ''}` });
     });
@@ -1153,15 +1167,14 @@ function viewStats() {
   const bars = per.map((x, i) => `<div class="dy"><i class="riso" style="height:${x.s * px}px"></i><i class="jb" style="height:${x.w * px}px"></i><span>${([0, 4, 9, 14, 19, 24, 29].includes(i) || i === last - 1 && last === 31) ? i + 1 : ''}</span></div>`).join('');
   // 시간대 (8~24시)
   const hrs = Array(16).fill(0);
-  const monthSess = S.sessions.filter((s) => days.includes(s.day));
-  for (const s of monthSess) {
-    const a = minOfDay(s.start_at), b = a + sessMin(s);
+  const monthSess = days.flatMap(workPieces);
+  for (const { a, b } of monthSess) {
     for (let h = 0; h < 16; h++) { const h0 = (h + 8) * 60, h1 = h0 + 60; hrs[h] += Math.max(0, Math.min(b, h1) - Math.max(a, h0)); }
   }
   const hmax = Math.max(60, ...hrs);
   // 프로젝트별
   const byP = {};
-  for (const s of monthSess) { const k = sessFull(s); byP[k] = (byP[k] || 0) + sessMin(s); }
+  for (const p of monthSess) byP[p.k] = (byP[p.k] || 0) + p.b - p.a;
   const pl = Object.entries(byP).sort((a, b) => b[1] - a[1]).slice(0, 6), pmax = Math.max(1, ...pl.map((x) => x[1]));
   return `${header('')}
   <div class="main">
