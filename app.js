@@ -280,7 +280,7 @@ function buildEvent(raw, day, kind, tv) {
     return { title, start_min: t.start_min, end_min: t.end_min, kind: 'task', place: null, project_id: p?.id || null };
   }
   if (kind === 'work') {
-    const w = WORKPLACES.find((x) => x.name === S.addWp) || WORKPLACES[0];
+    const w = WORKPLACES.find((x) => x.name === S.addWp) || WORKPLACES[0]; if (!w) return null;
     let { start_min, end_min } = t;
     if (start_min == null) [start_min, end_min] = w.shifts[parseYmd(day).getDay()] || Object.values(w.shifts)[0];
     else if (end_min == null) return null;
@@ -290,7 +290,7 @@ function buildEvent(raw, day, kind, tv) {
   return { title: t.rest, start_min: t.start_min, end_min: t.end_min, kind: 'event', place: null };
 }
 const activeProjects = () => S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
-const KINDS = [['task', '작업'], ['event', '약속'], ['work', '근무']];
+const KINDS = [['task', '작업'], ['event', '약속'], ['work', '근무']].filter(([k]) => k !== 'work' || WORKPLACES.length);   // 근무지가 없으면 근무 숨김
 
 
 // ───────── 그리기
@@ -1419,7 +1419,7 @@ function addVals() {
   return v;
 }
 function shiftVals(v) {
-  const w = WORKPLACES.find((x) => x.name === S.addWp) || WORKPLACES.filter((x) => !x.archived)[0] || WORKPLACES[0];
+  const w = WORKPLACES.find((x) => x.name === S.addWp) || WORKPLACES.filter((x) => !x.archived)[0] || WORKPLACES[0]; if (!w) return;
   const [a, b] = w.shifts[parseYmd(S.sel).getDay()] || Object.values(w.shifts)[0];
   Object.assign(v, { sh: Math.floor(a / 60), sm: a % 60, eh: Math.floor(b / 60) % 24, em: b % 60 });
 }
