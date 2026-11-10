@@ -309,11 +309,13 @@ const KINDS = [['task', '작업'], ['event', '약속'], ['work', '근무']].filt
 
 // ───────── 그리기
 const board = document.getElementById('board');
+// 압정: 납작한 머리 · 몸통 · 바늘
+const PIN = '<svg viewBox="0 0 16 20" aria-hidden="true"><path d="M4 1.5h8M5.5 1.5v6L2.5 11h11l-3-3.5v-6" fill="var(--pf)" stroke="currentColor" stroke-width="2" stroke-linejoin="miter"/><path d="M8 11v8" stroke="currentColor" stroke-width="2"/></svg>';
 const X = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0L10 10M10 0L0 10" stroke="#e0352b" stroke-width="2.2"/></svg>';
 
 function header(sum) {
   const d = new Date();
-  return `<header class="hd"><span id="date">${dateLabel(d)}</span><span id="clock" data-act="sync" role="button" aria-label="동기화">${clockLabel(d)}</span><span id="syncing" class="sync"${S.syncing ? '' : ' hidden'}>&#8635;</span><span class="sum">${sum || ''}</span>${!PHONE && 'documentPictureInPicture' in window ? `<button class="pinbtn" data-act="pin">${pipWin ? '위에 두는 중' : '위에 두기'}</button>` : ''}</header>`;
+  return `<header class="hd"><span id="date">${dateLabel(d)}</span><span id="clock" data-act="sync" role="button" aria-label="동기화">${clockLabel(d)}</span><span id="syncing" class="sync"${S.syncing ? '' : ' hidden'}>&#8635;</span><span class="sum">${sum || ''}</span>${!PHONE && 'documentPictureInPicture' in window ? `<button class="pinbtn${pipWin ? ' on' : ''}" data-act="pin" aria-label="${pipWin ? '맨 위 창 닫기' : '창 맨 위에 두기'}" title="${pipWin ? '맨 위 창 닫기' : '창 맨 위에 두기'}">${PIN}</button>` : ''}</header>`;
 }
 const dateLabel = (d) => `${d.getFullYear()}. ${pad(d.getMonth() + 1)}. ${pad(d.getDate())}. ${wdh(d.getDay())}`;
 const clockLabel = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
