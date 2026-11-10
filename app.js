@@ -1210,7 +1210,8 @@ function viewStats() {
   let td = 0, tn = 0, appt = 0;
   for (const ds of days) { const t = todosOf(ds); tn += t.length; td += t.filter((x) => x.done).length; appt += eventsOf(ds).filter((e) => e.kind === 'event').length; }
   const max = Math.max(240, ...per.map((x) => x.s + x.w)), px = 140 / max;
-  const bars = per.map((x, i) => `<div class="dy"><i class="riso" style="height:${x.s * px}px"></i><i class="jb" style="height:${x.w * px}px"></i><span>${([0, 4, 9, 14, 19, 24, 29].includes(i) || i === last - 1 && last === 31) ? i + 1 : ''}</span></div>`).join('');
+  const tdy = todayStr();   // 오늘은 날짜 줄에 빨간 동그라미
+  const bars = per.map((x, i) => `<div class="dy${x.ds === tdy ? ' sel' : ''}"><i class="riso" style="height:${x.s * px}px"></i><i class="jb" style="height:${x.w * px}px"></i><span>${x.ds !== tdy && ([0, 4, 9, 14, 19, 24, 29].includes(i) || i === last - 1 && last === 31) ? i + 1 : ''}</span></div>`).join('');
   // 시간대 (8~24시)
   const hrs = Array(16).fill(0);
   const monthSess = days.flatMap(workPieces);
