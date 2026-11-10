@@ -41,6 +41,7 @@ const parseYmd = (s) => { const [y, m, d] = s.split('-').map(Number); return new
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 const todayStr = () => ymd(new Date());
 const mondayOf = (d) => addDays(d, -((d.getDay() + 6) % 7));
+const sundayOf = (d) => addDays(d, -d.getDay());   // 주간 달력은 일요일부터
 const hm = (m) => { if (m > 1440) m -= 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
 const dur = (m) => { const h = Math.floor(m / 60), r = m % 60; return r ? `${h}H ${r}M` : `${h}H`; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -64,7 +65,7 @@ const PLANT_SEED = [
   ['금전수', '큰금'], ['금전수', '작은금'], ['보틀트리', '우살'],
 ].map(([species, name, gone], i) => ({ species, name, gone: !!gone, pos: i + 1 }));
 S.month = (() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })();
-S.week = mondayOf(new Date());
+S.week = sundayOf(new Date());
 
 // ───────── 저장소 (Supabase / 데모)
 let sb = null;
@@ -172,7 +173,7 @@ function wantedRange() {
   const gs = addDays(S.month, -S.month.getDay());
   const ge = addDays(gs, 41);
   const ws = S.week, we = addDays(S.week, 6);
-  const t = new Date(); const tm = mondayOf(t); const te = addDays(tm, 6);
+  const t = new Date(); const tm = sundayOf(t); const te = addDays(tm, 6);
   const sel = parseYmd(S.sel), dd = parseYmd(S.diaryDay);
   const dm = new Date(dd.getFullYear(), dd.getMonth(), 1), dme = new Date(dd.getFullYear(), dd.getMonth() + 1, 0);
   const all = [gs, ge, ws, we, tm, te, sel, dm, dme, parseYmd(S.todoDay || todayStr())];
@@ -927,7 +928,7 @@ board.addEventListener('click', async (e) => {
   } else if (act === 'mode') {
     e.preventDefault();
     S.calMode = el.dataset.mode;
-    if (S.calMode === 'week') S.week = mondayOf(parseYmd(S.sel));
+    if (S.calMode === 'week') S.week = sundayOf(parseYmd(S.sel));
     else { const d = parseYmd(S.sel); S.month = new Date(d.getFullYear(), d.getMonth(), 1); }
     render(); ensureLoaded();
   } else if (act === 'prev' || act === 'next') {
@@ -1777,7 +1778,7 @@ function route() {
   if (S.view === 'today') S.todoDay = null;   // 할 일 탭에 다시 들어오면 오늘부터
   if (S.view === 'cal') {
     const d = parseYmd(S.sel);
-    S.month = new Date(d.getFullYear(), d.getMonth(), 1); S.week = mondayOf(d);
+    S.month = new Date(d.getFullYear(), d.getMonth(), 1); S.week = sundayOf(d);
   }
   render(); ensureLoaded();
 }
