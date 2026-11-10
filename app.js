@@ -1709,6 +1709,8 @@ addEventListener('touchstart', (e) => {
 const pagerEls = () => {
   const ph = board.querySelector('section.ph'); if (ph) return [ph];
   const l = board.querySelector('.main > section.left'); if (!l) return [];
+  // 주간: 요일 한자·시간 줄은 두고 날짜 숫자·하루 칸만
+  const wg = l.querySelector('.wgrid'); if (wg) return [...wg.querySelectorAll('.dh .n, .allday, .col')];
   return [...l.children].filter((c) => !c.matches('.ctl, .wd, .pin, .hd2'));
 };
 addEventListener('touchmove', (e) => {
@@ -1718,6 +1720,7 @@ addEventListener('touchmove', (e) => {
     if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { swipe = null; return; }   // 세로 스크롤
     if (Math.abs(dx) < 10) return;
     swipe.drag = true; swipe.els = pagerEls(); if (!swipe.els.length) { swipe = null; return; }
+    board.querySelector('.wgrid')?.classList.add('swiping');
     swipe.els.forEach((x) => x.getAnimations().forEach((a) => a.cancel()));
   }
   e.preventDefault();
@@ -1733,13 +1736,16 @@ addEventListener('touchend', (e) => {
   const go = Math.abs(dx) > W * 0.22 || (Math.abs(dx) > 40 && Math.abs(sw.vx || 0) > 0.45);
   if (!go) {   // 제자리로
     els.forEach((x) => { x.animate([{ transform: `translateX(${dx}px)` }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); x.style.transform = ''; });
+    setTimeout(() => board.querySelector('.wgrid')?.classList.remove('swiping'), 200);
     return;
   }
   const k = dx < 0 ? 1 : -1;
   const outs = els.map((x) => x.animate([{ transform: `translateX(${dx}px)` }, { transform: `translateX(${-k * W}px)` }], { duration: 170, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' }));
   outs[0].onfinish = () => {
     step(k);   // 여기서 아래 상세 칸도 함께 바뀜
+    const wg = board.querySelector('.wgrid'); wg?.classList.add('swiping');
     pagerEls().forEach((x) => x.animate([{ transform: `translateX(${k * W}px)` }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' }));
+    setTimeout(() => wg?.classList.remove('swiping'), 220);
   };
 }, { passive: true });
 

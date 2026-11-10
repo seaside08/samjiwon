@@ -438,3 +438,9 @@ html:has(.pipbody),.pipbody{overflow:auto;height:auto;min-height:100%}
 .pipb .red{font-size:14px}
 .pipb .pipnow{font-size:13px}
 .pipb .pipnow b{margin-left:6px;color:var(--red)}
+/* 주간 달력 쓸어 넘기기: 요일 한자·시간은 제자리, 오늘 상자는 잠깐 숨김 */
+.wgrid.swiping .dh.today{background:none;color:var(--ink)}
+.wgrid.swiping .hours{position:relative;z-index:6;background:var(--paper)}
+.wgrid.swiping .hours::before{content:'';position:absolute;inset:-1.5px 0 0 -100px;background:var(--paper);z-index:-1}
+.wgrid.swiping>span:not(.dh){position:relative;z-index:6}
+.wgrid.swiping>span:not(.dh)::before{content:'';position:absolute;inset:0 0 0 -100px;background:var(--paper)}
