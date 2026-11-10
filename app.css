@@ -428,7 +428,7 @@ body.phone .cell+.cell{padding-left:4.5px}
 /* 창 맨 위에 두기 */
 .pinbtn{--pf:var(--paper);background:none;border:0;padding:0 2px;color:var(--ink);cursor:pointer;align-self:center;line-height:0}
 .pinbtn svg{width:15px;height:19px;display:block}
-.pinbtn.on{--pf:var(--red);color:var(--ink);transform:rotate(-20deg)}
+.pinbtn.on{--pf:var(--ink)}
 .hd .sum:empty{display:none}
 .hd .sum:empty+.pinbtn{margin-left:auto}
 html:has(.pipbody),.pipbody{overflow:auto;height:auto;min-height:100%}
