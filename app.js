@@ -313,7 +313,7 @@ const X = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0L10 10M10 0L
 
 function header(sum) {
   const d = new Date();
-  return `<header class="hd"><span id="date">${dateLabel(d)}</span><span id="clock" data-act="sync" role="button" aria-label="동기화">${clockLabel(d)}</span><span id="syncing" class="sync"${S.syncing ? '' : ' hidden'}>&#8635;</span><span class="sum">${sum || ''}</span></header>`;
+  return `<header class="hd"><span id="date">${dateLabel(d)}</span><span id="clock" data-act="sync" role="button" aria-label="동기화">${clockLabel(d)}</span><span id="syncing" class="sync"${S.syncing ? '' : ' hidden'}>&#8635;</span><span class="sum">${sum || ''}</span>${!PHONE && 'documentPictureInPicture' in window ? `<button class="pinbtn" data-act="pin">${pipWin ? '위에 두는 중' : '위에 두기'}</button>` : ''}</header>`;
 }
 const dateLabel = (d) => `${d.getFullYear()}. ${pad(d.getMonth() + 1)}. ${pad(d.getDate())}. ${wdh(d.getDay())}`;
 const clockLabel = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
@@ -733,6 +733,44 @@ function render(force) {
   plantScroll();
   if (S.sheet) initWheels();
   else if (focusAdd) board.querySelector(`form[data-add="${focusAdd}"] input`)?.focus();
+  pipRender();
+}
+
+// ───────── 창 맨 위에 두기 (데스크탑 크롬·엣지): 다른 창 위에 떠 있는 작은 오늘 창
+var pipWin = null;
+async function pinOpen() {
+  if (pipWin) { pipWin.close(); return; }
+  try { pipWin = await documentPictureInPicture.requestWindow({ width: 340, height: 460 }); } catch (e) { toast('작은 창을 열지 못했어요'); return; }
+  const doc = pipWin.document;
+  document.querySelectorAll('link[rel="stylesheet"], style').forEach((x) => { const c = x.cloneNode(true); if (x.href) c.href = x.href; doc.head.appendChild(c); });
+  doc.title = '삼중일기';
+  doc.body.className = 'pipbody';
+  doc.body.innerHTML = '<div class="pipb"></div>';
+  doc.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-act]'); if (!el) return;
+    if (el.dataset.act === 'toggle') toggleTodo(el.closest('.todo').dataset.id);
+    else if (el.dataset.act === 'pip-back') { focus(); location.hash = 'today'; }
+  });
+  doc.addEventListener('submit', (e) => {
+    e.preventDefault(); const i = e.target.querySelector('input'), v = i.value.trim(); i.value = '';
+    if (v) addTodo(todayStr(), v);
+  });
+  pipWin.addEventListener('pagehide', () => { pipWin = null; render(); });
+  render();
+}
+function pipRender() {
+  if (!pipWin) return;
+  const doc = pipWin.document, box = doc.querySelector('.pipb'); if (!box) return;
+  const a = doc.activeElement, typing = a && a.tagName === 'INPUT' && a.value; if (typing) return;
+  const day = todayStr(), todos = todosOf(day), done = todos.filter((t) => t.done).length, r = running();
+  const d = new Date();
+  const evs = eventsOf(day).map((e) => `<div class="e"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n">${esc(shortName(e.title))}</span><span class="x">${e.end_min != null ? '~' + workCode(e.end_min) : ''}</span></div>`).join('');
+  box.innerHTML = `<div class="row"><span class="bk" data-act="pip-back" role="button">${pad(d.getMonth() + 1)} / ${pad(d.getDate())} ${wdh(d.getDay())}</span><span class="red">[ ${done} / ${todos.length} ]</span></div>
+    ${r ? `<div class="pipnow">NOW WORKING &#8212; ${esc(sessFull(r))} <b id="pip-el">${elapsed(r)}</b></div>` : ''}
+    <div class="todos">${todos.map(todoRow).join('')}</div>
+    <form class="add"><span class="plus" aria-hidden="true">+</span><input aria-label="할 일 추가" autocomplete="off"></form>
+    ${evs ? `<div class="sched riso">${evs}</div>` : ''}`;
+  if (a && a.tagName === 'INPUT') doc.querySelector('.pipb input')?.focus();
 }
 let pendingRender = false;
 
@@ -781,6 +819,12 @@ function tilt() {
 }
 
 // ───────── 동작
+async function toggleTodo(id) {
+  const t = S.todos.find((x) => x.id === id); if (!t) return;
+  t.done = !t.done; t.done_at = t.done ? new Date().toISOString() : null; render();
+  waterFromTodo(t);
+  try { await api.update('todos', t.id, { done: t.done, done_at: t.done_at }); } catch (er) { fail(er); }
+}
 async function addTodo(day, raw) {
   const p = parseTodo(raw); if (!p.text) return;
   const pos = Math.max(0, ...todosOf(day).map((t) => t.pos)) + 1;
@@ -846,10 +890,9 @@ board.addEventListener('click', async (e) => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const act = el.dataset.act;
   if (act === 'toggle') {
-    const t = S.todos.find((x) => x.id === el.closest('.todo').dataset.id); if (!t) return;
-    t.done = !t.done; t.done_at = t.done ? new Date().toISOString() : null; render();
-    waterFromTodo(t);
-    try { await api.update('todos', t.id, { done: t.done, done_at: t.done_at }); } catch (er) { fail(er); }
+    toggleTodo(el.closest('.todo').dataset.id);
+  } else if (act === 'pin') {
+    pinOpen();
   } else if (act === 'edit-todo') {
     openSheet('todo', el.closest('.todo').dataset.id);
   } else if (act === 'edit-event') {
@@ -1715,6 +1758,7 @@ setInterval(() => {
   const c = document.getElementById('clock'); if (c) c.textContent = clockLabel(d);
   const dt = document.getElementById('date'); if (dt) dt.innerHTML = dateLabel(d);
   const el = document.getElementById('elapsed'), r = running(); if (el && r) el.textContent = elapsed(r);
+  const pe = pipWin?.document.getElementById('pip-el'); if (pe && r) pe.textContent = elapsed(r);
   if (ymd(d) !== lastDay) { lastDay = ymd(d); S.sel = S.diaryDay = S.plantDay = S.plantEnd = lastDay; render(); load(); }
 }, 1000);
 

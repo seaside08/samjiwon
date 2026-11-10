@@ -425,3 +425,14 @@ body.phone .cell+.cell{padding-left:4.5px}
 .todos .todo,.evf .ev{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .todos .todo.drag,.evf .ev.drag{opacity:.45}
 .evf{display:flex;flex-direction:column;gap:inherit}
+/* 창 맨 위에 두기 */
+.pinbtn{font:inherit;font-size:12px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);padding:2px 7px;line-height:1.1;cursor:pointer;align-self:center}
+.hd .sum:empty{display:none}
+.hd .sum:empty+.pinbtn{margin-left:auto}
+html:has(.pipbody),.pipbody{overflow:auto;height:auto;min-height:100%}
+.pipb{color:var(--ink);font-family:'IBM Plex Mono','KR Small',-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;font-size:16px;font-weight:700;line-height:1.08;padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px}
+.pipb .row{display:flex;align-items:center;gap:12px}
+.pipb .bk{cursor:pointer}
+.pipb .red{font-size:14px}
+.pipb .pipnow{font-size:13px}
+.pipb .pipnow b{margin-left:6px;color:var(--red)}
