@@ -310,7 +310,7 @@ const KINDS = [['task', '작업'], ['event', '약속'], ['work', '근무']].filt
 // ───────── 그리기
 const board = document.getElementById('board');
 // 압정: 납작한 머리 · 몸통 · 바늘
-const PIN = '<svg viewBox="0 0 16 20" aria-hidden="true"><path d="M4 1.5h8M5.5 1.5v6L2.5 11h11l-3-3.5v-6" fill="var(--pf)" stroke="currentColor" stroke-width="2" stroke-linejoin="miter"/><path d="M8 11v8" stroke="currentColor" stroke-width="2"/></svg>';
+const PIN = '<svg viewBox="0 0 16 20" aria-hidden="true"><path d="M4 1.5h8M5.5 1.5v6L2.5 11h11l-3-3.5v-6" fill="var(--pf)" stroke="currentColor" stroke-width="2.6" stroke-linejoin="miter"/><path d="M8 11v8" stroke="currentColor" stroke-width="2.6"/></svg>';
 const X = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0L10 10M10 0L0 10" stroke="#e0352b" stroke-width="2.2"/></svg>';
 
 function header(sum) {
