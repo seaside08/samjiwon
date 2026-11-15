@@ -1518,7 +1518,12 @@ function sheetHTML() {
     else if (t === 'event') body = (it.kind !== 'work' ? row('edit', '수정하기') : '') + row('time', '시간 바꾸기') + row('date', '날짜 바꾸기') + row('tomorrow', '내일 하기') + (it.kind !== 'work' ? row('kind', it.kind === 'task' ? '약속으로 바꾸기' : '작업으로 바꾸기') + row('toTodo', '할 일로 바꾸기') : '') + row('del', '지우기');
     else body = row('time', '시간 바꾸기') + row('del', '지우기');
   } else if (sh.mode === 'edit') {
-    body = `<form class="sh-form" data-sh="edit"><input class="edit" autocomplete="off" enterkeyhint="done" value="${esc(t === 'todo' ? todoInput(it) : it.title)}"></form>
+    // 작업 일정은 프로젝트도 고르기 (고른 걸 다시 누르면 빼기)
+    const isTask = t === 'event' && it.kind === 'task';
+    if (isTask && sh.ep === undefined) sh.ep = it.project_id || null;
+    const ps = isTask ? [...activeProjects(), ...S.projects.filter((p) => p.id === it.project_id && !activeProjects().includes(p))] : [];
+    body = `<form class="sh-form" data-sh="edit"><input class="edit" autocomplete="off" enterkeyhint="done" value="${esc(sh.txt ?? (t === 'todo' ? todoInput(it) : it.title))}"></form>
+      ${isTask && ps.length ? `<div class="opts">${ps.map((p) => `<button data-act="sh" data-do="ep-${p.id}" class="${sh.ep === p.id ? 'on' : ''}">${esc(p.name)}</button>`).join('')}</div>` : ''}
       <div class="sh-acts"><button class="btn" data-act="sh" data-do="save-edit">저장</button><button class="ul" data-act="sh" data-do="menu">뒤로</button></div>`;
   } else if (sh.mode === 'date') {
     body = `<input type="date" class="sh-date" value="${it.day}">
@@ -1591,17 +1596,21 @@ async function sheetDo(d) {
   const t = sh.type, table = t === 'todo' ? 'todos' : t === 'event' ? 'events' : 'sessions';
   const upd = async (patch) => { Object.assign(it, patch); closeSheet(); try { await api.update(table, it.id, patch); } catch (e) { fail(e); } };
   if (d === 'menu') { sh.mode = 'menu'; return render(true); }
-  if (['edit', 'date'].includes(d)) { sh.mode = d; return render(true); }
+  if (['edit', 'date'].includes(d)) { sh.mode = d; delete sh.ep; delete sh.txt; return render(true); }
   if (d === 'time' || d === 'toEvent') { sh.mode = d; sh.v = sheetVals(it, t); return render(true); }
   if (d === 'tg-all') { sh.v.allDay = !sh.v.allDay; return render(true); }
   if (d === 'tg-end') { sh.v.noEnd = !sh.v.noEnd; return render(true); }
   if (d.startsWith('k-')) { sh.v.kind = d.slice(2); return render(true); }
   if (d.startsWith('p-')) { sh.v.proj = d.slice(2); return render(true); }
+  if (d.startsWith('ep-')) {
+    const id = d.slice(3); sh.ep = sh.ep === id ? null : id;
+    sh.txt = board.querySelector('.sh-form input')?.value; return render(true);
+  }
   if (d === 'tomorrow') return upd({ day: ymd(addDays(parseYmd(it.day), 1)) });
   if (d === 'save-date') { const v = board.querySelector('.sh-date')?.value; if (v) return upd({ day: v }); return; }
   if (d === 'save-edit') {
     const v = board.querySelector('.sh-form input')?.value.trim(); if (!v) return;
-    return upd(t === 'todo' ? parseTodo(v) : { title: v });
+    return upd(t === 'todo' ? parseTodo(v) : sh.ep !== undefined && it.kind === 'task' ? { title: v, project_id: sh.ep } : { title: v });
   }
   if (d === 'kind') return upd({ kind: it.kind === 'task' ? 'event' : 'task', project_id: it.kind === 'task' ? null : (it.project_id || activeProjects()[0]?.id || null) });
   if (d === 'save-time') {
