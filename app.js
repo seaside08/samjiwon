@@ -343,6 +343,7 @@ const addForm = (kind, label, style = '') =>
 
 function viewToday() {
   const today = todayStr(), day = S.todoDay || today;
+  const hsum = `${day === today ? '오늘' : `${pad(parseYmd(day).getMonth() + 1)}/${pad(parseYmd(day).getDate())}`} 근무 ${dur(dayWork(day))} &#183; 작업 ${dur(daySess(day))}`;
   const d0 = parseYmd(day);
   const ttl = day === today ? 'TODAY / 오늘 할 일' : `${pad(d0.getMonth() + 1)} / ${pad(d0.getDate())} ${wdh(d0.getDay())} &#183; 할 일`;
   const lbl = `<span class="bk"${day === today ? '' : ' data-act="todo-today" role="button" aria-label="오늘로 돌아가기"'}>${ttl}</span>`;
@@ -358,7 +359,7 @@ function viewToday() {
   const lastS = S.sessions.slice().sort((a, b) => (a.start_at < b.start_at ? 1 : -1))[0];
   const cur = (r && sessFull(r)) || (lastS && projOf(lastS.project_id)?.status === 'active' && sessFull(lastS)) || active[0]?.name;   // 여기는 풀네임
   const now = `<button class="bk nowbtn" data-act="log-open" aria-label="작업시간 기록하기">NOW WORKING${cur ? ` &#8212; ${esc(cur)}` : ''}</button>`;
-  if (PHONE) return `${header('')}
+  if (PHONE) return `${header(hsum)}
   <section class="ph">
     <div class="row">${lbl}<span class="red" style="font-size:16px">[ ${done} / ${todos.length} ]</span></div>
     <div class="todos">${todos.map(todoRow).join('')}</div>
@@ -366,7 +367,7 @@ function viewToday() {
     ${now}
     ${items.length ? `<div class="sched riso">${items.map((x) => x.h.replace(' data-act="go-day"', '')).join('')}</div>` : ''}
   </section>`;
-  return `${header('')}
+  return `${header(hsum)}
   <div class="main" style="gap:36px">
     <section class="left">
       <div class="row">${lbl}<span class="red" style="font-size:15px">[ ${done} / ${todos.length} ]</span></div>
