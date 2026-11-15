@@ -236,6 +236,11 @@ const sessOf = (day) => S.sessions.filter((s) => s.day === day).sort((a, b) => (
 const running = () => S.sessions.find((s) => !s.end_at);
 // 작업 일정 (kind: task)
 const isWorkEv = (e) => e.kind === 'task';
+// 외주 작업은 달력에서 초록을 연하게 (프로젝트 '분류'에 외주). 프로젝트가 안 붙은 일정은 이름으로 찾기
+const evProj = (e) => projOf(e.project_id) || (e.title ? S.projects.find((p) => { const n = String(shortName(p.name)).toLowerCase(), t = String(shortName(e.title)).toLowerCase(); return t === n || t.startsWith(n + ' ') || e.title.toLowerCase() === p.name.toLowerCase(); }) : null);
+const isOut = (p) => !!p && /외주/.test(p.category || '');
+const owE = (e) => (isWorkEv(e) && isOut(evProj(e)) ? ' ow' : '');
+const owS = (s) => (isOut(projOf(s.project_id)) ? ' ow' : '');
 const projOf = (id) => S.projects.find((p) => p.id === id);
 const sessFull = (s) => projOf(s.project_id)?.name || s.title || '작업';
 const sessLabel = (s) => shortName(sessFull(s));   // 줄임말 적용
@@ -426,8 +431,8 @@ function viewMonth() {
       grid += `<div class="cell" data-act="sel" data-day="${ds}"><b class="${cls}">${d.getDate()}</b>
         ${evs.map((e, i) => e.kind === 'work'
           ? `<span class="ln">${workCode(e.start_min)} ${esc(wpOf(e)?.short || e.title)}</span>`
-          : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}` : ''}"><span class="lt">${e.start_min == null ? '' : `<em class="tm">${workCode(e.start_min)} </em>`}${esc(shortName(e.title))}</span></span>`).join('')}
-        ${Object.entries(sessOf(ds).reduce((a, s) => { const k = shortName(sessLabel(s)); a[k] = (a[k] || 0) + sessMin(s); return a; }, {})).map(([k, v], j) => `<span class="ln rz ${['riso3', 'riso', 'riso2'][(d.getDate() + j) % 3]}"><span class="lt">${esc(k)} ${dur(v)}</span></span>`).join('')}
+          : `<span class="ln${isWorkEv(e) ? ` rz ${['riso', 'riso2', 'riso3'][(d.getDate() + i) % 3]}${owE(e)}` : ''}"><span class="lt">${e.start_min == null ? '' : `<em class="tm">${workCode(e.start_min)} </em>`}${esc(shortName(e.title))}</span></span>`).join('')}
+        ${Object.entries(sessOf(ds).reduce((a, s) => { const k = shortName(sessLabel(s)); a[k] = a[k] || [0, owS(s)]; a[k][0] += sessMin(s); return a; }, {})).map(([k, [v, ow]], j) => `<span class="ln rz ${['riso3', 'riso', 'riso2'][(d.getDate() + j) % 3]}${ow}"><span class="lt">${esc(k)} ${dur(v)}</span></span>`).join('')}
       </div>`;
     }
     grid += '</div>';
@@ -460,7 +465,7 @@ function viewWeek() {
     eventsOf(ds).filter((e) => e.start_min != null).forEach((e) => {
       weekWork += workMin(e);
       const plain = e.end_min == null || (e.kind !== 'work' && !isWorkEv(e));
-      const cls = plain ? '' : e.kind === 'work' ? 'work' : ['riso', 'riso2', 'riso3'][(k++ + i) % 3];
+      const cls = plain ? '' : e.kind === 'work' ? 'work' : ['riso', 'riso2', 'riso3'][(k++ + i) % 3] + owE(e);
       const t = `${workCode(e.start_min)}${e.end_min != null ? '&#8211;' + workCode(e.end_min) : ''}`;
       const nm = e.kind === 'work' ? (wpOf(e)?.short || e.title) : shortName(e.title);
       items.push({ a: e.start_min, b: plain ? e.start_min + 45 : e.end_min, plain, cls, work: e.kind === 'work', body: plain ? `${workCode(e.start_min)}<br>${esc(nm)}` : `${esc(nm)}<br>${t}` });
@@ -468,7 +473,7 @@ function viewWeek() {
     weekSess += daySess(ds);
     sessOf(ds).forEach((s, j) => {
       const a = minOfDay(s.start_at), b = s.end_at ? minOfDay(s.end_at) : nowMin;
-      items.push({ a, b: Math.max(b, a + 1), cls: ['riso', 'riso2', 'riso3'][(j + i + 1) % 3], body: `${esc(shortName(sessLabel(s)))}<br>${workCode(a)}&#8211;${s.end_at ? workCode(b) : ''}` });
+      items.push({ a, b: Math.max(b, a + 1), cls: ['riso', 'riso2', 'riso3'][(j + i + 1) % 3] + owS(s), body: `${esc(shortName(sessLabel(s)))}<br>${workCode(a)}&#8211;${s.end_at ? workCode(b) : ''}` });
     });
     items.sort((x, y) => x.a - y.a || y.b - x.b);
     // 근무는 칸 전체에 깔고, 그 위에 겹치는 작업·일정은 올려 놓는다 (칸을 쪼개지 않음)
@@ -502,7 +507,7 @@ function viewWeek() {
       ${calCtl(`${pad(ws.getMonth() + 1)}. ${pad(ws.getDate())} &#8212; ${pad(we.getMonth() + 1)}. ${pad(we.getDate())}`, '이전 주', '다음 주')}
       <div class="wgrid">
         <span></span>${heads.join('')}
-        ${hasAll ? '<span></span>' + allday.map((a, i) => `<div class="allday" data-act="sel" data-day="${ymd(days[i])}">${a.map((e) => `<span class="adl${isWorkEv(e) ? ' rzs riso' : ''}">${esc(shortName(e.title))}</span>`).join('')}</div>`).join('') : ''}
+        ${hasAll ? '<span></span>' + allday.map((a, i) => `<div class="allday" data-act="sel" data-day="${ymd(days[i])}">${a.map((e) => `<span class="adl${isWorkEv(e) ? ' rzs riso' + owE(e) : ''}">${esc(shortName(e.title))}</span>`).join('')}</div>`).join('') : ''}
         <div class="hours" style="height:${HH * 14}px">${hours}</div>${cols.join('')}
       </div>
     </section>
