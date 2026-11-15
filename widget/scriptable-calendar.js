@@ -137,12 +137,14 @@ function draw(size, data, tex, fam) {
       const lh = 11.2, maxL = Math.floor((ch - 21) / lh);
       const evs = (byDay[ds] || []).sort((a, b) => (a.kind === 'work' ? -1 : 0) - (b.kind === 'work' ? -1 : 0) || (a.start_min ?? -1) - (b.start_min ?? -1));
       // 작업 기록: 프로젝트별로 묶어 시간 합계
-      const sm = {};
+      const sm = {}, so = {};
       for (const x of (data.sessions || []).filter((x) => x.day === ds)) {
-        const k = shortName((data.projects || {})[x.project_id] || x.title || '작업');
+        const P = (data.projects || {})[x.project_id];
+        const k = shortName((P && P.name) || x.title || '작업');
+        if (isOut(P)) so[k] = true;
         sm[k] = (sm[k] || 0) + Math.max(0, Math.round(((x.end_at ? Date.parse(x.end_at) : Date.now()) - Date.parse(x.start_at)) / 60000));
       }
-      const lines = [...evs.map((e) => ({ e })), ...Object.entries(sm).map(([k, v]) => ({ e: { kind: 'task', title: `${k} ${dur(v)}` } }))];
+      const lines = [...evs.map((e) => ({ e })), ...Object.entries(sm).map(([k, v]) => ({ e: { kind: 'task', title: `${k} ${dur(v)}` }, ow: so[k] }))];
       let ly = ry + 20.5;
       const f = Font.boldSystemFont(9.3);
       for (let i = 0; i < Math.min(maxL, lines.length); i++) {
@@ -153,6 +155,7 @@ function draw(size, data, tex, fam) {
         } else if (L.e.kind === 'task') {
           const br = new Rect(x + LW, ly, cw - LW * 1.5, lh);
           if (tex) c.drawImageInRect(tex, br); else { c.setFillColor(GREEN); c.fillRect(br); }
+          if (L.ow || (L.e.day && isOut(evProj(L.e, data.projects)))) { c.setFillColor(new Color('#fbfbf8', 0.4)); c.fillRect(br); }   // 외주는 초록 60%
           text(shortName(L.e.title), x + 3.5, ly, cw - 4, lh, f);
         } else {
           text(shortName(L.e.title), x + 3.5, ly, cw - 4, lh, f);
@@ -163,6 +166,16 @@ function draw(size, data, tex, fam) {
   }
   line(G, gy + rows * ch - LW, W - G * 2, LW);
   return c.getImage();
+}
+
+// 외주 작업: 프로젝트 '분류'에 외주. 프로젝트가 안 붙은 일정은 이름으로 찾기
+function isOut(p) { return !!p && /외주/.test(p.category || ''); }
+function evProj(e, projects) {
+  const ps = Object.values(projects || {});
+  if (e.project_id && projects && projects[e.project_id]) return projects[e.project_id];
+  if (!e.title) return null;
+  const t = String(shortName(e.title)).toLowerCase();
+  return ps.find((p) => { const n = String(shortName(p.name)).toLowerCase(); return t === n || t.startsWith(n + ' ') || e.title.toLowerCase() === p.name.toLowerCase(); }) || null;
 }
 
 async function main() {
@@ -177,12 +190,12 @@ async function main() {
     const y = now.getFullYear(), m = now.getMonth();
     const from = ymd(new Date(y, m, 1 - new Date(y, m, 1).getDay())), to = ymd(new Date(y, m + 1, 14));
     const [events, sessions, projs, tex] = await Promise.all([
-      get(tk, `events?select=day,start_min,title,kind,place&day=gte.${from}&day=lte.${to}`),
+      get(tk, `events?select=day,start_min,title,kind,place,project_id&day=gte.${from}&day=lte.${to}`),
       get(tk, `sessions?select=day,project_id,title,start_at,end_at&day=gte.${from}&day=lte.${to}`).catch(() => []),
-      get(tk, 'projects?select=id,name').catch(() => []),
+      get(tk, 'projects?select=id,name,category').catch(() => get(tk, 'projects?select=id,name')).catch(() => []),
       texture(),
     ]);
-    w.backgroundImage = draw(widgetSize(fam), { events, sessions, projects: Object.fromEntries(projs.map((p) => [p.id, p.name])) }, tex, fam);
+    w.backgroundImage = draw(widgetSize(fam), { events, sessions, projects: Object.fromEntries(projs.map((p) => [p.id, p])) }, tex, fam);
   } catch (e) {
     const t = w.addText(e.message);
     t.font = Font.boldSystemFont(12); t.textColor = RED;
