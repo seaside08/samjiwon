@@ -179,9 +179,10 @@ function evProj(e, projects) {
 }
 
 async function main() {
+  if ((args.queryParameters || {}).tap) return;   // 위젯을 눌러서 열린 경우: 미리보기 창 없이 바로 끝
   const fam = config.widgetFamily || 'large';
   const w = new ListWidget();
-  w.url = SITE;
+  w.url = URLScheme.forRunningScript() + '?tap=1';   // 누르면 사이트 대신 Scriptable이 잠깐 열려 다시 그리기만 함
   w.setPadding(0, 0, 0, 0);
   w.backgroundColor = PAPER;
   w.refreshAfterDate = new Date(Date.now() + 5 * 60 * 1000);   // 5분 뒤 새로 고침 요청 (실제 시각은 iOS가 정함)
