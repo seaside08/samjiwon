@@ -448,7 +448,9 @@ html:has(.pipbody),.pipbody{overflow:auto;height:auto;min-height:100%}
 .ow.tilt::before{opacity:.6}
 .ow:not(.tilt){box-shadow:inset 0 0 0 999px rgba(251,251,248,.4)}
 /* 해인 근무 (주간 달력) */
-.blk.hae{background:#8fcaff url(tex.jpg) -60px -120px/240px 240px;background-blend-mode:luminosity;mix-blend-mode:multiply;z-index:2;pointer-events:none;text-align:right}
+.blk.hae{background:none;mix-blend-mode:multiply;z-index:2;pointer-events:none;text-align:right}
+/* 파랑은 초록 질감을 색만 돌려서 (사파리에서 섞기 방식이 빠져 초록으로 보이던 것 막기) */
+.blk.hae::before,.haesw button.on::before{content:"";position:absolute;inset:0;z-index:-1;background:#5fd97c url(tex.jpg) -60px -120px/240px 240px;filter:hue-rotate(72deg) saturate(.85) brightness(1.08)}
 .haesw{display:inline-flex;align-items:center;gap:4px;margin-left:10px}
 .haesw button{font:inherit;font-size:14px;background:none;border:0;color:var(--ink);cursor:pointer;padding:1px 5px;line-height:1.2}
-.haesw button.on{background:#8fcaff url(tex.jpg) -20px -40px/240px 240px;background-blend-mode:luminosity}
+.haesw button.on{position:relative;isolation:isolate}
