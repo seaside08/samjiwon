@@ -1035,15 +1035,18 @@ const periodLabel = (p) => {
   return `${p.start_day ? ymdDot(p.start_day) : ''} &#8211; ${end}`;
 };
 function projField(p, f) {
-  if (f === 'pay') return p.pay ? String(p.pay) : '';
+  if (f === 'pay') return p.pay != null ? String(p.pay) : '';
   return p[f] || '';
 }
 function parseProjField(f, v) {
-  if (f === 'pay') { const n = parseInt(v.replace(/[^\d]/g, ''), 10); return { pay: Number.isFinite(n) ? n : null }; }
+  if (f === 'pay') return { pay: /^[\d,\s]+$/.test(v) ? v.replace(/[,\s]/g, '') : v || null };   // 글자도 그대로 (숫자만이면 쉼표 빼고)
   if (f === 'name') return v ? { name: v } : null;
   return { [f]: v || null };
 }
+// 보수: 숫자만이면 50,000처럼, 글자가 섞이면 적은 그대로
+const payLabel = (v) => (/^\d+$/.test(String(v)) ? won(+v) : esc(String(v)));
 async function saveProj(p, patch) {
+  p = S.projects.find((x) => x.id === p.id) || p;   // 편집하는 사이 새로 불러왔어도 지금 목록의 것에 반영
   Object.assign(p, patch);
   render();
   try { await api.update('projects', p.id, patch); } catch (e) { fail(e); }
@@ -1062,7 +1065,7 @@ function viewProjects() {
       <span class="ptitle riso" data-act="pf" data-f="name">${esc(sel.name)}</span>
       ${row('분류', 'category', sel.category && esc(sel.category))}
       ${row('작업기간', 'period', (sel.start_day || sel.end_day) && periodLabel(sel))}
-      ${row('보수', 'pay', sel.pay && won(sel.pay))}
+      ${row('보수', 'pay', sel.pay != null && sel.pay !== '' && payLabel(sel.pay))}
       ${row('함께한 사람', 'people', sel.people && esc(sel.people))}
       ${row('참여 파트', 'output', sel.output && esc(sel.output))}
       ${row('프로그램', 'programs', sel.programs && esc(sel.programs))}

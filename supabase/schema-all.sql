@@ -163,3 +163,9 @@ alter table public.app_secrets enable row level security;
 drop policy if exists own on public.app_secrets;
 create policy own on public.app_secrets for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 grant select, insert, update, delete on public.app_secrets to authenticated;
+
+-- ===== schema-7.sql =====
+-- 삼중일기 7차: 프로젝트 보수에 글자도 적을 수 있게 (예: '회당 5만원', '50000')
+-- Supabase > SQL Editor 에 붙여 넣고 Run 한 번.
+
+alter table public.projects alter column pay type text using pay::text;
