@@ -102,6 +102,10 @@ const api = DEMO ? demoApi() : {
     const { data, error } = await sb.from(table).insert(rows).select();
     if (error) throw error; return data;
   },
+  async secret(k) {
+    const { data, error } = await sb.from('app_secrets').select('v').eq('k', k).maybeSingle();
+    if (error) throw error; return data?.v || null;
+  },
   async recentDiary() {
     const { data, error } = await sb.from('days').select('day,diary').not('diary', 'is', null).neq('diary', '').order('day', { ascending: false }).limit(8);
     if (error) throw error; return data;
@@ -198,10 +202,7 @@ async function load() {
         api.all('projects'), api.all('sessions'), api.all('plants'), api.list('plant_logs', lf, lt), api.recentDiary(),
       ]);
       if (DEMO) S.hae = await api.list('partner_shifts', from, to);
-      else if (S.haeOn && !S.haeTried) {   // 켜 둔 채 다시 열면 기억한 암호로 조용히 불러오기
-        S.haeTried = true; let pw = null; try { pw = localStorage.getItem(HAE_KEY); } catch (e) { /* 없음 */ }
-        if (pw) haeLoad(pw).then(() => render());
-      }
+      else if (S.haeOn) haeLoad();
       S.todos = todos; S.events = events;
       S.days = Object.fromEntries(days.map((r) => [r.day, r]));
       S.projects = projects; S.sessions = sessions; S.plants = plants; S.plogs = plogs; S.recent = recent;
@@ -462,27 +463,19 @@ function viewMonth() {
 }
 
 // ───────── 해인 근무: Claude가 근무표 사진을 받아 hae.enc(암호로 잠긴 파일)에 넣어 둠
-// 기기마다 처음 한 번 암호를 넣으면 그 기기에 기억 (공개 코드에는 잠긴 파일만 있음)
-const HAE_KEY = 'samjung-hae-pw';
-async function haeDecrypt(pw) {
-  const r = await fetch(`hae.enc?t=${Date.now()}`, { cache: 'no-store' }); if (!r.ok) return [];
-  const { salt, iv, ct } = await r.json(), b = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
-  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
-  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b(salt), iterations: 200000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b(iv) }, key, b(ct))));
-}
-async function haeLoad(pw) {
-  try { S.hae = await haeDecrypt(pw); return true; } catch (e) { return false; }
-}
-async function haeOpen() {
-  let pw = null; try { pw = localStorage.getItem(HAE_KEY); } catch (e) { /* 저장 안 됨 */ }
-  if (pw && await haeLoad(pw)) { render(); return; }
-  S.sheet = { type: 'hae' }; render(true); board.querySelector('.sheet input')?.focus();
-}
-async function haeUnlock(pw) {
-  if (!pw || !(await haeLoad(pw))) { toast('암호가 맞지 않아요'); return; }
-  try { localStorage.setItem(HAE_KEY, pw); } catch (e) { /* 이번만 */ }
-  S.sheet = null; render();
+// 여는 암호는 내 Supabase(app_secrets)에만 있어서, 로그인하면 따로 묻지 않고 열림
+async function haeLoad() {
+  if (DEMO || S.haeLoaded) return;
+  S.haeLoaded = true;
+  try {
+    const pw = await api.secret('hae'); if (!pw) return;
+    const r = await fetch(`hae.enc?t=${Date.now()}`, { cache: 'no-store' }); if (!r.ok) return;
+    const { salt, iv, ct } = await r.json(), b = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b(salt), iterations: 200000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    S.hae = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b(iv) }, key, b(ct))));
+    render();
+  } catch (e) { S.haeLoaded = false; }
 }
 const haeOf = (day) => (S.haeOn ? S.hae.find((x) => x.day === day) : null);
 
@@ -897,7 +890,6 @@ async function addEvent(day, raw, tv) {
 
 board.addEventListener('submit', (e) => {
   if (e.target.closest('form[data-sh]')) { e.preventDefault(); sheetDo('save-edit'); return; }
-  if (e.target.closest('form[data-hae]')) { e.preventDefault(); haeUnlock(e.target.querySelector('input').value); return; }
   const f = e.target.closest('form[data-add]'); if (!f) return;
   e.preventDefault();
   const input = f.querySelector('input'), v = input.value.trim();
@@ -978,9 +970,7 @@ board.addEventListener('click', async (e) => {
     S.sel = el.dataset.day; location.hash = '#cal';
   } else if (act === 'hae') {
     S.haeOn = !S.haeOn; try { localStorage.setItem('samjung-hae', S.haeOn ? '1' : '0'); } catch (e) { /* 이 기기만 */ }
-    if (S.haeOn && !DEMO) haeOpen(); else render();
-  } else if (act === 'hae-unlock') {
-    haeUnlock(board.querySelector('.sheet input')?.value || '');
+    render(); if (S.haeOn) haeLoad();
   } else if (act === 'mode') {
     e.preventDefault();
     S.calMode = el.dataset.mode;
@@ -1559,12 +1549,6 @@ function sheetHTML() {
   if (sh.type === 'period') return periodSheetHTML();
   if (sh.type === 'add') return addSheetHTML();
   if (sh.type === 'addTodo') return addTodoSheetHTML();
-  if (sh.type === 'hae') return `<div class="sh-bg" data-act="sh-close"></div>
-  <div class="sheet" role="dialog" aria-label="해인 근무 암호">
-    <div class="sh-head"><span>해인 근무 암호</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
-    <form class="sh-form" data-hae><input class="edit" type="password" autocomplete="off" enterkeyhint="done" aria-label="암호"></form>
-    <div class="sh-acts"><button class="btn" data-act="hae-unlock">열기</button></div>
-  </div>`;
   const it = sheetItem(); if (!it) { S.sheet = null; return ''; }
   const t = sh.type;
   let head, title;
