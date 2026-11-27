@@ -50,7 +50,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const S = {
   view: 'today', todoDay: null, calMode: 'month',
   sel: todayStr(), month: null, week: null,
-  todos: [], events: [], days: {},
+  todos: [], events: [], days: {}, hae: [], haeOn: (() => { try { return localStorage.getItem('samjung-hae') === '1'; } catch (e) { return false; } })(),
   projects: [], sessions: [], plants: [], plogs: [], recent: [],
   proj: null,
   addKind: 'task', addProj: null, addWp: null,
@@ -102,6 +102,10 @@ const api = DEMO ? demoApi() : {
     const { data, error } = await sb.from(table).insert(rows).select();
     if (error) throw error; return data;
   },
+  async upsertMany(table, rows) {
+    const { error } = await sb.from(table).upsert(rows.map((r) => ({ user_id: S.user.id, ...r })));
+    if (error) throw error;
+  },
   async recentDiary() {
     const { data, error } = await sb.from('days').select('day,diary').not('diary', 'is', null).neq('diary', '').order('day', { ascending: false }).limit(8);
     if (error) throw error; return data;
@@ -150,6 +154,13 @@ function demoApi() {
     ],
     plants: [],
     plant_logs: [],
+    partner_shifts: [
+      { day: d(-1), start_min: null, end_min: null, off: '휴무' },
+      { day: d(0), start_min: 930, end_min: 1350, off: null },
+      { day: d(1), start_min: 390, end_min: 780, off: null },
+      { day: d(2), start_min: null, end_min: null, off: '연차' },
+      { day: d(3), start_min: 1020, end_min: 1350, off: null },
+    ],
   };
   return {
     async list(table, from, to) { return db[table].filter((r) => r.day >= from && r.day <= to).map((r) => ({ ...r })); },
@@ -159,6 +170,7 @@ function demoApi() {
     async saveDay(day, patch) { const r = db.days.find((x) => x.day === day); r ? Object.assign(r, patch) : db.days.push({ day, ...patch }); },
     async all(table) { return db[table].map((r) => ({ ...r })); },
     async insertMany(table, rows) { const out = rows.map((r) => ({ id: id(), ...r })); db[table].push(...out); return out.map((r) => ({ ...r })); },
+    async upsertMany(table, rows) { for (const r of rows) { db[table] = db[table].filter((x) => x.day !== r.day); db[table].push({ ...r }); } },
     async recentDiary() { return db.days.filter((r) => r.diary).sort((a, b) => (a.day < b.day ? 1 : -1)).slice(0, 8).map((r) => ({ ...r })); },
     async upsertLog(plant_id, day, patch) {
       let r = db.plant_logs.find((x) => x.plant_id === plant_id && x.day === day);
@@ -190,6 +202,7 @@ async function load() {
         api.list('todos', from, to), api.list('events', from, to), api.list('days', from, to),
         api.all('projects'), api.all('sessions'), api.all('plants'), api.list('plant_logs', lf, lt), api.recentDiary(),
       ]);
+      S.hae = await api.list('partner_shifts', from, to).catch(() => []);   // 해인 근무 (표가 아직 없으면 빈 채로)
       S.todos = todos; S.events = events;
       S.days = Object.fromEntries(days.map((r) => [r.day, r]));
       S.projects = projects; S.sessions = sessions; S.plants = plants; S.plogs = plogs; S.recent = recent;
@@ -391,7 +404,7 @@ function calCtl(title, prevLabel, nextLabel) {
     <span class="sw"><button data-act="prev" aria-label="${prevLabel}">&#8592;</button>
     <a href="#cal" data-act="mode" data-mode="month" class="${S.calMode === 'month' ? 'riso3' : ''}">월</a>
     <a href="#cal" data-act="mode" data-mode="week" class="${S.calMode === 'week' ? 'riso3' : ''}">주</a>
-    <button data-act="next" aria-label="${nextLabel}">&#8594;</button></span></div>`;
+    <button data-act="next" aria-label="${nextLabel}">&#8594;</button></span>${S.calMode === 'week' ? `<span class="haesw"><button data-act="hae" class="${S.haeOn ? 'on' : ''}" aria-pressed="${S.haeOn}">해인</button>${S.haeOn ? '<button data-act="hae-add" aria-label="해인 근무 넣기">+</button>' : ''}</span>` : ''}</div>`;
 }
 
 function daySide() {
@@ -449,6 +462,33 @@ function viewMonth() {
   </div>`;
 }
 
+// ───────── 해인 근무: '11/25 10:00–15:30', '11/23 휴무' 같은 줄을 읽어 날짜별로 저장
+function haeParse(txt) {
+  const out = [], t = new Date();
+  const re = /(\d{1,2})\s*[\/.월]\s*(\d{1,2})\s*일?[^\d\n,]*?(?:(\d{1,2}):(\d{2})\s*[–—\-~]\s*(\d{1,2}):(\d{2})|(휴무|연차|휴가|쉼|off))/gi;
+  for (const m of txt.matchAll(re)) {
+    const mo = +m[1] - 1, dd = +m[2];
+    // 연도는 오늘과 가장 가까운 쪽으로 (12월에 1월 근무표를 넣어도 맞게)
+    const cand = [t.getFullYear() - 1, t.getFullYear(), t.getFullYear() + 1].map((y) => new Date(y, mo, dd));
+    const d = cand.sort((a, b) => Math.abs(a - t) - Math.abs(b - t))[0];
+    if (d.getMonth() !== mo) continue;
+    const row = m[7] ? { day: ymd(d), start_min: null, end_min: null, off: m[7] === '연차' ? '연차' : '휴무' }
+      : { day: ymd(d), start_min: +m[3] * 60 + +m[4], end_min: +m[5] * 60 + +m[6], off: null };
+    if (row.end_min != null && row.end_min <= row.start_min) row.end_min += 24 * 60;
+    out.push(row);
+  }
+  return out;
+}
+async function haeSave(txt) {
+  const rows = haeParse(txt);
+  if (!rows.length) { toast('날짜와 시간을 찾지 못했어요'); return; }
+  S.sheet = null;
+  for (const r of rows) { S.hae = S.hae.filter((x) => x.day !== r.day); S.hae.push(r); }
+  render(); toast(`해인 근무 ${rows.length}일 넣었어요`);
+  try { await api.upsertMany('partner_shifts', rows); } catch (e) { fail(e); }
+}
+const haeOf = (day) => (S.haeOn ? S.hae.find((x) => x.day === day) : null);
+
 function viewWeek() {
   const ws = S.week, we = addDays(ws, 6), today = todayStr();
   const days = [...Array(7)].map((_, i) => addDays(ws, i));
@@ -488,14 +528,23 @@ function viewWeek() {
       lanesEnd[l] = it.b; it.lane = l; cluster.push(it); clusterEnd = Math.max(clusterEnd, it.b);
     }
     flush();
+    // 해인 근무: 내 일정과 겹치면 칸을 반씩 (내 것 왼쪽, 해인 오른쪽)
+    const hs = haeOf(ds), hb = hs && hs.start_min != null ? { a: hs.start_min, b: hs.end_min } : null;
+    const split = hb && items.some((x) => x.a < hb.b && (x.plain ? x.a + 45 : x.b) > hb.a);
+    const W = split ? 50 : 100;
     const blks = [...items].sort((x, y) => (y.work ? 1 : 0) - (x.work ? 1 : 0)).map((it) => {   // 근무 네모를 먼저 깔고 그 위에
       const top = Math.max(0, (it.a - H0) * PX);
       const h = it.plain ? null : Math.max(26, Math.min(HH * 14, (it.b - H0) * PX) - top);
-      const pos = it.work ? '' : it.n > 1 ? `left:calc(${(it.lane / it.n) * 100}% + 2px);right:auto;width:calc(${100 / it.n}% - 4px);` : '';
+      const pos = it.work ? (split ? 'right:auto;width:calc(50% - 5px);' : '') : it.n > 1 || split ? `left:calc(${(it.lane / (it.n || 1)) * W}% + 2px);right:auto;width:calc(${W / (it.n || 1)}% - 4px);` : '';
       return `<div class="blk ${it.cls}${it.over ? ' over' : ''}" style="${pos}top:${top}px;${h ? `height:${h}px` : ''}"><div class="bi">${it.body}</div></div>`;
     }).join('');
+    let hae = '';
+    if (hb) {
+      const top = Math.max(0, (hb.a - H0) * PX), h = Math.max(26, Math.min(HH * 14, (hb.b - H0) * PX) - top);
+      hae = `<div class="blk hae" style="${split ? 'left:calc(50% + 1px);' : ''}top:${top}px;height:${h}px"><div class="bi">해인<br>${workCode(hb.a)}&#8211;${workCode(hb.b)}</div></div>`;
+    } else if (hs && hs.off) hae = `<span class="haeoff">해인 ${esc(hs.off)}</span>`;
     const line = ds === today && nowMin >= H0 ? `<div class="nowline" style="top:${(nowMin - H0) * PX}px"></div><div class="nowsq" style="top:${(nowMin - H0) * PX - 3}px"></div>` : '';
-    return `<div class="col" data-act="sel" data-day="${ds}">${blks}${line}</div>`;
+    return `<div class="col${split ? ' split' : ''}" data-act="sel" data-day="${ds}">${hae}${blks}${line}</div>`;
   });
   const heads = days.map((d) => {
     const ds = ymd(d);
@@ -931,6 +980,13 @@ board.addEventListener('click', async (e) => {
     S.sel = el.dataset.day; render();
   } else if (act === 'go-day') {
     S.sel = el.dataset.day; location.hash = '#cal';
+  } else if (act === 'hae') {
+    S.haeOn = !S.haeOn; try { localStorage.setItem('samjung-hae', S.haeOn ? '1' : '0'); } catch (e) { /* 이 기기만 */ }
+    render();
+  } else if (act === 'hae-add') {
+    S.sheet = { type: 'hae' }; render(true); board.querySelector('.sheet textarea')?.focus();
+  } else if (act === 'hae-save') {
+    haeSave(board.querySelector('.sheet textarea')?.value || '');
   } else if (act === 'mode') {
     e.preventDefault();
     S.calMode = el.dataset.mode;
@@ -1509,6 +1565,12 @@ function sheetHTML() {
   if (sh.type === 'period') return periodSheetHTML();
   if (sh.type === 'add') return addSheetHTML();
   if (sh.type === 'addTodo') return addTodoSheetHTML();
+  if (sh.type === 'hae') return `<div class="sh-bg" data-act="sh-close"></div>
+  <div class="sheet" role="dialog" aria-label="해인 근무 넣기">
+    <div class="sh-head"><span>해인 근무 넣기</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
+    <textarea class="haeta" rows="7" aria-label="해인 근무"></textarea>
+    <div class="sh-acts"><button class="btn" data-act="hae-save">넣기</button></div>
+  </div>`;
   const it = sheetItem(); if (!it) { S.sheet = null; return ''; }
   const t = sh.type;
   let head, title;
