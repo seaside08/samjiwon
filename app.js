@@ -404,7 +404,7 @@ function calCtl(title, prevLabel, nextLabel) {
     <span class="sw"><button data-act="prev" aria-label="${prevLabel}">&#8592;</button>
     <a href="#cal" data-act="mode" data-mode="month" class="${S.calMode === 'month' ? 'riso3' : ''}">월</a>
     <a href="#cal" data-act="mode" data-mode="week" class="${S.calMode === 'week' ? 'riso3' : ''}">주</a>
-    <button data-act="next" aria-label="${nextLabel}">&#8594;</button></span>${S.calMode === 'week' ? `<span class="haesw"><button data-act="hae" class="${S.haeOn ? 'on' : ''}" aria-pressed="${S.haeOn}">해인</button></span>` : ''}</div>`;
+    <button data-act="next" aria-label="${nextLabel}">&#8594;</button></span>${S.calMode === 'week' ? `<span class="haesw"><button data-act="hae" class="${S.haeOn ? 'on' : ''}" aria-pressed="${S.haeOn}" aria-label="해인 근무 보기">海</button></span>` : ''}</div>`;
 }
 
 function daySide() {
@@ -529,7 +529,7 @@ function viewWeek() {
     let hae = '';
     if (hb) {
       const top = Math.max(0, (hb.a - H0) * PX), h = Math.max(26, Math.min(HH * 14, (hb.b - H0) * PX) - top);
-      hae = `<div class="blk hae" style="top:${top}px;height:${h}px"><div class="bi">${workCode(hb.a)}&#8211;${workCode(hb.b)}</div></div>`;
+      hae = `<div class="blk hae" style="top:${top}px;height:${h}px"></div>`;
     }   // 쉬는 날(휴무·연차)은 아무것도 안 보임
     const line = ds === today && nowMin >= H0 ? `<div class="nowline" style="top:${(nowMin - H0) * PX}px"></div><div class="nowsq" style="top:${(nowMin - H0) * PX - 3}px"></div>` : '';
     return `<div class="col" data-act="sel" data-day="${ds}">${blks}${hae}${line}</div>`;
