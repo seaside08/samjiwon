@@ -454,4 +454,4 @@ html:has(.pipbody),.pipbody{overflow:auto;height:auto;min-height:100%}
 .haesw{display:inline-flex;align-items:center;margin-left:4px;font-size:15px}
 .haesw button{font:inherit;font-weight:700;background:none;border:0;color:var(--ink);cursor:pointer;padding:2px 8px;line-height:inherit;position:relative;isolation:isolate}
 .haesw button.on{color:var(--paper)}
-.haesw button.on::before{content:"";position:absolute;inset:0;z-index:-1;background:#5fd97c url(tex.jpg) -20px -40px/240px 240px;filter:hue-rotate(72deg) saturate(1.1) brightness(.82)}
+.haesw button.on::before{content:"";position:absolute;inset:0;z-index:-1;background:#5fd97c url(tex.jpg) -20px -40px/240px 240px;filter:hue-rotate(72deg) saturate(.85) brightness(1.08)}
