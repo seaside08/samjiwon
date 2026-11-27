@@ -528,23 +528,21 @@ function viewWeek() {
       lanesEnd[l] = it.b; it.lane = l; cluster.push(it); clusterEnd = Math.max(clusterEnd, it.b);
     }
     flush();
-    // 해인 근무: 내 일정과 겹치면 칸을 반씩 (내 것 왼쪽, 해인 오른쪽)
+    // 해인 근무: 칸 전체에 파란 형광펜을 곱하기(multiply)로 겹쳐 올림
     const hs = haeOf(ds), hb = hs && hs.start_min != null ? { a: hs.start_min, b: hs.end_min } : null;
-    const split = hb && items.some((x) => x.a < hb.b && (x.plain ? x.a + 45 : x.b) > hb.a);
-    const W = split ? 50 : 100;
     const blks = [...items].sort((x, y) => (y.work ? 1 : 0) - (x.work ? 1 : 0)).map((it) => {   // 근무 네모를 먼저 깔고 그 위에
       const top = Math.max(0, (it.a - H0) * PX);
       const h = it.plain ? null : Math.max(26, Math.min(HH * 14, (it.b - H0) * PX) - top);
-      const pos = it.work ? (split ? 'right:auto;width:calc(50% - 5px);' : '') : it.n > 1 || split ? `left:calc(${(it.lane / (it.n || 1)) * W}% + 2px);right:auto;width:calc(${W / (it.n || 1)}% - 4px);` : '';
+      const pos = it.work ? '' : it.n > 1 ? `left:calc(${(it.lane / it.n) * 100}% + 2px);right:auto;width:calc(${100 / it.n}% - 4px);` : '';
       return `<div class="blk ${it.cls}${it.over ? ' over' : ''}" style="${pos}top:${top}px;${h ? `height:${h}px` : ''}"><div class="bi">${it.body}</div></div>`;
     }).join('');
     let hae = '';
     if (hb) {
       const top = Math.max(0, (hb.a - H0) * PX), h = Math.max(26, Math.min(HH * 14, (hb.b - H0) * PX) - top);
-      hae = `<div class="blk hae" style="${split ? 'left:calc(50% + 1px);' : ''}top:${top}px;height:${h}px"><div class="bi">해인<br>${workCode(hb.a)}&#8211;${workCode(hb.b)}</div></div>`;
+      hae = `<div class="blk hae" style="top:${top}px;height:${h}px"><div class="bi">${workCode(hb.a)}&#8211;${workCode(hb.b)}</div></div>`;
     } else if (hs && hs.off) hae = `<span class="haeoff">해인 ${esc(hs.off)}</span>`;
     const line = ds === today && nowMin >= H0 ? `<div class="nowline" style="top:${(nowMin - H0) * PX}px"></div><div class="nowsq" style="top:${(nowMin - H0) * PX - 3}px"></div>` : '';
-    return `<div class="col${split ? ' split' : ''}" data-act="sel" data-day="${ds}">${hae}${blks}${line}</div>`;
+    return `<div class="col" data-act="sel" data-day="${ds}">${blks}${hae}${line}</div>`;
   });
   const heads = days.map((d) => {
     const ds = ymd(d);
