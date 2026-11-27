@@ -144,6 +144,7 @@ function demoApi() {
     projects: [
       { id: 'p1', name: '피보테 배경 외주', stages: ['선화', '채색', '납품'], stage: 1, start_day: d(-15), end_day: d(16), pay: 400000, programs: '클립스튜디오, 포토샵', link: 'https://youtu.be/', note: '단편에 들어갈 배경 두 장.', status: 'active', pos: 1 , category: '외주', people: '스튜디오 피보테 (담당 김OO)', output: '배경 일러스트 2장 · 3840×2160 · 디지털'},
       { id: 'p2', name: '오리엉덩이 zine', stages: ['원고', '레이아웃', '인쇄·제본', '판매'], stage: 1, pay: 160000, status: 'active', pos: 2 },
+      { id: 'p4', name: 'collect my favorite', stages: ['작업'], stage: 1, start_day: d(11), end_day: d(120), pay: '50000', category: '과외', status: 'active', pos: 4 },
       { id: 'p3', name: '지난 외주', stages: ['작업'], stage: 1, status: 'done', pos: 3 },
     ],
     sessions: [
@@ -322,6 +323,8 @@ function buildEvent(raw, day, kind, tv) {
   if (!t.rest) return null;
   return { title: t.rest, start_min: t.start_min, end_min: t.end_min, kind: 'event', place: null };
 }
+// 진행 중 표시: 시작 날짜가 아직 안 왔으면 진행 중이 아님 (일정에서 고를 수는 있음)
+const isLive = (p) => p.status === 'active' && (!p.start_day || p.start_day <= todayStr());
 const activeProjects = () => S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
 const KINDS = [['task', '작업'], ['event', '약속'], ['work', '근무']].filter(([k]) => k !== 'work' || WORKPLACES.length);   // 근무지가 없으면 근무 숨김
 
@@ -367,7 +370,7 @@ function viewToday() {
     ...evs.map((e) => ({ k: e.start_min ?? -1, h: `<div class="e" data-act="edit-event" data-id="${e.id}"><span class="t">${e.start_min != null ? workCode(e.start_min) : ''}</span><span class="n">${esc(shortName(e.title))}</span><span class="x">${e.end_min != null ? '~' + workCode(e.end_min) : ''}</span></div>` })),
     ...sessOf(day).map((s) => ({ k: minOfDay(s.start_at), h: `<div class="e"${s.end_at ? ` data-act="edit-sess" data-id="${s.id}"` : ''}><span class="t">${workCode(minOfDay(s.start_at))}</span><span class="n">${esc(sessLabel(s))}</span><span class="x">${s.end_at ? '~' + workCode(minOfDay(s.end_at)) : 'REC'}</span></div>` })),
   ].sort((a, b) => a.k - b.k);
-  const active = S.projects.filter((p) => p.status === 'active').sort((a, b) => a.pos - b.pos);
+  const active = S.projects.filter(isLive).sort((a, b) => a.pos - b.pos);
   // 지금 하는 작업: 돌고 있는 기록 → 가장 최근 기록 → 진행 중 첫 프로젝트
   const lastS = S.sessions.slice().sort((a, b) => (a.start_at < b.start_at ? 1 : -1))[0];
   const cur = (r && sessFull(r)) || (lastS && projOf(lastS.project_id)?.status === 'active' && sessFull(lastS)) || active[0]?.name;   // 여기는 풀네임
@@ -1055,11 +1058,11 @@ async function saveProj(p, patch) {
 // 프로젝트 목록: 시작한 날이 최근일수록 위 (시작일이 없는 새 프로젝트는 맨 위)
 const projSorted = () => S.projects.slice().sort((a, b) => (b.start_day || '9999').localeCompare(a.start_day || '9999') || a.pos - b.pos);
 function viewProjects() {
-  const active = S.projects.filter((p) => p.status === 'active');
+  const active = S.projects.filter(isLive);
   const list = projSorted();
   const sel = list.find((p) => p.id === S.proj) || list[0];
   const rows = list.map((p, i) => `<div class="pl${p === sel ? ' on' : ''}${i === list.length - 1 ? ' last' : ''}" data-act="proj" data-id="${p.id}">
-      <span class="nm">${esc(p.name)}${p.status === 'active' ? '<i class="live"></i>' : ''}</span></div>`).join('');
+      <span class="nm">${esc(p.name)}${isLive(p) ? '<i class="live"></i>' : ''}</span></div>`).join('');
   const none = '<span class="mu">&#8212;</span>';
   const row = (label, key, val) => `<div class="pv" data-act="pf" data-f="${key}"><span class="pk">${label}</span><span class="pval">${val || none}</span></div>`;
   const link = sel?.link ? `<a class="lnk" href="${esc(/^https?:/.test(sel.link) ? sel.link : 'https://' + sel.link)}" target="_blank" rel="noopener">${esc(sel.link.replace(/^https?:\/\//, ''))}</a>` : '';
