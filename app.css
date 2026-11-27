@@ -452,4 +452,3 @@ html:has(.pipbody),.pipbody{overflow:auto;height:auto;min-height:100%}
 .haesw{display:inline-flex;align-items:center;gap:4px;margin-left:10px}
 .haesw button{font:inherit;font-size:14px;background:none;border:0;color:var(--ink);cursor:pointer;padding:1px 5px;line-height:1.2}
 .haesw button.on{background:#8fcaff url(tex.jpg) -20px -40px/240px 240px;background-blend-mode:luminosity}
-.haeta{border-radius:0;-webkit-appearance:none;width:100%;box-sizing:border-box;font:inherit;font-size:14px;line-height:1.35;border:2px solid var(--ink);background:var(--paper);color:var(--ink);padding:8px;resize:vertical;margin-top:4px}

@@ -102,10 +102,6 @@ const api = DEMO ? demoApi() : {
     const { data, error } = await sb.from(table).insert(rows).select();
     if (error) throw error; return data;
   },
-  async upsertMany(table, rows) {
-    const { error } = await sb.from(table).upsert(rows.map((r) => ({ user_id: S.user.id, ...r })));
-    if (error) throw error;
-  },
   async recentDiary() {
     const { data, error } = await sb.from('days').select('day,diary').not('diary', 'is', null).neq('diary', '').order('day', { ascending: false }).limit(8);
     if (error) throw error; return data;
@@ -170,7 +166,6 @@ function demoApi() {
     async saveDay(day, patch) { const r = db.days.find((x) => x.day === day); r ? Object.assign(r, patch) : db.days.push({ day, ...patch }); },
     async all(table) { return db[table].map((r) => ({ ...r })); },
     async insertMany(table, rows) { const out = rows.map((r) => ({ id: id(), ...r })); db[table].push(...out); return out.map((r) => ({ ...r })); },
-    async upsertMany(table, rows) { for (const r of rows) { db[table] = db[table].filter((x) => x.day !== r.day); db[table].push({ ...r }); } },
     async recentDiary() { return db.days.filter((r) => r.diary).sort((a, b) => (a.day < b.day ? 1 : -1)).slice(0, 8).map((r) => ({ ...r })); },
     async upsertLog(plant_id, day, patch) {
       let r = db.plant_logs.find((x) => x.plant_id === plant_id && x.day === day);
@@ -202,7 +197,11 @@ async function load() {
         api.list('todos', from, to), api.list('events', from, to), api.list('days', from, to),
         api.all('projects'), api.all('sessions'), api.all('plants'), api.list('plant_logs', lf, lt), api.recentDiary(),
       ]);
-      S.hae = await api.list('partner_shifts', from, to).catch(() => []);   // 해인 근무 (표가 아직 없으면 빈 채로)
+      if (DEMO) S.hae = await api.list('partner_shifts', from, to);
+      else if (S.haeOn && !S.haeTried) {   // 켜 둔 채 다시 열면 기억한 암호로 조용히 불러오기
+        S.haeTried = true; let pw = null; try { pw = localStorage.getItem(HAE_KEY); } catch (e) { /* 없음 */ }
+        if (pw) haeLoad(pw).then(() => render());
+      }
       S.todos = todos; S.events = events;
       S.days = Object.fromEntries(days.map((r) => [r.day, r]));
       S.projects = projects; S.sessions = sessions; S.plants = plants; S.plogs = plogs; S.recent = recent;
@@ -404,7 +403,7 @@ function calCtl(title, prevLabel, nextLabel) {
     <span class="sw"><button data-act="prev" aria-label="${prevLabel}">&#8592;</button>
     <a href="#cal" data-act="mode" data-mode="month" class="${S.calMode === 'month' ? 'riso3' : ''}">월</a>
     <a href="#cal" data-act="mode" data-mode="week" class="${S.calMode === 'week' ? 'riso3' : ''}">주</a>
-    <button data-act="next" aria-label="${nextLabel}">&#8594;</button></span>${S.calMode === 'week' ? `<span class="haesw"><button data-act="hae" class="${S.haeOn ? 'on' : ''}" aria-pressed="${S.haeOn}">해인</button>${S.haeOn ? '<button data-act="hae-add" aria-label="해인 근무 넣기">+</button>' : ''}</span>` : ''}</div>`;
+    <button data-act="next" aria-label="${nextLabel}">&#8594;</button></span>${S.calMode === 'week' ? `<span class="haesw"><button data-act="hae" class="${S.haeOn ? 'on' : ''}" aria-pressed="${S.haeOn}">해인</button></span>` : ''}</div>`;
 }
 
 function daySide() {
@@ -462,30 +461,28 @@ function viewMonth() {
   </div>`;
 }
 
-// ───────── 해인 근무: '11/25 10:00–15:30', '11/23 휴무' 같은 줄을 읽어 날짜별로 저장
-function haeParse(txt) {
-  const out = [], t = new Date();
-  const re = /(\d{1,2})\s*[\/.월]\s*(\d{1,2})\s*일?[^\d\n,]*?(?:(\d{1,2}):(\d{2})\s*[–—\-~]\s*(\d{1,2}):(\d{2})|(휴무|연차|휴가|쉼|off))/gi;
-  for (const m of txt.matchAll(re)) {
-    const mo = +m[1] - 1, dd = +m[2];
-    // 연도는 오늘과 가장 가까운 쪽으로 (12월에 1월 근무표를 넣어도 맞게)
-    const cand = [t.getFullYear() - 1, t.getFullYear(), t.getFullYear() + 1].map((y) => new Date(y, mo, dd));
-    const d = cand.sort((a, b) => Math.abs(a - t) - Math.abs(b - t))[0];
-    if (d.getMonth() !== mo) continue;
-    const row = m[7] ? { day: ymd(d), start_min: null, end_min: null, off: m[7] === '연차' ? '연차' : '휴무' }
-      : { day: ymd(d), start_min: +m[3] * 60 + +m[4], end_min: +m[5] * 60 + +m[6], off: null };
-    if (row.end_min != null && row.end_min <= row.start_min) row.end_min += 24 * 60;
-    out.push(row);
-  }
-  return out;
+// ───────── 해인 근무: Claude가 근무표 사진을 받아 hae.enc(암호로 잠긴 파일)에 넣어 둠
+// 기기마다 처음 한 번 암호를 넣으면 그 기기에 기억 (공개 코드에는 잠긴 파일만 있음)
+const HAE_KEY = 'samjung-hae-pw';
+async function haeDecrypt(pw) {
+  const r = await fetch(`hae.enc?t=${Date.now()}`, { cache: 'no-store' }); if (!r.ok) return [];
+  const { salt, iv, ct } = await r.json(), b = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b(salt), iterations: 200000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b(iv) }, key, b(ct))));
 }
-async function haeSave(txt) {
-  const rows = haeParse(txt);
-  if (!rows.length) { toast('날짜와 시간을 찾지 못했어요'); return; }
-  S.sheet = null;
-  for (const r of rows) { S.hae = S.hae.filter((x) => x.day !== r.day); S.hae.push(r); }
-  render(); toast(`해인 근무 ${rows.length}일 넣었어요`);
-  try { await api.upsertMany('partner_shifts', rows); } catch (e) { fail(e); }
+async function haeLoad(pw) {
+  try { S.hae = await haeDecrypt(pw); return true; } catch (e) { return false; }
+}
+async function haeOpen() {
+  let pw = null; try { pw = localStorage.getItem(HAE_KEY); } catch (e) { /* 저장 안 됨 */ }
+  if (pw && await haeLoad(pw)) { render(); return; }
+  S.sheet = { type: 'hae' }; render(true); board.querySelector('.sheet input')?.focus();
+}
+async function haeUnlock(pw) {
+  if (!pw || !(await haeLoad(pw))) { toast('암호가 맞지 않아요'); return; }
+  try { localStorage.setItem(HAE_KEY, pw); } catch (e) { /* 이번만 */ }
+  S.sheet = null; render();
 }
 const haeOf = (day) => (S.haeOn ? S.hae.find((x) => x.day === day) : null);
 
@@ -900,6 +897,7 @@ async function addEvent(day, raw, tv) {
 
 board.addEventListener('submit', (e) => {
   if (e.target.closest('form[data-sh]')) { e.preventDefault(); sheetDo('save-edit'); return; }
+  if (e.target.closest('form[data-hae]')) { e.preventDefault(); haeUnlock(e.target.querySelector('input').value); return; }
   const f = e.target.closest('form[data-add]'); if (!f) return;
   e.preventDefault();
   const input = f.querySelector('input'), v = input.value.trim();
@@ -980,11 +978,9 @@ board.addEventListener('click', async (e) => {
     S.sel = el.dataset.day; location.hash = '#cal';
   } else if (act === 'hae') {
     S.haeOn = !S.haeOn; try { localStorage.setItem('samjung-hae', S.haeOn ? '1' : '0'); } catch (e) { /* 이 기기만 */ }
-    render();
-  } else if (act === 'hae-add') {
-    S.sheet = { type: 'hae' }; render(true); board.querySelector('.sheet textarea')?.focus();
-  } else if (act === 'hae-save') {
-    haeSave(board.querySelector('.sheet textarea')?.value || '');
+    if (S.haeOn && !DEMO) haeOpen(); else render();
+  } else if (act === 'hae-unlock') {
+    haeUnlock(board.querySelector('.sheet input')?.value || '');
   } else if (act === 'mode') {
     e.preventDefault();
     S.calMode = el.dataset.mode;
@@ -1564,10 +1560,10 @@ function sheetHTML() {
   if (sh.type === 'add') return addSheetHTML();
   if (sh.type === 'addTodo') return addTodoSheetHTML();
   if (sh.type === 'hae') return `<div class="sh-bg" data-act="sh-close"></div>
-  <div class="sheet" role="dialog" aria-label="해인 근무 넣기">
-    <div class="sh-head"><span>해인 근무 넣기</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
-    <textarea class="haeta" rows="7" aria-label="해인 근무"></textarea>
-    <div class="sh-acts"><button class="btn" data-act="hae-save">넣기</button></div>
+  <div class="sheet" role="dialog" aria-label="해인 근무 암호">
+    <div class="sh-head"><span>해인 근무 암호</span><button class="sh-x" data-act="sh-close" aria-label="닫기">&#215;</button></div>
+    <form class="sh-form" data-hae><input class="edit" type="password" autocomplete="off" enterkeyhint="done" aria-label="암호"></form>
+    <div class="sh-acts"><button class="btn" data-act="hae-unlock">열기</button></div>
   </div>`;
   const it = sheetItem(); if (!it) { S.sheet = null; return ''; }
   const t = sh.type;

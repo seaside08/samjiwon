@@ -8,3 +8,6 @@
   - 배포 완료(GitHub Actions `pages build and deployment` 성공)를 확인한 뒤 알린다.
 - 위젯(`widget/*.js`)과 구글 스크립트(`google/apps-script.js`)는 사용자가 직접 복사해 붙여 넣는다 — 배포 때 함께 안내.
 - 사용자에게는 존댓말.
+- 해인 근무: 사용자가 근무표 사진을 보내면 날짜별로 읽어 `node tools/hae-tool.mjs hae.enc <암호> rows.json` 으로 `hae.enc`(암호로 잠긴 파일)에 넣는다.
+  - rows.json 예: `[{"day":"2026-12-07","start_min":930,"end_min":1350,"off":null},{"day":"2026-12-08","start_min":null,"end_min":null,"off":"휴무"}]`
+  - 암호는 사용자에게 받는다. **저장소·커밋·평문 파일 어디에도 암호나 풀린 근무표를 남기지 않는다.**
