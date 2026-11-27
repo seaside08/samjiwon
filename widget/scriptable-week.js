@@ -103,7 +103,6 @@ function draw(size, data, tex) {
   const fill = (r, col) => { c.setFillColor(col); c.fillRect(r); };
   const green = (r, out) => {
     if (tex) c.drawImageInRect(tex, r); else fill(r, GREEN);
-    if (out) fill(r, new Color('#fbfbf8', 0.4));   // 외주는 초록 60%
   };
 
   const ws = sundayOf(now), days = [...Array(7)].map((_, i) => new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i)), keys = days.map(ymd);

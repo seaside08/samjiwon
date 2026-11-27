@@ -155,7 +155,6 @@ function draw(size, data, tex, fam) {
         } else if (L.e.kind === 'task') {
           const br = new Rect(x + LW, ly, cw - LW * 1.5, lh);
           if (tex) c.drawImageInRect(tex, br); else { c.setFillColor(GREEN); c.fillRect(br); }
-          if (L.ow || (L.e.day && isOut(evProj(L.e, data.projects)))) { c.setFillColor(new Color('#fbfbf8', 0.4)); c.fillRect(br); }   // 외주는 초록 60%
           text(shortName(L.e.title), x + 3.5, ly, cw - 4, lh, f);
         } else {
           text(shortName(L.e.title), x + 3.5, ly, cw - 4, lh, f);
