@@ -540,7 +540,7 @@ function viewWeek() {
     if (hb) {
       const top = Math.max(0, (hb.a - H0) * PX), h = Math.max(26, Math.min(HH * 14, (hb.b - H0) * PX) - top);
       hae = `<div class="blk hae" style="top:${top}px;height:${h}px"><div class="bi">${workCode(hb.a)}&#8211;${workCode(hb.b)}</div></div>`;
-    } else if (hs && hs.off) hae = `<span class="haeoff">해인 ${esc(hs.off)}</span>`;
+    }   // 쉬는 날(휴무·연차)은 아무것도 안 보임
     const line = ds === today && nowMin >= H0 ? `<div class="nowline" style="top:${(nowMin - H0) * PX}px"></div><div class="nowsq" style="top:${(nowMin - H0) * PX - 3}px"></div>` : '';
     return `<div class="col" data-act="sel" data-day="${ds}">${blks}${hae}${line}</div>`;
   });
