@@ -1052,9 +1052,11 @@ async function saveProj(p, patch) {
   try { await api.update('projects', p.id, patch); } catch (e) { fail(e); }
 }
 
+// 프로젝트 목록: 시작한 날이 최근일수록 위 (시작일이 없는 새 프로젝트는 맨 위)
+const projSorted = () => S.projects.slice().sort((a, b) => (b.start_day || '9999').localeCompare(a.start_day || '9999') || a.pos - b.pos);
 function viewProjects() {
   const active = S.projects.filter((p) => p.status === 'active');
-  const list = S.projects.slice().sort((a, b) => a.pos - b.pos);
+  const list = projSorted();
   const sel = list.find((p) => p.id === S.proj) || list[0];
   const rows = list.map((p, i) => `<div class="pl${p === sel ? ' on' : ''}${i === list.length - 1 ? ' last' : ''}" data-act="proj" data-id="${p.id}">
       <span class="nm">${esc(p.name)}${p.status === 'active' ? '<i class="live"></i>' : ''}</span></div>`).join('');
@@ -1330,7 +1332,7 @@ function handleMore(act, el, ev) {
     return true;
   }
   if (act === 'pf') {
-    const p = projOf(S.proj) || S.projects.slice().sort((a, b) => a.pos - b.pos)[0];
+    const p = projOf(S.proj) || projSorted()[0];
     if (!p) return true;
     const fld = el.dataset.f;
     if (fld === 'period') { S.sheet = { type: 'period', pid: p.id, v: periodVals(p) }; render(true); return true; }
